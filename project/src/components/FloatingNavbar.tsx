@@ -1,12 +1,16 @@
-import  { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Menu, X } from 'lucide-react';
+import { Heart, Menu, X, User, LogOut } from 'lucide-react';
 
 const FloatingNavbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userName, setUserName] = useState('');
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const navigation = [
     { name: 'Home', href: '/' },
@@ -24,6 +28,40 @@ const FloatingNavbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('token');
+      const userStr = localStorage.getItem('user');
+      if (token && userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          setIsAuthenticated(true);
+          setUserName(user.name || 'User');
+        } catch (e) {
+          setIsAuthenticated(false);
+        }
+      } else {
+        setIsAuthenticated(false);
+      }
+    };
+    
+    checkAuth();
+    window.addEventListener('storage', checkAuth);
+    return () => window.removeEventListener('storage', checkAuth);
+  }, [location]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('auth_token');
+    setIsAuthenticated(false);
+    setUserName('');
+    setShowUserMenu(false);
+    navigate('/');
+  };
+
   const isActive = (path: string) => location.pathname === path;
 
   return (
@@ -40,7 +78,7 @@ const FloatingNavbar = () => {
         px-6 py-4
         transition-all duration-300
         ${isScrolled ? 'bg-white/20' : ''}
-        w-full max-w-4xl mx-auto
+        w-full max-w-5xl mx-auto
       `}>
         <div className="flex justify-between items-center">
           {/* Logo */}
@@ -84,6 +122,59 @@ const FloatingNavbar = () => {
             ))}
           </div>
 
+          {/* Auth Section - Desktop */}
+          <div className="hidden md:flex items-center space-x-2">
+            {isAuthenticated ? (
+              <div className="relative">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium shadow-lg"
+                >
+                  <User className="h-4 w-4" />
+                  <span>{userName}</span>
+                </motion.button>
+                
+                <AnimatePresence>
+                  {showUserMenu && (
+                    <>
+                      {/* Backdrop to close menu */}
+                      <div 
+                        className="fixed inset-0 z-40"
+                        onClick={() => setShowUserMenu(false)}
+                      />
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="absolute right-0 mt-2 w-48 backdrop-blur-lg bg-white/90 border border-white/20 rounded-xl shadow-xl overflow-hidden z-50"
+                      >
+                        <button
+                          onClick={handleLogout}
+                          className="w-full px-4 py-3 text-left text-gray-700 hover:bg-red-50 transition-colors duration-200 flex items-center space-x-2"
+                        >
+                          <LogOut className="h-4 w-4" />
+                          <span>Logout</span>
+                        </button>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
+            ) : (
+              <Link to="/login">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  Login
+                </motion.button>
+              </Link>
+            )}
+          </div>
+
           {/* Mobile Menu Button */}
           <motion.button
             whileTap={{ scale: 0.95 }}
@@ -122,6 +213,36 @@ const FloatingNavbar = () => {
                     {item.name}
                   </Link>
                 ))}
+                
+                {/* Mobile Auth Section */}
+                <div className="pt-2 border-t border-white/20 space-y-2">
+                  {isAuthenticated ? (
+                    <>
+                      <div className="px-4 py-2 text-sm font-medium text-gray-700 flex items-center space-x-2">
+                        <User className="h-4 w-4" />
+                        <span>{userName}</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          handleLogout();
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-2 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-all duration-200 flex items-center space-x-2"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        <span>Logout</span>
+                      </button>
+                    </>
+                  ) : (
+                    <Link
+                      to="/login"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white text-sm font-semibold text-center"
+                    >
+                      Login
+                    </Link>
+                  )}
+                </div>
               </div>
             </motion.div>
           )}

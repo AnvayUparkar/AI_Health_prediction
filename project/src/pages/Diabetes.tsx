@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Activity, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { predict } from '../services/api';
 
 const Diabetes = () => {
   const [formData, setFormData] = useState({
@@ -21,7 +22,7 @@ const Diabetes = () => {
     Obesity: ''
   });
   
-  const [result, setResult] = useState<{prediction: string, confidence: string} | null>(null);
+  const [result, setResult] = useState<{prediction: string, confidence: number | null} | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -57,27 +58,20 @@ const Diabetes = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setErrorMessage(null); // Clear previous errors
+    setErrorMessage(null);
+    setResult(null);
     
     try {
-      const response = await fetch('http://localhost:5000/predict_diabetes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
+      const data = await predict('diabetes', formData);
+      
+      setResult({
+        prediction: data.prediction,
+        confidence: data.confidence
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Prediction failed');
-      }
-
-      const result = await response.json();
-      setResult(result);
-    } catch (error) {
-      console.error('Prediction error:', error);
-      setErrorMessage((error as Error).message || 'Prediction failed. Please try again or check if the backend server is running.');
+    } catch (err: any) {
+      console.error('Prediction error:', err);
+      const errorMsg = err?.response?.data?.error || err?.message || 'Prediction failed. Please try again.';
+      setErrorMessage(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -85,8 +79,8 @@ const Diabetes = () => {
 
   const getResultColor = (prediction: string) => {
     switch (prediction) {
-      case 'Negative': return 'text-health-low bg-green-50 border-green-200';
-      case 'Positive': return 'text-health-high bg-red-50 border-red-200';
+      case 'Negative': return 'text-green-700 bg-green-50 border-green-200';
+      case 'Positive': return 'text-red-700 bg-red-50 border-red-200';
       default: return 'text-gray-600 bg-gray-50 border-gray-200';
     }
   };
@@ -102,7 +96,7 @@ const Diabetes = () => {
             <Activity className="h-12 w-12 text-green-500" />
           </div>
         </div>
-        <h1 className="text-4xl font-bold text-health-text mb-4">Diabetes Risk Questionnaire</h1>
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">Diabetes Risk Questionnaire</h1>
         <p className="text-gray-600 max-w-2xl mx-auto">
           Please answer all questions honestly based on your current symptoms and health status. 
           This assessment evaluates your risk factors for diabetes.
@@ -112,9 +106,9 @@ const Diabetes = () => {
       <div className="bg-white rounded-2xl shadow-lg p-8">
         <form id="diabetes-form" onSubmit={handleSubmit} className="space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {questions.map((question, index) => (
+            {questions.map((question) => (
               <div key={question.field} className="space-y-4">
-                <label className="block text-sm font-semibold text-health-text">
+                <label className="block text-sm font-semibold text-gray-900">
                   {question.label}
                 </label>
                 
@@ -127,7 +121,7 @@ const Diabetes = () => {
                     max={question.max}
                     value={formData[question.field as keyof typeof formData]}
                     onChange={(e) => handleInputChange(question.field, e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-health-primary focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                     required
                   />
                 )}
@@ -138,7 +132,7 @@ const Diabetes = () => {
                     name={question.field}
                     value={formData[question.field as keyof typeof formData]}
                     onChange={(e) => handleInputChange(question.field, e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-health-primary focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                     required
                   >
                     <option value="">Select an option</option>
@@ -160,7 +154,7 @@ const Diabetes = () => {
                         value="Yes"
                         checked={formData[question.field as keyof typeof formData] === 'Yes'}
                         onChange={(e) => handleInputChange(question.field, e.target.value)}
-                        className="w-4 h-4 text-health-primary border-gray-300 focus:ring-health-primary"
+                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                         required
                       />
                       <span className="text-sm text-gray-700">Yes</span>
@@ -173,7 +167,7 @@ const Diabetes = () => {
                         value="No"
                         checked={formData[question.field as keyof typeof formData] === 'No'}
                         onChange={(e) => handleInputChange(question.field, e.target.value)}
-                        className="w-4 h-4 text-health-primary border-gray-300 focus:ring-health-primary"
+                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                         required
                       />
                       <span className="text-sm text-gray-700">No</span>
@@ -188,7 +182,7 @@ const Diabetes = () => {
             <button
               type="submit"
               disabled={!isFormValid || isLoading}
-              className="px-8 py-4 bg-health-primary text-white rounded-xl font-semibold hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-2"
+              className="px-8 py-4 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-2"
             >
               {isLoading ? (
                 <>
@@ -207,10 +201,10 @@ const Diabetes = () => {
               </p>
             )}
             {errorMessage && (
-              <p className="text-sm text-red-500 flex items-center space-x-1 mt-4">
-                <AlertCircle className="h-4 w-4 text-red-500" />
+              <div className="text-sm text-red-600 flex items-center space-x-1 mt-4 bg-red-50 p-4 rounded-lg">
+                <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
                 <span>Error: {errorMessage}</span>
-              </p>
+              </div>
             )}
           </div>
         </form>
@@ -218,32 +212,32 @@ const Diabetes = () => {
         {/* Results */}
         <div id="result">
           {result && (
-            <div className="mt-12 p-8 border-2 rounded-2xl transition-all duration-500 animate-fade-in">
-              <div className={`${getResultColor(result.prediction)}`}>
-                <div className="text-center">
-                  <div className="flex justify-center mb-4">
-                    {result.prediction === 'Negative' && <CheckCircle className="h-16 w-16 text-health-low" />}
-                    {result.prediction === 'Positive' && <AlertCircle className="h-16 w-16 text-health-high" />}
-                  </div>
-                  
-                  <h2 className="text-3xl font-bold mb-2">
-                    Result: {result.prediction === 'Positive' ? 'Higher Risk' : 'Lower Risk'}
-                  </h2>
-                  
+            <div className={`mt-12 p-8 border-2 rounded-2xl transition-all duration-500 ${getResultColor(result.prediction)}`}>
+              <div className="text-center">
+                <div className="flex justify-center mb-4">
+                  {result.prediction === 'Negative' && <CheckCircle className="h-16 w-16 text-green-600" />}
+                  {result.prediction === 'Positive' && <AlertCircle className="h-16 w-16 text-red-600" />}
+                </div>
+                
+                <h2 className="text-3xl font-bold mb-2">
+                  Result: {result.prediction === 'Positive' ? 'Higher Risk' : 'Lower Risk'}
+                </h2>
+                
+                {result.confidence !== null && (
                   <p className="text-xl mb-4">
                     Confidence: {result.confidence}%
                   </p>
-                  
-                  <div className="bg-white bg-opacity-50 rounded-xl p-6 mt-6">
-                    <p className="text-sm leading-relaxed">
-                      {result.prediction === 'Negative' && 
-                        "Your assessment indicates a lower risk for diabetes. Continue maintaining a healthy lifestyle with regular exercise and a balanced diet."
-                      }
-                      {result.prediction === 'Positive' && 
-                        "Your assessment indicates a higher risk for diabetes. We recommend consulting with a healthcare professional for proper screening and guidance on preventive measures."
-                      }
-                    </p>
-                  </div>
+                )}
+                
+                <div className="bg-white bg-opacity-50 rounded-xl p-6 mt-6">
+                  <p className="text-sm leading-relaxed">
+                    {result.prediction === 'Negative' && 
+                      "Your assessment indicates a lower risk for diabetes. Continue maintaining a healthy lifestyle with regular exercise and a balanced diet."
+                    }
+                    {result.prediction === 'Positive' && 
+                      "Your assessment indicates a higher risk for diabetes. We recommend consulting with a healthcare professional for proper screening and guidance on preventive measures."
+                    }
+                  </p>
                 </div>
               </div>
             </div>
