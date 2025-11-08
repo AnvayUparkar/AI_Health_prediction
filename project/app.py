@@ -16,6 +16,8 @@ from backend.routes.auth import auth_bp
 from backend.routes.predict import predict_bp
 from backend.routes.diet import diet_bp
 from backend.routes.workout import workout_bp
+from backend.routes.appointments import appointments_bp
+from backend.routes.diet_plan import diet_plan_bp
 
 def create_app(config_overrides: Optional[dict] = None):
     app = Flask(__name__, static_folder=None)
@@ -24,7 +26,7 @@ def create_app(config_overrides: Optional[dict] = None):
     CORS(app, 
          resources={r"/*": {
              "origins": "*",
-             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
              "allow_headers": ["Content-Type", "Authorization"],
              "expose_headers": ["Authorization"],
              "supports_credentials": False
@@ -44,29 +46,30 @@ def create_app(config_overrides: Optional[dict] = None):
     db.init_app(app)
     JWTManager(app)
 
-    # Register blueprints under /auth and /api
+    # Register blueprints
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(predict_bp, url_prefix='/api')
     app.register_blueprint(diet_bp, url_prefix='/api')
     app.register_blueprint(workout_bp, url_prefix='/api')
+    app.register_blueprint(appointments_bp, url_prefix='/api')
+    app.register_blueprint(diet_plan_bp, url_prefix='/api')
 
     @app.route('/health', methods=['GET'])
     def health():
-        return jsonify({'status': 'ok'})
+        return jsonify({'status': 'ok', 'message': 'Server is running'})
 
     # Add explicit OPTIONS handler for all routes
     @app.route('/<path:path>', methods=['OPTIONS'])
     def handle_options(path):
         return '', 204
 
-    # Legacy endpoints for clients that call root-level paths (pre-v2)
+    # Legacy endpoints for backward compatibility
     @app.route('/predict_diabetes', methods=['OPTIONS', 'POST'])
     def legacy_predict_diabetes():
         if request.method == 'OPTIONS':
             return '', 204
         data = request.get_json(silent=True) or {}
         features = data if isinstance(data, dict) else {}
-        # Import the predict function from routes
         from backend.routes.predict import predict_with_type
         resp, status = predict_with_type('diabetes', features)
         return jsonify(resp), status
@@ -89,7 +92,7 @@ def create_app(config_overrides: Optional[dict] = None):
         except Exception as e:
             print(f"✗ DB init failed: {e}")
 
-        # Load models (non-blocking - individual models can fail)
+        # Load ML models (non-blocking)
         try:
             from backend.routes.predict import load_models_once
             load_models_once()
@@ -101,10 +104,39 @@ def create_app(config_overrides: Optional[dict] = None):
 
 if __name__ == '__main__':
     app = create_app()
-    print("=" * 60)
+    print("=" * 70)
     print("🚀 Starting Flask server...")
-    print("📍 API URL: http://localhost:5000")
+    print("🏥 Health Prediction API Server")
+    print("=" * 70)
+    print("📍 Server URL: http://localhost:5000")
     print("🏥 Health check: http://localhost:5000/health")
-    print("🔮 Predict endpoint: http://localhost:5000/api/predict")
-    print("=" * 60)
+    print("")
+    print("🔮 Prediction endpoints:")
+    print("   - POST /api/predict")
+    print("   - POST /predict_diabetes (legacy)")
+    print("   - POST /predict_lung_cancer (legacy)")
+    print("")
+    print("📅 Appointment endpoints:")
+    print("   - POST /api/appointments")
+    print("   - GET /api/appointments")
+    print("   - GET /api/appointments/<id>")
+    print("   - PATCH /api/appointments/<id>")
+    print("   - DELETE /api/appointments/<id>")
+    print("")
+    print("🥗 Diet Plan endpoints:")
+    print("   - POST /api/diet-plan")
+    print("   - POST /api/diet-plan/validate")
+    print("")
+    print("💪 Workout endpoints:")
+    print("   - GET /api/workouts")
+    print("   - POST /api/workouts/generate")
+    print("")
+    print("🍽️ Diet endpoints:")
+    print("   - GET /api/diet")
+    print("   - POST /api/diet/generate")
+    print("")
+    print("🔐 Auth endpoints:")
+    print("   - POST /auth/register")
+    print("   - POST /auth/login")
+    print("=" * 70)
     app.run(host='0.0.0.0', port=5000, debug=True)

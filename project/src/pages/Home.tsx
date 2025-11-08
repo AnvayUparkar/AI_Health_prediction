@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sun as Lung, Activity, ArrowRight, Sparkles, Shield, Clock, Brain, Heart, Zap } from 'lucide-react';
+import { Sun as Lung, Activity, ArrowRight, Sparkles, Shield, Clock, Brain, Heart, Zap, Calendar, Stethoscope, LineChart, Utensils } from 'lucide-react';
 import AnimatedBackground from '../components/AnimatedBackground';
 import GlassCard from '../components/GlassCard';
 import FeatureCard from '../components/FeatureCard';
@@ -42,6 +42,40 @@ const Home = () => {
       description: "Experience lightning-fast predictions with our optimized algorithms that process your data in milliseconds."
     }
   ];
+
+  const mainServices = [
+    {
+      icon: Calendar,
+      title: "Book Doctor Appointment",
+      description: "Schedule consultations with healthcare professionals. Choose between online video consultations or in-person visits at your convenience.",
+      gradient: "from-blue-500 to-cyan-500",
+      hoverColor: "blue-500",
+      features: ["Online & Offline consultations", "Flexible scheduling", "Experienced doctors"],
+      link: "/book-appointment",
+      ctaText: "Book Appointment"
+    },
+    {
+      icon: LineChart,
+      title: "AI Health Predictions",
+      description: "Access our suite of AI-powered health prediction tools. Get instant risk assessments for various conditions based on your health data.",
+      gradient: "from-purple-500 to-pink-500",
+      hoverColor: "purple-500",
+      features: ["Multiple prediction models", "Instant results", "Comprehensive analysis"],
+      link: "/predictions",
+      ctaText: "Start Prediction"
+    },
+    {
+      icon: Utensils,
+      title: "Smart Diet Planner",
+      description: "Receive personalized diet recommendations based on your health reports. AI-powered nutrition planning tailored to your specific needs.",
+      gradient: "from-green-500 to-emerald-500",
+      hoverColor: "green-500",
+      features: ["Personalized meal plans", "Report-based recommendations", "Nutritionist-approved"],
+      link: "/diet-planner",
+      ctaText: "Get Diet Plan"
+    }
+  ];
+
   return (
     <div className="relative min-h-screen">
       <AnimatedBackground />
@@ -90,8 +124,9 @@ const Home = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-2xl font-semibold text-lg shadow-xl hover:shadow-2xl transition-all duration-300"
+                onClick={() => window.scrollTo({ top: document.querySelector('#services')?.offsetTop || 0, behavior: 'smooth' })}
               >
-                Start Health Assessment
+                Explore Services
               </motion.button>
               
               <motion.button
@@ -105,6 +140,75 @@ const Home = () => {
           </motion.div>
         </div>
       </section>
+
+      {/* Main Services Section */}
+      <section id="services" className="relative py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+              Our Healthcare Services
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Comprehensive health solutions powered by AI and expert care
+            </p>
+          </motion.div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-20">
+            {mainServices.map((service, index) => {
+              const IconComponent = service.icon;
+              return (
+                <GlassCard key={index} className="p-8 group" delay={index * 0.2}>
+                  <div className="flex flex-col h-full">
+                    <div className="flex items-center space-x-4 mb-6">
+                      <motion.div 
+                        className={`p-4 bg-gradient-to-r ${service.gradient} rounded-2xl`}
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                      >
+                        <IconComponent className="h-8 w-8 text-white" />
+                      </motion.div>
+                    </div>
+                    
+                    <h3 className={`text-2xl font-bold text-gray-800 mb-4 group-hover:text-${service.hoverColor} transition-colors duration-300`}>
+                      {service.title}
+                    </h3>
+                    
+                    <p className="text-gray-600 mb-6 leading-relaxed flex-grow">
+                      {service.description}
+                    </p>
+                    
+                    <div className="space-y-3 mb-8">
+                      {service.features.map((item, idx) => (
+                        <div key={idx} className="flex items-center space-x-3">
+                          <div className={`w-2 h-2 bg-gradient-to-r ${service.gradient} rounded-full`}></div>
+                          <span className="text-gray-600">{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <Link to={service.link}>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className={`w-full bg-gradient-to-r ${service.gradient} text-white px-6 py-4 rounded-xl font-semibold flex items-center justify-center space-x-2 hover:shadow-xl transition-all duration-300`}
+                      >
+                        <span>{service.ctaText}</span>
+                        <ArrowRight className="h-5 w-5" />
+                      </motion.button>
+                    </Link>
+                  </div>
+                </GlassCard>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
       {/* Features Section */}
       <section className="relative py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
@@ -253,7 +357,7 @@ const Home = () => {
                 Ready to Take Control of Your Health?
               </h2>
               <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-                Choose an assessment above to begin your journey towards better health awareness and proactive care.
+                Choose a service above to begin your journey towards better health awareness and proactive care.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link to="/what-we-do">
