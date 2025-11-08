@@ -16,8 +16,8 @@ const FloatingNavbar = () => {
     { name: 'Home', href: '/' },
     { name: 'About', href: '/about' },
     { name: 'What We Do', href: '/what-we-do' },
-    { name: 'Lung Cancer', href: '/lung-cancer' },
-    { name: 'Diabetes', href: '/diabetes' },
+    // { name: 'Lung Cancer', href: '/lung-cancer' },
+    // { name: 'Diabetes', href: '/diabetes' },
   ];
 
   useEffect(() => {
@@ -47,6 +47,7 @@ const FloatingNavbar = () => {
     };
     
     checkAuth();
+    // Listen for storage changes (e.g., login in another tab)
     window.addEventListener('storage', checkAuth);
     return () => window.removeEventListener('storage', checkAuth);
   }, [location]);
@@ -122,7 +123,7 @@ const FloatingNavbar = () => {
             ))}
           </div>
 
-          {/* Auth Section - Desktop */}
+          {/* Auth Section */}
           <div className="hidden md:flex items-center space-x-2">
             {isAuthenticated ? (
               <div className="relative">
@@ -138,40 +139,44 @@ const FloatingNavbar = () => {
                 
                 <AnimatePresence>
                   {showUserMenu && (
-                    <>
-                      {/* Backdrop to close menu */}
-                      <div 
-                        className="fixed inset-0 z-40"
-                        onClick={() => setShowUserMenu(false)}
-                      />
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="absolute right-0 mt-2 w-48 backdrop-blur-lg bg-white/90 border border-white/20 rounded-xl shadow-xl overflow-hidden z-50"
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="absolute right-0 mt-2 w-48 backdrop-blur-lg bg-white/90 border border-white/20 rounded-xl shadow-xl overflow-hidden"
+                    >
+                      <button
+                        onClick={handleLogout}
+                        className="w-full px-4 py-3 text-left text-gray-700 hover:bg-red-50 transition-colors duration-200 flex items-center space-x-2"
                       >
-                        <button
-                          onClick={handleLogout}
-                          className="w-full px-4 py-3 text-left text-gray-700 hover:bg-red-50 transition-colors duration-200 flex items-center space-x-2"
-                        >
-                          <LogOut className="h-4 w-4" />
-                          <span>Logout</span>
-                        </button>
-                      </motion.div>
-                    </>
+                        <LogOut className="h-4 w-4" />
+                        <span>Logout</span>
+                      </button>
+                    </motion.div>
                   )}
                 </AnimatePresence>
               </div>
             ) : (
-              <Link to="/login">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
-                >
-                  Login
-                </motion.button>
-              </Link>
+              <>
+                <Link to="/login">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="px-4 py-2 rounded-xl text-gray-700 font-medium hover:bg-white/20 transition-all duration-200"
+                  >
+                    Login
+                  </motion.button>
+                </Link>
+                <Link to="/signup">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium shadow-lg"
+                  >
+                    Sign Up
+                  </motion.button>
+                </Link>
+              </>
             )}
           </div>
 
@@ -218,9 +223,8 @@ const FloatingNavbar = () => {
                 <div className="pt-2 border-t border-white/20 space-y-2">
                   {isAuthenticated ? (
                     <>
-                      <div className="px-4 py-2 text-sm font-medium text-gray-700 flex items-center space-x-2">
-                        <User className="h-4 w-4" />
-                        <span>{userName}</span>
+                      <div className="px-4 py-2 text-sm font-medium text-gray-700">
+                        Hello, {userName}
                       </div>
                       <button
                         onClick={() => {
@@ -234,13 +238,22 @@ const FloatingNavbar = () => {
                       </button>
                     </>
                   ) : (
-                    <Link
-                      to="/login"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="block px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white text-sm font-semibold text-center"
-                    >
-                      Login
-                    </Link>
+                    <>
+                      <Link
+                        to="/login"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block px-4 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-white/20 transition-all duration-200"
+                      >
+                        Login
+                      </Link>
+                      <Link
+                        to="/signup"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white text-sm font-medium text-center"
+                      >
+                        Sign Up
+                      </Link>
+                    </>
                   )}
                 </div>
               </div>

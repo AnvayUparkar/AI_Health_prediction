@@ -19,14 +19,23 @@ DIABETES_LABEL_ENCODER_PATH = os.path.join(BASE_DIR, 'models', 'diabetes_label_e
 
 lung_cancer_model = None
 lung_cancer_label_encoder = None
+lung_cancer_feature_names = None  # Store actual feature names from model
 diabetes_model = None
 diabetes_label_encoder = None
 
+# Define expected features for each model (fallback defaults)
 DIABETES_FEATURES = [
     'Age', 'Gender', 'Polyuria', 'Polydipsia', 'sudden weight loss', 
     'weakness', 'Polyphagia', 'Genital thrush', 'visual blurring', 
     'Itching', 'Irritability', 'delayed healing', 'partial paresis', 
     'muscle stiffness', 'Alopecia', 'Obesity'
+]
+
+LUNG_CANCER_FEATURES = [
+    'Gender', 'Age', 'Smoking', 'Yellow fingers', 'Anxiety',
+    'Peer_pressure', 'Chronic Disease', 'Fatigue', 'Allergy',
+    'Wheezing', 'Alcohol', 'Coughing', 'Shortness of Breath',
+    'Swallowing Difficulty', 'Chest Pain'
 ]
 
 def _inject_shim_for_module(module_name: str):
@@ -78,7 +87,8 @@ def load_models_once():
     Load models lazily. Safe to call inside a request context.
     Each model loads independently - if one fails, others can still work.
     """
-    global lung_cancer_model, lung_cancer_label_encoder, diabetes_model, diabetes_label_encoder
+    global lung_cancer_model, lung_cancer_label_encoder, lung_cancer_feature_names
+    global diabetes_model, diabetes_label_encoder
     
     print("Loading models...")
     models_loaded = []
@@ -90,6 +100,15 @@ def load_models_once():
             if os.path.exists(LUNG_CANCER_MODEL_PATH):
                 print(f"  Loading lung cancer model from {LUNG_CANCER_MODEL_PATH}")
                 lung_cancer_model = _safe_joblib_load(LUNG_CANCER_MODEL_PATH)
+                
+                # CRITICAL FIX: Extract actual feature names from the model
+                if hasattr(lung_cancer_model, 'feature_names_in_'):
+                    lung_cancer_feature_names = list(lung_cancer_model.feature_names_in_)
+                    print(f"  ✓ Extracted feature names from model: {lung_cancer_feature_names}")
+                else:
+                    lung_cancer_feature_names = LUNG_CANCER_FEATURES
+                    print(f"  ⚠ Model has no feature_names_in_, using defaults")
+                
                 print("  ✓ Lung cancer model loaded")
                 models_loaded.append("lung_cancer_model")
             else:
@@ -157,21 +176,67 @@ def predict_with_type(prediction_type: str, features: Dict[str, Any]) -> Tuple[D
         if not lung_cancer_model:
             return ({'error': 'Lung cancer model not available'}, 500)
         try:
-            input_df = pd.DataFrame([features])
-            for col in input_df.columns:
-                try:
-                    val = input_df.at[0, col]
-                    if isinstance(val, str):
-                        s = val.strip()
-                        if s != '':
-                            try:
-                                input_df.at[0, col] = float(s)
-                            except Exception:
-                                input_df.at[0, col] = val
-                except Exception:
-                    continue
-
+            print(f"\n{'='*60}")
+            print("LUNG CANCER PREDICTION REQUEST")
+            print(f"{'='*60}")
+            print(f"Received features: {features}")
+            
+            # Use actual feature names from model
+            expected_features = lung_cancer_feature_names or LUNG_CANCER_FEATURES
+            print(f"Expected features: {expected_features}")
+            
+            # Process the features
+            processed = {}
+            
+            # Map received features to expected features (handle case and whitespace)
+            for expected_feat in expected_features:
+                # Try exact match first
+                if expected_feat in features:
+                    val = features[expected_feat]
+                else:
+                    # Try case-insensitive match
+                    found = False
+                    for k, v in features.items():
+                        if k.strip().lower() == expected_feat.strip().lower():
+                            val = v
+                            found = True
+                            break
+                    if not found:
+                        print(f"⚠ Feature '{expected_feat}' not found in input, skipping")
+                        continue
+                
+                # Convert to numeric
+                if isinstance(val, str):
+                    s = val.strip()
+                    if s != '':
+                        try:
+                            processed[expected_feat] = float(s)
+                        except Exception:
+                            processed[expected_feat] = val
+                else:
+                    processed[expected_feat] = val
+            
+            print(f"Processed features: {processed}")
+            
+            # Create DataFrame with features
+            input_df = pd.DataFrame([processed])
+            
+            # Check for missing features
+            missing_features = [f for f in expected_features if f not in input_df.columns]
+            if missing_features:
+                print(f"✗ Missing features: {missing_features}")
+                return ({'error': f'Missing required features: {missing_features}'}, 400)
+            
+            # Reorder columns to match model training order
+            input_df = input_df[expected_features]
+            print(f"Input DataFrame shape: {input_df.shape}")
+            print(f"Input DataFrame columns: {list(input_df.columns)}")
+            print(f"Input DataFrame:\n{input_df}")
+            
+            # Make prediction
             pred_enc = lung_cancer_model.predict(input_df)
+            
+            # Decode prediction if encoder is available
             if lung_cancer_label_encoder is not None:
                 try:
                     pred_label = lung_cancer_label_encoder.inverse_transform(pred_enc)[0]
@@ -180,16 +245,23 @@ def predict_with_type(prediction_type: str, features: Dict[str, Any]) -> Tuple[D
             else:
                 pred_label = str(pred_enc[0])
 
+            # Get confidence
             confidence = None
             if hasattr(lung_cancer_model, 'predict_proba'):
                 try:
                     probs = lung_cancer_model.predict_proba(input_df)[0]
                     confidence = round(float(np.max(probs)) * 100, 2)
-                except Exception:
+                except Exception as e:
+                    print(f"Warning: Could not get confidence: {e}")
                     confidence = None
 
-            return ({'prediction': pred_label, 'confidence': confidence}, 200)
+            result = {'prediction': pred_label, 'confidence': confidence}
+            print(f"✓ Prediction result: {result}")
+            print(f"{'='*60}\n")
+            
+            return (result, 200)
         except Exception as e:
+            print(f"✗ Prediction error: {str(e)}")
             traceback.print_exc()
             return ({'error': f'Prediction error: {str(e)}'}, 500)
 
@@ -304,9 +376,13 @@ def health_check():
 
 @predict_bp.route('/model-info', methods=['GET'])
 def model_info():
-    """Returns information about loaded models."""
+    """Returns information about loaded models and their expected features."""
+    # Use actual feature names from model if available
+    lc_features = lung_cancer_feature_names if lung_cancer_feature_names else LUNG_CANCER_FEATURES
+    
     return jsonify({
         'lung_cancer_model_loaded': lung_cancer_model is not None,
         'diabetes_model_loaded': diabetes_model is not None,
+        'lung_cancer_features': lc_features,
         'diabetes_features': DIABETES_FEATURES
     })

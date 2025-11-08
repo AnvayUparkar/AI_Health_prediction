@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Sun as Lung, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 
 const LungCancer = () => {
-  // Default feature list used if backend /model-info cannot be reached
+  // Default features that match the backend model
   const DEFAULT_FEATURES = [
     'Gender',
     'Age',
@@ -21,10 +21,7 @@ const LungCancer = () => {
     'Chest Pain'
   ];
 
-  // Features will be fetched from backend /model-info if available so frontend keys
-  // always match the model's expected feature names.
   const [features, setFeatures] = useState<string[]>(DEFAULT_FEATURES);
-
   const [formData, setFormData] = useState<Record<string, string>>(
     Object.fromEntries(DEFAULT_FEATURES.map(f => [f, '']))
   );
@@ -32,13 +29,37 @@ const LungCancer = () => {
   const [result, setResult] = useState<{prediction: string, confidence: string} | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Build questions dynamically from `features` so the frontend always matches backend
+  // Build questions dynamically from `features`
   const buildQuestion = (field: string) => {
     const f = field.toLowerCase();
-    if (f.includes('age')) return { field, label: 'What is your current age?', type: 'number', min: 1, max: 120 };
-    if (f.includes('gender')) return { field, label: `${field}`, type: 'select', options: [{ value: '1', label: 'Male' }, { value: '2', label: 'Female' }] };
-    // default to small-range sliders for other ordinal features
-    return { field, label: `${field}`, type: 'range', min: 1, max: 3 };
+    if (f.includes('age')) {
+      return { 
+        field, 
+        label: 'What is your current age?', 
+        type: 'number', 
+        min: 1, 
+        max: 120 
+      };
+    }
+    if (f.includes('gender')) {
+      return { 
+        field, 
+        label: 'Gender', 
+        type: 'select', 
+        options: [
+          { value: '1', label: 'Male' }, 
+          { value: '2', label: 'Female' }
+        ] 
+      };
+    }
+    // Default to small-range sliders for other ordinal features
+    return { 
+      field, 
+      label: field, 
+      type: 'range', 
+      min: 1, 
+      max: 3 
+    };
   };
 
   const questions = features.map(buildQuestion);
@@ -53,26 +74,39 @@ const LungCancer = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Only send features present in backend
+    setResult(null);
+    
+    // Prepare payload - only send features that are in the backend's expected list
     const payload = Object.fromEntries(
-      Object.entries(formData).filter(([key]) => features.includes(key))
+      Object.entries(formData)
+        .filter(([key]) => features.includes(key))
+        .filter(([_, value]) => value !== '') // Only send non-empty values
     );
+    
     try {
       const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${API_URL}/predict_lung_cancer`, {
+      
+      // Use the new unified prediction endpoint
+      const response = await fetch(`${API_URL}/api/predict`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          type: 'lung_cancer',
+          features: payload
+        })
       });
+      
       const data = await response.json();
+      
       if (!response.ok) {
         // Show backend error in UI
-        setResult(null);
+        console.error('Prediction error:', data);
         alert(data.error || 'Prediction failed. Please check your inputs and try again.');
         return;
       }
+      
       setResult(data);
     } catch (error: any) {
       console.error('Prediction error:', error);
@@ -83,77 +117,67 @@ const LungCancer = () => {
   };
 
   const getResultColor = (prediction: string) => {
-    switch (prediction) {
-      case 'Low': return 'text-health-low bg-green-50 border-green-200';
-      case 'Medium': return 'text-health-medium bg-yellow-50 border-yellow-200';
-      case 'High': return 'text-health-high bg-red-50 border-red-200';
-      default: return 'text-gray-600 bg-gray-50 border-gray-200';
+    const pred = prediction.toLowerCase();
+    if (pred.includes('low') || pred === 'no') {
+      return 'text-health-low bg-green-50 border-green-200';
     }
+    if (pred.includes('medium') || pred.includes('moderate')) {
+      return 'text-health-medium bg-yellow-50 border-yellow-200';
+    }
+    if (pred.includes('high') || pred === 'yes') {
+      return 'text-health-high bg-red-50 border-red-200';
+    }
+    return 'text-gray-600 bg-gray-50 border-gray-200';
+  };
+
+  const getResultMessage = (prediction: string) => {
+    const pred = prediction.toLowerCase();
+    if (pred.includes('low') || pred === 'no') {
+      return "Your assessment indicates a lower risk profile. Continue maintaining healthy lifestyle choices and regular check-ups with your healthcare provider.";
+    }
+    if (pred.includes('medium') || pred.includes('moderate')) {
+      return "Your assessment indicates a moderate risk profile. Consider discussing these results with your healthcare provider and explore preventive measures.";
+    }
+    if (pred.includes('high') || pred === 'yes') {
+      return "Your assessment indicates a higher risk profile. We strongly recommend consulting with a healthcare professional for further evaluation and guidance.";
+    }
+    return "Please consult with a healthcare professional to discuss your results.";
   };
 
   const isFormValid = features.every(f => (formData[f] ?? '') !== '');
 
-  // Fetch model-info from backend to align field names at runtime
+  // Fetch model info from backend to align field names at runtime
   useEffect(() => {
     const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000';
-    // Helper: parse CSV header line into feature list (exclude target columns)
-    const parseCsvHeader = async (csvUrl: string) => {
+    
+    const fetchModelInfo = async () => {
       try {
-        const res = await fetch(csvUrl);
-        if (!res.ok) throw new Error('CSV fetch failed');
-        const text = await res.text();
-        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-        if (!lines.length) return null;
-        const header = lines[0].split(',').map(h => h.trim());
-        const excluded = new Set(['Level', 'Level_encoded', 'Level_encoded ']);
-        const features = header.filter(h => !excluded.has(h));
-        return features;
-      } catch (e) {
-        return null;
+        const res = await fetch(`${API_URL}/api/model-info`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.lung_cancer_features && Array.isArray(data.lung_cancer_features)) {
+            console.log('Loaded lung cancer features from backend:', data.lung_cancer_features);
+            setFeatures(data.lung_cancer_features);
+            
+            // Update form data with new features
+            setFormData(prev => {
+              const updated = { ...prev };
+              data.lung_cancer_features.forEach((f: string) => {
+                if (!(f in updated)) {
+                  updated[f] = '';
+                }
+              });
+              return updated;
+            });
+          }
+        }
+      } catch (error) {
+        console.warn('Could not fetch model info, using default features:', error);
+        // Keep using default features
       }
     };
 
-    // New behavior: prefer the local CSV header first, then fallback to backend /model-info.
-    (async () => {
-      // Try CSV first (preferred)
-      try {
-        const csvName = encodeURI('cancer patient data sets.csv');
-        const csvUrl = `${window.location.origin}/${csvName}`;
-        const csvFeatures = await parseCsvHeader(csvUrl);
-        if (csvFeatures && csvFeatures.length) {
-          setFeatures(csvFeatures);
-          setFormData(prev => {
-            const copy = { ...prev };
-            csvFeatures.forEach((f: string) => { if (!(f in copy)) copy[f] = ''; });
-            return copy;
-          });
-          return; // done
-        }
-      } catch (e) {
-        // continue to try model-info
-      }
-
-      // CSV not available or failed — try backend /model-info
-      try {
-        const res = await fetch(`${API_URL}/model-info`);
-        if (res.ok) {
-          const json = await res.json();
-          const mf = json?.model_feature_order && json.model_feature_order.length ? json.model_feature_order
-            : (json?.lung_cancer_features_from_dataset && json.lung_cancer_features_from_dataset.length ? json.lung_cancer_features_from_dataset : null);
-          if (mf) {
-            setFeatures(mf);
-            setFormData(prev => {
-              const copy = { ...prev };
-              mf.forEach((f: string) => { if (!(f in copy)) copy[f] = ''; });
-              return copy;
-            });
-            return;
-          }
-        }
-      } catch (e) {
-        // ignore; will keep defaults
-      }
-    })();
+    fetchModelInfo();
   }, []);
 
   return (
@@ -191,7 +215,7 @@ const LungCancer = () => {
                     name={question.field}
                     min={question.min}
                     max={question.max}
-                    value={formData[question.field as keyof typeof formData]}
+                    value={formData[question.field]}
                     onChange={(e) => handleInputChange(question.field, e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-health-primary focus:border-transparent transition-all duration-200"
                     required
@@ -202,7 +226,7 @@ const LungCancer = () => {
                   <select
                     id={question.field}
                     name={question.field}
-                    value={formData[question.field as keyof typeof formData]}
+                    value={formData[question.field]}
                     onChange={(e) => handleInputChange(question.field, e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-health-primary focus:border-transparent transition-all duration-200"
                     required
@@ -224,7 +248,7 @@ const LungCancer = () => {
                       name={question.field}
                       min={question.min}
                       max={question.max}
-                      value={formData[question.field as keyof typeof formData]}
+                      value={formData[question.field] || question.min}
                       onChange={(e) => handleInputChange(question.field, e.target.value)}
                       className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
                       required
@@ -232,7 +256,7 @@ const LungCancer = () => {
                     <div className="flex justify-between text-xs text-gray-500">
                       <span>{question.min}</span>
                       <span className="font-medium text-health-primary">
-                        {formData[question.field as keyof typeof formData] || question.min}
+                        {formData[question.field] || question.min}
                       </span>
                       <span>{question.max}</span>
                     </div>
@@ -274,30 +298,30 @@ const LungCancer = () => {
               <div className={`${getResultColor(result.prediction)}`}>
                 <div className="text-center">
                   <div className="flex justify-center mb-4">
-                    {result.prediction === 'Low' && <CheckCircle className="h-16 w-16 text-health-low" />}
-                    {result.prediction === 'Medium' && <AlertCircle className="h-16 w-16 text-health-medium" />}
-                    {result.prediction === 'High' && <AlertCircle className="h-16 w-16 text-health-high" />}
+                    {getResultColor(result.prediction).includes('green') && 
+                      <CheckCircle className="h-16 w-16 text-health-low" />
+                    }
+                    {getResultColor(result.prediction).includes('yellow') && 
+                      <AlertCircle className="h-16 w-16 text-health-medium" />
+                    }
+                    {getResultColor(result.prediction).includes('red') && 
+                      <AlertCircle className="h-16 w-16 text-health-high" />
+                    }
                   </div>
                   
                   <h2 className="text-3xl font-bold mb-2">
                     Risk Level: {result.prediction}
                   </h2>
                   
-                  <p className="text-xl mb-4">
-                    Confidence: {result.confidence}%
-                  </p>
+                  {result.confidence && (
+                    <p className="text-xl mb-4">
+                      Confidence: {result.confidence}%
+                    </p>
+                  )}
                   
                   <div className="bg-white bg-opacity-50 rounded-xl p-6 mt-6">
                     <p className="text-sm leading-relaxed">
-                      {result.prediction === 'Low' && 
-                        "Your assessment indicates a lower risk profile. Continue maintaining healthy lifestyle choices and regular check-ups with your healthcare provider."
-                      }
-                      {result.prediction === 'Medium' && 
-                        "Your assessment indicates a moderate risk profile. Consider discussing these results with your healthcare provider and explore preventive measures."
-                      }
-                      {result.prediction === 'High' && 
-                        "Your assessment indicates a higher risk profile. We strongly recommend consulting with a healthcare professional for further evaluation and guidance."
-                      }
+                      {getResultMessage(result.prediction)}
                     </p>
                   </div>
                 </div>
