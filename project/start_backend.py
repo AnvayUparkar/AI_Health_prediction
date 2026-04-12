@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Startup script for the AI Health Predictor Flask backend
 This script checks for required model files and provides helpful setup instructions.
@@ -20,7 +20,7 @@ def check_model_files():
     missing_files = []
     
     if not os.path.exists(models_dir):
-        print(f"❌ Models directory '{models_dir}' not found!")
+        print(f"[FAIL] Models directory '{models_dir}' not found!")
         print("Creating models directory...")
         os.makedirs(models_dir)
         missing_files = required_files
@@ -62,7 +62,7 @@ def install_dependencies():
         print("✅ Dependencies installed successfully!")
         return True
     except subprocess.CalledProcessError:
-        print("❌ Failed to install dependencies. Please run manually:")
+        print("[FAIL] Failed to install dependencies. Please run manually:")
         print("  pip install -r requirements.txt")
         return False
 
@@ -75,13 +75,13 @@ def main():
     missing_files = check_model_files()
     
     if missing_files:
-        print(f"❌ Missing model files: {', '.join(missing_files)}")
+        print(f"[FAIL] Missing model files: {', '.join(missing_files)}")
         print_setup_instructions()
         return False
     
     # Check if requirements.txt exists
     if not os.path.exists("requirements.txt"):
-        print("❌ requirements.txt not found!")
+        print("[FAIL] requirements.txt not found!")
         return False
     
     # Install dependencies
@@ -90,7 +90,7 @@ def main():
     
     # Check if app.py exists
     if not os.path.exists("app.py"):
-        print("❌ app.py not found!")
+        print("[FAIL] app.py not found!")
         return False
     
     print("✅ All checks passed! Starting the Flask server...")
@@ -108,7 +108,7 @@ def main():
     except KeyboardInterrupt:
         print("\n👋 Server stopped by user")
     except Exception as e:
-        print(f"❌ Error starting server: {e}")
+        print(f"[FAIL] Error starting server: {e}")
         return False
     
     return True

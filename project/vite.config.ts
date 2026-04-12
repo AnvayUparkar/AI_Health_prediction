@@ -7,4 +7,7 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
+  server: {
+    // Note: removed strict COOP headers to fix Google Identity console errors
+  },
 });

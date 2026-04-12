@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sun as Lung, Activity, ArrowRight } from 'lucide-react';
+import { Sun as Lung, Activity, ArrowRight, HeartPulse } from 'lucide-react';
 import AnimatedBackground from '../components/AnimatedBackground';
 import GlassCard from '../components/GlassCard';
 
@@ -25,6 +25,16 @@ const Predictions = () => {
       features: ['Comprehensive symptom analysis', 'Quick and easy questionnaire', 'Immediate risk assessment'],
       link: "/diabetes",
       accuracy: "92%"
+    },
+    {
+      icon: HeartPulse,
+      title: "Heart Disease Risk Predictor",
+      description: "Evaluate your cardiovascular risk using our elite ensemble model that analyzes your lifestyle, health markers, and dietary habits.",
+      gradient: "from-rose-400 to-red-500",
+      hoverColor: "rose-500",
+      features: ['17 comprehensive risk factors', 'Elite Stacking Ensemble Model', 'Highly accurate assessment'],
+      link: "/heart-disease",
+      accuracy: "86%"
     }
   ];
 
@@ -47,7 +57,7 @@ const Predictions = () => {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
           {predictionModels.map((model, index) => {
             const IconComponent = model.icon;
             return (

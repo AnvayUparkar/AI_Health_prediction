@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Test script for the AI Health Predictor Flask backend
 This script tests both endpoints with sample data to verify the backend is working correctly.
@@ -18,16 +18,16 @@ def test_health_endpoint():
         response = requests.get(f"{BASE_URL}/health")
         if response.status_code == 200:
             data = response.json()
-            print(f"✅ Health check passed: {data}")
+            print(f"[OK] Health check passed: {data}")
             return True
         else:
-            print(f"❌ Health check failed: {response.status_code}")
+            print(f"[FAIL] Health check failed: {response.status_code}")
             return False
     except requests.exceptions.ConnectionError:
-        print("❌ Cannot connect to backend. Make sure the Flask server is running on http://localhost:5000")
+        print("[FAIL] Cannot connect to backend. Make sure the Flask server is running on http://localhost:5000")
         return False
     except Exception as e:
-        print(f"❌ Health check error: {e}")
+        print(f"[FAIL] Health check error: {e}")
         return False
 
 def test_lung_cancer_endpoint():
@@ -59,17 +59,17 @@ def test_lung_cancer_endpoint():
         
         if response.status_code == 200:
             result = response.json()
-            print(f"✅ Lung cancer prediction successful:")
+            print(f"[OK] Lung cancer prediction successful:")
             print(f"   Prediction: {result.get('prediction')}")
             print(f"   Confidence: {result.get('confidence')}%")
             return True
         else:
             error_data = response.json()
-            print(f"❌ Lung cancer prediction failed: {error_data.get('error')}")
+            print(f"[FAIL] Lung cancer prediction failed: {error_data.get('error')}")
             return False
             
     except Exception as e:
-        print(f"❌ Lung cancer prediction error: {e}")
+        print(f"[FAIL] Lung cancer prediction error: {e}")
         return False
 
 def test_diabetes_endpoint():
@@ -105,17 +105,17 @@ def test_diabetes_endpoint():
         
         if response.status_code == 200:
             result = response.json()
-            print(f"✅ Diabetes prediction successful:")
+            print(f"[OK] Diabetes prediction successful:")
             print(f"   Prediction: {result.get('prediction')}")
             print(f"   Confidence: {result.get('confidence')}%")
             return True
         else:
             error_data = response.json()
-            print(f"❌ Diabetes prediction failed: {error_data.get('error')}")
+            print(f"[FAIL] Diabetes prediction failed: {error_data.get('error')}")
             return False
             
     except Exception as e:
-        print(f"❌ Diabetes prediction error: {e}")
+        print(f"[FAIL] Diabetes prediction error: {e}")
         return False
 
 def main():
@@ -125,7 +125,7 @@ def main():
     
     # Test health endpoint first
     if not test_health_endpoint():
-        print("\n❌ Backend is not running or not accessible.")
+        print("\n[FAIL] Backend is not running or not accessible.")
         print("Please start the Flask server with: python app.py")
         return
     
@@ -136,9 +136,9 @@ def main():
     # Summary
     print("\n" + "=" * 50)
     print("📊 Test Results Summary:")
-    print(f"   Health Check: ✅")
-    print(f"   Lung Cancer: {'✅' if lung_success else '❌'}")
-    print(f"   Diabetes: {'✅' if diabetes_success else '❌'}")
+    print(f"   Health Check: [OK]")
+    print(f"   Lung Cancer: {'[OK]' if lung_success else '[FAIL]'}")
+    print(f"   Diabetes: {'[OK]' if diabetes_success else '[FAIL]'}")
     
     if lung_success and diabetes_success:
         print("\n🎉 All tests passed! Your backend is working correctly.")

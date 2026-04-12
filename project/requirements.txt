@@ -6,9 +6,14 @@ PyPDF2==3.0.0
 pdfplumber==0.7.5    # optional, recommended for robust PDF parsing
 pillow       # optional (PIL)
 pytesseract==0.3.10  # optional, requires tesseract binary on system
+opencv-python>=4.8.0  # image preprocessing for OCR
 joblib==1.3.2
 pandas==2.1.1
 # Use a numpy compatible with pandas on Python 3.12 and scikit-learn (<2.0)
 numpy>=1.26,<2.0
 scikit-learn==1.3.2
 seaborn==0.12.2
+google-generativeai>=0.5.0   # Gemini API SDK
+python-dotenv>=1.0.0         # load .env into os.environ
+google-auth>=2.23.0
+google-api-python-client>=2.100.0

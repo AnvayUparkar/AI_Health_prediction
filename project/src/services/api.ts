@@ -33,7 +33,7 @@ export const login = async (email: string, password: string) => {
     return res.data;
 };
 
-export const predict = async (type: 'lung_cancer' | 'diabetes', features: Record<string, any>) => {
+export const predict = async (type: 'lung_cancer' | 'diabetes' | 'heart_disease', features: Record<string, any>) => {
     const res = await api.post('/api/predict', { type, features });
     return res.data;
 };
@@ -54,5 +54,16 @@ export const getWorkoutPlan = async (goal?: string, level?: string) => {
     if (goal) params.goal = goal;
     if (level) params.level = level;
     const res = await api.get('/api/workout-plan', { params });
+    return res.data;
+};
+
+export const analyzeReport = async (file: File, onUploadProgress?: (progressEvent: AxiosProgressEvent) => void) => {
+    const fd = new FormData();
+    fd.append('report', file);
+    const res = await api.post('/api/analyze-report', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress,
+        timeout: 120000,  // 2 min timeout for OCR processing
+    });
     return res.data;
 };

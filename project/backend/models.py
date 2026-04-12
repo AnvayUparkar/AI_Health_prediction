@@ -5,6 +5,8 @@
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
+import json
+from datetime import datetime
 
 db = SQLAlchemy()
 
@@ -40,6 +42,47 @@ class Appointment(db.Model):
     doctor_id = db.Column(db.Integer, db.ForeignKey('doctors.id'), nullable=True)
     date = db.Column(db.String(60), nullable=True)
     notes = db.Column(db.Text, nullable=True)
+
+class HealthAnalysis(db.Model):
+    """Stores AI-powered health analysis results for a user"""
+    __tablename__ = 'health_analyses'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    health_score = db.Column(db.Integer)
+    risk_level = db.Column(db.String(50))
+    health_status = db.Column(db.String(100))
+    # Original metrics for trend reporting
+    steps = db.Column(db.Integer, nullable=True)
+    avg_heart_rate = db.Column(db.Float, nullable=True)
+    sleep_hours = db.Column(db.Float, nullable=True)
+    diet_plan = db.Column(db.Text)  # Stored as JSON string
+    recommendations = db.Column(db.Text)  # Stored as JSON string
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        try:
+            diet = json.loads(self.diet_plan) if self.diet_plan else []
+        except:
+            diet = []
+        try:
+            recs = json.loads(self.recommendations) if self.recommendations else []
+        except:
+            recs = []
+            
+        return {
+            "id": self.id,
+            "health_score": self.health_score,
+            "risk_level": self.risk_level,
+            "health_status": self.health_status,
+            "metrics": {
+                "steps": self.steps,
+                "avg_heart_rate": self.avg_heart_rate,
+                "sleep_hours": self.sleep_hours
+            },
+            "diet_plan": diet,
+            "recommendations": recs,
+            "created_at": self.created_at.isoformat()
+        }
 
 def init_db(app):
     """

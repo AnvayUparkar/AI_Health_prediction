@@ -5,11 +5,13 @@ import Login from './pages/Login'
 import Signup from './pages/Signup';
 import LungCancer from './pages/LungCancer';
 import Diabetes from './pages/Diabetes';
+import HeartDisease from './pages/HeartDisease';
 import About from './pages/About';
 import WhatWeDo from './pages/WhatWeDo';
 import BookAppointment from './pages/BookAppointment';
 import Predictions from './pages/Predictions';
 import DietPlanner from './pages/DietPlanner';
+import ReportAnalyzer from './pages/ReportAnalyzer';
 
 // ProtectedRoute Component
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
@@ -50,6 +52,14 @@ function App() {
             } 
           />
           <Route 
+            path="/heart-disease" 
+            element={
+              <ProtectedRoute>
+                <HeartDisease />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
             path="/book-appointment" 
             element={
               <ProtectedRoute>
@@ -70,6 +80,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <DietPlanner />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/report-analyzer" 
+            element={
+              <ProtectedRoute>
+                <ReportAnalyzer />
               </ProtectedRoute>
             } 
           />

@@ -56,5 +56,5 @@ def login():
     if not user or not user.check_password(password):
         return jsonify({'error': 'Invalid credentials'}), 401
 
-    access_token = create_access_token(identity={'id': user.id, 'email': user.email}, expires_delta=timedelta(days=7))
+    access_token = create_access_token(identity=str(user.id), expires_delta=timedelta(days=7))
     return jsonify({'access_token': access_token, 'user': user.to_dict()})

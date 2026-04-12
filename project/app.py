@@ -1,6 +1,16 @@
 import os
 import sys
 from typing import Optional
+
+# Load .env before any module reads os.environ (e.g. GEMINI_API_KEY)
+try:
+    from dotenv import load_dotenv
+    # Use explicit path so it works regardless of the CWD at launch time
+    _env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+    load_dotenv(dotenv_path=_env_path, override=True)
+except ImportError:
+    pass  # python-dotenv optional; env vars can be set on the OS directly
+
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
@@ -18,6 +28,10 @@ from backend.routes.diet import diet_bp
 from backend.routes.workout import workout_bp
 from backend.routes.appointments import appointments_bp
 from backend.routes.diet_plan import diet_plan_bp
+from backend.routes.report_analysis import report_analysis_bp
+from backend.routes.health_analysis import health_analysis_bp
+from backend.routes.google_fit_sync import google_fit_sync_bp
+from backend.routes.google_fit_debug import google_fit_debug_bp
 
 def create_app(config_overrides: Optional[dict] = None):
     app = Flask(__name__, static_folder=None)
@@ -53,6 +67,10 @@ def create_app(config_overrides: Optional[dict] = None):
     app.register_blueprint(workout_bp, url_prefix='/api')
     app.register_blueprint(appointments_bp, url_prefix='/api')
     app.register_blueprint(diet_plan_bp, url_prefix='/api')
+    app.register_blueprint(report_analysis_bp, url_prefix='/api')
+    app.register_blueprint(health_analysis_bp, url_prefix='/api')
+    app.register_blueprint(google_fit_sync_bp, url_prefix='/api')
+    app.register_blueprint(google_fit_debug_bp, url_prefix='/api')
 
     @app.route('/health', methods=['GET'])
     def health():
@@ -88,16 +106,16 @@ def create_app(config_overrides: Optional[dict] = None):
     with app.app_context():
         try:
             init_db(app)
-            print(f"✓ Initialized SQLite DB at {app.config['SQLALCHEMY_DATABASE_URI']}")
+            print(f"[OK] Initialized SQLite DB at {app.config['SQLALCHEMY_DATABASE_URI']}")
         except Exception as e:
-            print(f"✗ DB init failed: {e}")
+            print(f"[ERROR] DB init failed: {e}")
 
         # Load ML models (non-blocking)
         try:
             from backend.routes.predict import load_models_once
             load_models_once()
         except Exception as e:
-            print(f"⚠ Model loading encountered errors: {e}")
+            print(f"[WARN] Model loading encountered errors: {e}")
             print("  Server will continue - some predictions may not be available")
 
     return app
@@ -105,37 +123,40 @@ def create_app(config_overrides: Optional[dict] = None):
 if __name__ == '__main__':
     app = create_app()
     print("=" * 70)
-    print("🚀 Starting Flask server...")
-    print("🏥 Health Prediction API Server")
+    print("Starting Flask server...")
+    print("Health Prediction API Server")
     print("=" * 70)
-    print("📍 Server URL: http://localhost:5000")
-    print("🏥 Health check: http://localhost:5000/health")
+    print("Server URL: http://localhost:5000")
+    print("Health check: http://localhost:5000/health")
     print("")
-    print("🔮 Prediction endpoints:")
+    print("Prediction endpoints:")
     print("   - POST /api/predict")
     print("   - POST /predict_diabetes (legacy)")
     print("   - POST /predict_lung_cancer (legacy)")
     print("")
-    print("📅 Appointment endpoints:")
+    print("Appointment endpoints:")
     print("   - POST /api/appointments")
     print("   - GET /api/appointments")
     print("   - GET /api/appointments/<id>")
     print("   - PATCH /api/appointments/<id>")
     print("   - DELETE /api/appointments/<id>")
     print("")
-    print("🥗 Diet Plan endpoints:")
+    print("Diet Plan endpoints:")
     print("   - POST /api/diet-plan")
     print("   - POST /api/diet-plan/validate")
     print("")
-    print("💪 Workout endpoints:")
+    print("Workout endpoints:")
     print("   - GET /api/workouts")
     print("   - POST /api/workouts/generate")
     print("")
-    print("🍽️ Diet endpoints:")
+    print("Diet endpoints:")
     print("   - GET /api/diet")
     print("   - POST /api/diet/generate")
     print("")
-    print("🔐 Auth endpoints:")
+    print("Report Analysis endpoints:")
+    print("   - POST /api/analyze-report")
+    print("")
+    print("Auth endpoints:")
     print("   - POST /auth/register")
     print("   - POST /auth/login")
     print("=" * 70)

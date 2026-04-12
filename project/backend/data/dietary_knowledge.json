@@ -1,0 +1,2766 @@
+{
+  "condition_nutrients": {
+    "iron_deficiency_anemia": [
+      "iron",
+      "vitamin_c",
+      "folate"
+    ],
+    "prediabetes": [
+      "fiber",
+      "low_glycemic",
+      "protein",
+      "chromium"
+    ],
+    "hyperlipidemia": [
+      "fiber",
+      "omega_3",
+      "healthy_fats"
+    ],
+    "hypertriglyceridemia": [
+      "fiber",
+      "omega_3",
+      "low_fat"
+    ],
+    "low_hdl": [
+      "omega_3",
+      "healthy_fats"
+    ],
+    "hypertension": [
+      "potassium",
+      "magnesium",
+      "low_sodium"
+    ],
+    "protein_deficiency": [
+      "protein",
+      "amino_acids"
+    ],
+    "thyroid_issues": [
+      "iodine",
+      "selenium",
+      "zinc",
+      "fiber"
+    ],
+    "kidney_strain": [
+      "antioxidants",
+      "low_sodium",
+      "low_purine"
+    ],
+    "liver_stress": [
+      "antioxidants",
+      "fiber",
+      "vitamin_e",
+      "curcumin"
+    ],
+    "vitamin_d_deficiency": [
+      "vitamin_d",
+      "calcium"
+    ],
+    "vitamin_b12_deficiency": [
+      "vitamin_b12"
+    ],
+    "hypocalcemia": [
+      "calcium",
+      "vitamin_d"
+    ],
+    "high_uric_acid": [
+      "high_water",
+      "low_purine",
+      "vitamin_c"
+    ]
+  },
+  "nutrient_foods": {
+    "iron": [
+      "spinach",
+      "beetroot",
+      "dates",
+      "lentils",
+      "rajma",
+      "chana",
+      "pomegranate",
+      "moringa",
+      "fenugreek",
+      "jaggery",
+      "black beans",
+      "quinoa",
+      "pumpkin seeds",
+      "tofu",
+      "dark chocolate"
+    ],
+    "vitamin_c": [
+      "orange",
+      "amla",
+      "guava",
+      "lemon",
+      "papaya",
+      "kiwi",
+      "broccoli",
+      "bell peppers",
+      "strawberry",
+      "pineapple",
+      "mango",
+      "kale",
+      "brussels sprouts",
+      "cauliflower"
+    ],
+    "vitamin_b12": [
+      "milk",
+      "curd",
+      "eggs",
+      "fortified cereals",
+      "soy milk",
+      "kefir",
+      "mushrooms (shiitake)",
+      "sprouts",
+      "tempeh",
+      "nutritional yeast"
+    ],
+    "calcium": [
+      "milk",
+      "paneer",
+      "ragi",
+      "sesame seeds",
+      "curd",
+      "broccoli",
+      "almonds",
+      "chia seeds",
+      "fig",
+      "tofu",
+      "soybeans",
+      "kale",
+      "white beans",
+      "poppy seeds",
+      "okra"
+    ],
+    "vitamin_d": [
+      "mushrooms",
+      "egg yolk",
+      "fortified milk",
+      "fortified orange juice",
+      "fortified cereals",
+      "cod liver oil",
+      "salmon",
+      "mackerel",
+      "sardines",
+      "exposure to sunlight"
+    ],
+    "fiber": [
+      "oats",
+      "brown rice",
+      "guava",
+      "apple",
+      "papaya",
+      "broccoli",
+      "carrots",
+      "beans",
+      "lentils",
+      "quinoa",
+      "pear",
+      "barley",
+      "bajra",
+      "jowar",
+      "psyllium husk",
+      "whole wheat",
+      "flaxseeds",
+      "chia seeds",
+      "almonds",
+      "walnuts",
+      "sweet potato"
+    ],
+    "omega_3": [
+      "walnuts",
+      "flaxseeds",
+      "chia seeds",
+      "fish oil",
+      "salmon",
+      "hemp seeds",
+      "soybeans",
+      "Brussels sprouts",
+      "seaweed",
+      "algae oil"
+    ],
+    "healthy_fats": [
+      "almonds",
+      "walnuts",
+      "avocado",
+      "olive oil",
+      "flaxseeds",
+      "chia seeds",
+      "pumpkin seeds",
+      "sunflower seeds",
+      "peanut butter",
+      "coconut oil"
+    ],
+    "potassium": [
+      "banana",
+      "coconut water",
+      "potato",
+      "sweet potato",
+      "spinach",
+      "watermelon",
+      "orange",
+      "pomegranate",
+      "avocado",
+      "mushrooms",
+      "cucumber"
+    ],
+    "magnesium": [
+      "spinach",
+      "pumpkin seeds",
+      "dark chocolate",
+      "almonds",
+      "cashews",
+      "bananas",
+      "quinoa",
+      "black beans",
+      "avocado"
+    ],
+    "protein": [
+      "moong dal",
+      "paneer",
+      "tofu",
+      "soya chunks",
+      "eggs",
+      "chicken breast",
+      "lentils",
+      "chickpeas",
+      "greek yogurt",
+      "whey protein",
+      "almonds",
+      "peanuts",
+      "hemp seeds",
+      "tempeh",
+      "fish"
+    ],
+    "low_glycemic": [
+      "oats",
+      "dal",
+      "ragi",
+      "barley",
+      "quinoa",
+      "vegetables",
+      "whole wheat",
+      "sprouts",
+      "chana",
+      "apples",
+      "berries"
+    ],
+    "antioxidants": [
+      "turmeric",
+      "garlic",
+      "lemongrass",
+      "green tea",
+      "berries",
+      "pomegranate",
+      "dark chocolate",
+      "bell peppers",
+      "spinach",
+      "grapes",
+      "pecans"
+    ],
+    "low_purine": [
+      "eggs",
+      "dairy",
+      "nuts",
+      "whole grains",
+      "vegetables (most)",
+      "fruits (most)",
+      "water",
+      "coffee"
+    ],
+    "iodine": [
+      "iodized salt",
+      "milk",
+      "curd",
+      "eggs",
+      "seaweed",
+      "cod",
+      "shrimp",
+      "prunes"
+    ],
+    "selenium": [
+      "brazil nuts",
+      "eggs",
+      "sunflower seeds",
+      "chia seeds",
+      "mushrooms",
+      "brown rice",
+      "chicken",
+      "oats"
+    ],
+    "zinc": [
+      "pumpkin seeds",
+      "chickpeas",
+      "lentils",
+      "milk",
+      "paneer",
+      "oats",
+      "cashews",
+      "almonds",
+      "eggs"
+    ]
+  },
+  "food_details": {
+    "spinach": {
+      "benefits": "Supports hematopoietic health via folic acid and non-heme iron",
+      "tags": [
+        "iron",
+        "folate",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch"
+      ]
+    },
+    "beetroot": {
+      "benefits": "Nitrate content supports vascular health and red cell production",
+      "tags": [
+        "iron",
+        "antioxidants",
+        "fiber",
+        "meal_lunch"
+      ]
+    },
+    "pomegranate": {
+      "benefits": "Polyphenols support cardiovascular integrity and iron levels",
+      "tags": [
+        "iron",
+        "antioxidants",
+        "vitamin_c",
+        "potassium",
+        "meal_breakfast",
+        "meal_snack"
+      ]
+    },
+    "dates": {
+      "benefits": "Dense micronutrient source for acute iron support",
+      "tags": [
+        "iron",
+        "fiber",
+        "meal_breakfast",
+        "meal_snack"
+      ]
+    },
+    "oats": {
+      "benefits": "Beta-glucan fiber modulates glucose response and cholesterol",
+      "tags": [
+        "fiber",
+        "low_glycemic",
+        "zinc",
+        "selenium",
+        "meal_breakfast"
+      ]
+    },
+    "moong dal": {
+      "benefits": "Low-GI protein that minimizes insulin demand",
+      "tags": [
+        "protein",
+        "fiber",
+        "low_glycemic",
+        "meal_breakfast",
+        "meal_lunch",
+        "meal_dinner"
+      ]
+    },
+    "ragi": {
+      "benefits": "Provides complex structures that slow carbohydrate absorption",
+      "tags": [
+        "calcium",
+        "fiber",
+        "low_glycemic",
+        "meal_breakfast"
+      ]
+    },
+    "paneer": {
+      "benefits": "Bioavailable calcium and phosphorus for skeletal repair",
+      "tags": [
+        "protein",
+        "calcium",
+        "zinc",
+        "meal_lunch",
+        "meal_dinner"
+      ]
+    },
+    "soya chunks": {
+      "benefits": "Isoflavone-rich plant protein for metabolic health",
+      "tags": [
+        "protein",
+        "fiber",
+        "omega_3",
+        "meal_lunch"
+      ]
+    },
+    "almonds": {
+      "benefits": "Monounsaturated fats supporting neurological and arterial health",
+      "tags": [
+        "healthy_fats",
+        "protein",
+        "magnesium",
+        "vitamin_e",
+        "zinc",
+        "meal_snack"
+      ]
+    },
+    "walnuts": {
+      "benefits": "Alpha-linolenic acid (ALA) for neurovascular protection",
+      "tags": [
+        "omega_3",
+        "healthy_fats",
+        "fiber",
+        "biotin",
+        "meal_snack"
+      ]
+    },
+    "brown rice": {
+      "benefits": "Whole grain bran layer supports metabolic steady-state",
+      "tags": [
+        "fiber",
+        "selenium",
+        "low_glycemic",
+        "meal_lunch"
+      ]
+    },
+    "turmeric": {
+      "benefits": "Curcuminoids support hepatic enzyme regulation",
+      "tags": [
+        "antioxidants",
+        "curcumin",
+        "meal_dinner",
+        "meal_lunch"
+      ]
+    },
+    "garlic": {
+      "benefits": "Allicin compounds assist in reducing vascular oxidative stress",
+      "tags": [
+        "antioxidants",
+        "zinc",
+        "meal_lunch",
+        "meal_dinner"
+      ]
+    },
+    "coconut water": {
+      "benefits": "Potassium-rich electrolytes for blood pressure regulation",
+      "tags": [
+        "potassium",
+        "high_water",
+        "meal_snack"
+      ]
+    },
+    "bottle gourd": {
+      "benefits": "High hydration index with minimal renal Load",
+      "tags": [
+        "low_sodium",
+        "fiber",
+        "high_water",
+        "meal_dinner"
+      ]
+    },
+    "sprouts": {
+      "benefits": "High enzymatic activity aids in protein assimilation",
+      "tags": [
+        "vitamin_b12",
+        "protein",
+        "fiber",
+        "low_glycemic",
+        "meal_breakfast",
+        "meal_snack"
+      ]
+    },
+    "mushrooms": {
+      "benefits": "Ergothioneine and vegan-source Vitamin D precursors",
+      "tags": [
+        "vitamin_d",
+        "vitamin_b12",
+        "selenium",
+        "zinc",
+        "meal_lunch",
+        "meal_dinner"
+      ]
+    },
+    "amla": {
+      "benefits": "Ascorbic acid density enhances non-heme iron absorption",
+      "tags": [
+        "vitamin_c",
+        "antioxidants",
+        "meal_snack",
+        "meal_breakfast"
+      ]
+    },
+    "guava": {
+      "benefits": "Pectin fiber and vitamin C for metabolic health",
+      "tags": [
+        "vitamin_c",
+        "fiber",
+        "meal_breakfast",
+        "meal_snack"
+      ]
+    },
+    "orange": {
+      "benefits": "Supports collagen synthesis and immune signaling",
+      "tags": [
+        "vitamin_c",
+        "potassium",
+        "meal_breakfast",
+        "meal_snack"
+      ]
+    },
+    "papaya": {
+      "benefits": "Papain enzymes support digestion during hepatic stress",
+      "tags": [
+        "vitamin_c",
+        "fiber",
+        "antioxidants",
+        "meal_breakfast",
+        "meal_dinner"
+      ]
+    },
+    "flaxseeds": {
+      "benefits": "Fiber and ALA support lower triglyceride levels",
+      "tags": [
+        "omega_3",
+        "fiber",
+        "meal_snack",
+        "meal_breakfast"
+      ]
+    },
+    "chia seeds": {
+      "benefits": "Hydrophilic fiber aids in steady glucose absorption",
+      "tags": [
+        "omega_3",
+        "fiber",
+        "calcium",
+        "selenium",
+        "meal_breakfast",
+        "meal_snack"
+      ]
+    },
+    "pumpkin seeds": {
+      "benefits": "High magnesium supports muscle and nerve relaxation",
+      "tags": [
+        "zinc",
+        "magnesium",
+        "healthy_fats",
+        "meal_snack"
+      ]
+    },
+    "sunflower seeds": {
+      "benefits": "Tocopherols (Vitamin E) support hepatocyte protection",
+      "tags": [
+        "vitamin_e",
+        "selenium",
+        "healthy_fats",
+        "meal_snack"
+      ]
+    },
+    "curd": {
+      "benefits": "Probiotics support gut-derived Vitamin B12 production",
+      "tags": [
+        "protein",
+        "calcium",
+        "vitamin_b12",
+        "iodine",
+        "meal_breakfast",
+        "meal_lunch"
+      ]
+    },
+    "milk": {
+      "benefits": "Complete food for calcium and B-vitamins",
+      "tags": [
+        "calcium",
+        "vitamin_b12",
+        "protein",
+        "iodine",
+        "zinc",
+        "meal_breakfast"
+      ]
+    },
+    "eggs": {
+      "benefits": "Essential amino acids and choline for cellular health",
+      "tags": [
+        "protein",
+        "vitamin_b12",
+        "vitamin_d",
+        "selenium",
+        "zinc",
+        "iodine",
+        "meal_breakfast"
+      ]
+    },
+    "chicken breast": {
+      "benefits": "Lean protein with minimal saturated fat profile",
+      "tags": [
+        "protein",
+        "selenium",
+        "meal_lunch"
+      ]
+    },
+    "fish": {
+      "benefits": "Long-chain Omega-3s support neuro-cardiac health",
+      "tags": [
+        "protein",
+        "omega_3",
+        "vitamin_d",
+        "meal_lunch",
+        "meal_dinner"
+      ]
+    },
+    "banana": {
+      "benefits": "Natural potassium supports intra-cellular fluid balance",
+      "tags": [
+        "potassium",
+        "magnesium",
+        "fiber",
+        "meal_breakfast",
+        "meal_snack"
+      ]
+    },
+    "avocado": {
+      "benefits": "Healthy lipid profile supports hormone synthesis",
+      "tags": [
+        "healthy_fats",
+        "potassium",
+        "magnesium",
+        "meal_breakfast",
+        "meal_snack"
+      ]
+    },
+    "quinoa": {
+      "benefits": "Complete plant protein with high fiber",
+      "tags": [
+        "protein",
+        "fiber",
+        "low_glycemic",
+        "iron",
+        "magnesium",
+        "meal_lunch",
+        "meal_dinner"
+      ]
+    },
+    "rajma": {
+      "benefits": "Legumes supporting glycemic control and iron intake",
+      "tags": [
+        "protein",
+        "fiber",
+        "iron",
+        "meal_lunch"
+      ]
+    },
+    "chana": {
+      "benefits": "Complex carbohydrates supporting sustained metabolic energy",
+      "tags": [
+        "protein",
+        "fiber",
+        "iron",
+        "low_glycemic",
+        "zinc",
+        "meal_snack",
+        "meal_lunch"
+      ]
+    },
+    "lentils": {
+      "benefits": "Base plant protein supporting broad nutritional goals",
+      "tags": [
+        "protein",
+        "iron",
+        "fiber",
+        "zinc",
+        "meal_lunch",
+        "meal_dinner"
+      ]
+    },
+    "tofu": {
+      "benefits": "Phytosterols and lean protein supporting heart health",
+      "tags": [
+        "protein",
+        "calcium",
+        "iron",
+        "meal_lunch",
+        "meal_dinner"
+      ]
+    },
+    "sesame seeds": {
+      "benefits": "High calcium density for skeletal reinforcement",
+      "tags": [
+        "calcium",
+        "healthy_fats",
+        "meal_snack"
+      ]
+    },
+    "broccoli": {
+      "benefits": "Indole-3-carbinol supports detoxification pathways",
+      "tags": [
+        "antioxidants",
+        "fiber",
+        "vitamin_c",
+        "calcium",
+        "meal_lunch",
+        "meal_dinner"
+      ]
+    },
+    "bell peppers": {
+      "benefits": "Vibrant antioxidants and Vitamin C",
+      "tags": [
+        "vitamin_c",
+        "antioxidants",
+        "meal_lunch",
+        "meal_dinner"
+      ]
+    },
+    "watermelon": {
+      "benefits": "Lycopene supports cardiovascular and renal hydration",
+      "tags": [
+        "high_water",
+        "potassium",
+        "antioxidants",
+        "meal_snack"
+      ]
+    },
+    "cucumber": {
+      "benefits": "Phytonutrients support metabolic hydration",
+      "tags": [
+        "high_water",
+        "potassium",
+        "meal_snack",
+        "meal_lunch"
+      ]
+    },
+    "dark chocolate": {
+      "benefits": "Flavanols support nitric oxide production for BP",
+      "tags": [
+        "antioxidants",
+        "magnesium",
+        "iron",
+        "meal_snack"
+      ]
+    },
+    "brazil nuts": {
+      "benefits": "Critical selenium source for thyroid hormone conversion",
+      "tags": [
+        "selenium",
+        "healthy_fats",
+        "meal_snack"
+      ]
+    },
+    "iodized salt": {
+      "benefits": "Essential substrate for thyroxine (T4) synthesis",
+      "tags": [
+        "iodine",
+        "meal_lunch"
+      ]
+    },
+    "olive oil": {
+      "benefits": "Oleic acid supports anti-inflammatory markers",
+      "tags": [
+        "healthy_fats",
+        "meal_lunch",
+        "meal_dinner"
+      ]
+    },
+    "green tea": {
+      "benefits": "Catechins (EGCG) support metabolic optimization",
+      "tags": [
+        "antioxidants",
+        "meal_snack"
+      ]
+    },
+    "sweet potato": {
+      "benefits": "Complex starches with a favorable glycemic load",
+      "tags": [
+        "fiber",
+        "potassium",
+        "low_glycemic",
+        "meal_dinner"
+      ]
+    },
+    "moringa": {
+      "benefits": "Dense micronutrient profile for hematologic support",
+      "tags": [
+        "iron",
+        "calcium",
+        "vitamin_c",
+        "meal_lunch"
+      ]
+    },
+    "fenugreek": {
+      "benefits": "Supports glycemic control and iron mineralization",
+      "tags": [
+        "iron",
+        "fiber",
+        "low_glycemic",
+        "meal_breakfast",
+        "meal_lunch"
+      ]
+    },
+    "barley": {
+      "benefits": "Favorable fiber-to-carb ratio for metabolic health",
+      "tags": [
+        "fiber",
+        "low_glycemic",
+        "selenium",
+        "meal_dinner"
+      ]
+    },
+    "psyllium husk": {
+      "benefits": "Soluble fiber source for lowering lipid markers",
+      "tags": [
+        "fiber",
+        "meal_snack"
+      ]
+    },
+    "lemon": {
+      "benefits": "Citric acid assists in alkalizing urine profiles",
+      "tags": [
+        "vitamin_c",
+        "antioxidants",
+        "meal_snack",
+        "meal_lunch"
+      ]
+    },
+    "cod": {
+      "benefits": "High iodine and protein with minimal fat strain",
+      "tags": [
+        "protein",
+        "iodine",
+        "meal_lunch",
+        "meal_dinner"
+      ]
+    },
+    "hummus": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "meal_lunch",
+        "carotenoids",
+        "fiber",
+        "magnesium",
+        "potassium",
+        "vitamin_a",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "tomatoes": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "beans": {
+      "tags": [
+        "meal_dinner",
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "frankfurter": {
+      "tags": [
+        "protein",
+        "iron",
+        "vitamin_b12",
+        "potassium",
+        "magnesium",
+        "vitamin_a",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "nuts": {
+      "tags": [
+        "vitamin_c",
+        "protein",
+        "iron",
+        "carotenoids",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "vitamin_a",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "kale": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "meal_lunch",
+        "carotenoids",
+        "fiber",
+        "magnesium",
+        "potassium",
+        "vitamin_a",
+        "calcium"
+      ],
+      "benefits": "Powerful phytonutrients for cellular protection and retinal health."
+    },
+    "egg": {
+      "tags": [
+        "meal_breakfast",
+        "protein",
+        "iron",
+        "magnesium",
+        "potassium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "onion rings": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "pickles": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "meal_lunch",
+        "carotenoids",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "vitamin_a",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "cheese": {
+      "tags": [
+        "meal_breakfast",
+        "protein",
+        "iron",
+        "vitamin_b12",
+        "potassium",
+        "magnesium",
+        "vitamin_a",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "grapefruit juice": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "magnesium",
+        "potassium",
+        "meal_lunch",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "peaches": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "meal_lunch",
+        "carotenoids",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "vitamin_a",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "seeds": {
+      "tags": [
+        "vitamin_c",
+        "protein",
+        "iron",
+        "carotenoids",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "vitamin_a",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "bread": {
+      "tags": [
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "mustard": {
+      "tags": [
+        "vitamin_c",
+        "protein",
+        "iron",
+        "carotenoids",
+        "fiber",
+        "magnesium",
+        "potassium",
+        "vitamin_a",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "kiwifruit": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "meal_lunch",
+        "carotenoids",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "vitamin_a",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "nectarines": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "meal_lunch",
+        "carotenoids",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "vitamin_a",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "yogurt": {
+      "tags": [
+        "meal_breakfast",
+        "protein",
+        "iron",
+        "vitamin_b12",
+        "magnesium",
+        "potassium",
+        "vitamin_a",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "oil": {
+      "tags": [
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Critical for skeletal density and neuromuscular signalling integrity."
+    },
+    "chicken": {
+      "tags": [
+        "protein",
+        "iron",
+        "vitamin_b12",
+        "magnesium",
+        "potassium",
+        "vitamin_a",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "sauce": {
+      "tags": [
+        "protein",
+        "iron",
+        "carotenoids",
+        "fiber",
+        "magnesium",
+        "potassium",
+        "vitamin_a",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "ham": {
+      "tags": [
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "olives": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "meal_lunch",
+        "carotenoids",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "vitamin_a",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "cookies": {
+      "tags": [
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "restaurant": {
+      "tags": [
+        "protein",
+        "iron",
+        "carotenoids",
+        "magnesium",
+        "potassium",
+        "vitamin_a",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "beef": {
+      "tags": [
+        "protein",
+        "iron",
+        "vitamin_b12",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "carrots": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "figs": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "meal_lunch",
+        "carotenoids",
+        "fiber",
+        "magnesium",
+        "potassium",
+        "vitamin_a",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "lettuce": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "meal_lunch",
+        "carotenoids",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "vitamin_a",
+        "calcium"
+      ],
+      "benefits": "Powerful phytonutrients for cellular protection and retinal health."
+    },
+    "melons": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "meal_lunch",
+        "carotenoids",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "vitamin_a",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Powerful phytonutrients for cellular protection and retinal health."
+    },
+    "oranges": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "magnesium",
+        "potassium",
+        "meal_lunch",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "pears": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "meal_lunch",
+        "carotenoids",
+        "fiber",
+        "magnesium",
+        "potassium",
+        "vitamin_a",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "salt": {
+      "tags": [
+        "iron",
+        "potassium",
+        "calcium",
+        "magnesium"
+      ],
+      "benefits": "Critical for skeletal density and neuromuscular signalling integrity."
+    },
+    "sausage": {
+      "tags": [
+        "vitamin_c",
+        "protein",
+        "iron",
+        "vitamin_b12",
+        "potassium",
+        "magnesium",
+        "vitamin_a",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "sugars": {
+      "tags": [
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Supports cardiovascular rhythm and optimal electrolyte homeostasis."
+    },
+    "turkey": {
+      "tags": [
+        "protein",
+        "iron",
+        "vitamin_b12",
+        "potassium",
+        "magnesium",
+        "vitamin_a",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "ketchup": {
+      "tags": [
+        "meal_dinner",
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "pork": {
+      "tags": [
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "butter": {
+      "tags": [
+        "meal_breakfast",
+        "iron",
+        "magnesium",
+        "potassium",
+        "calcium"
+      ],
+      "benefits": "Supports cardiovascular rhythm and optimal electrolyte homeostasis."
+    },
+    "flour": {
+      "tags": [
+        "meal_breakfast",
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "onions": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "bananas": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "meal_lunch",
+        "carotenoids",
+        "fiber",
+        "vitamin_a",
+        "meal_snack"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "apples": {
+      "tags": [
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "mushroom": {
+      "tags": [
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "soy milk": {
+      "tags": [
+        "meal_dinner",
+        "protein",
+        "iron",
+        "vitamin_b12",
+        "meal_lunch",
+        "carotenoids",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "vitamin_a",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "almond milk": {
+      "tags": [
+        "protein",
+        "iron",
+        "vitamin_b12",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "vitamin_a",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "tomato": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "meal_lunch",
+        "carotenoids",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "vitamin_a",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "apple juice": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Supports cardiovascular rhythm and optimal electrolyte homeostasis."
+    },
+    "orange juice": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "grape juice": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "cranberry juice": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Supports cardiovascular rhythm and optimal electrolyte homeostasis."
+    },
+    "tomato juice": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "oat milk": {
+      "tags": [
+        "protein",
+        "iron",
+        "vitamin_b12",
+        "fiber",
+        "magnesium",
+        "potassium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "peppers": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "buttermilk": {
+      "tags": [
+        "meal_breakfast",
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "peanut butter": {
+      "tags": [
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "sesame butter": {
+      "tags": [
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "almond butter": {
+      "tags": [
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "flaxseed": {
+      "tags": [
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "cottage cheese": {
+      "tags": [
+        "meal_breakfast",
+        "protein",
+        "iron",
+        "vitamin_b12",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "cream cheese": {
+      "tags": [
+        "meal_breakfast",
+        "protein",
+        "iron",
+        "vitamin_b12",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "cream": {
+      "tags": [
+        "meal_breakfast",
+        "protein",
+        "iron",
+        "vitamin_b12",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "pineapple": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "cherries": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "potatoes": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "sweet potatoes": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "celery": {
+      "tags": [
+        "meal_dinner",
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "cabbage": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "strawberries": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "raspberries": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "blueberries": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "grapes": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "applesauce": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "buckwheat": {
+      "tags": [
+        "meal_breakfast",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "millet": {
+      "tags": [
+        "meal_breakfast",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "rice": {
+      "tags": [
+        "meal_breakfast",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "peanuts": {
+      "tags": [
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "chickpeas": {
+      "tags": [
+        "meal_dinner",
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "blackeye pea": {
+      "tags": [
+        "meal_dinner",
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "chickpeas (garbanzo beans": {
+      "tags": [
+        "meal_dinner",
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "peas": {
+      "tags": [
+        "meal_dinner",
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "crustaceans": {
+      "tags": [
+        "protein",
+        "iron",
+        "vitamin_b12",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "squash": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "cauliflower": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "collards": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "brussels sprouts": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "beets": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "eggplant": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "apricot": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "plantains": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "bulgur": {
+      "tags": [
+        "meal_breakfast",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "wild rice": {
+      "tags": [
+        "meal_breakfast",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "arugula": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "asparagus": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "corn": {
+      "tags": [
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "einkorn": {
+      "tags": [
+        "meal_breakfast",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "farro": {
+      "tags": [
+        "meal_breakfast",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "fonio": {
+      "tags": [
+        "meal_breakfast",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "khorasan": {
+      "tags": [
+        "meal_breakfast",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "kiwifruit (kiwi)": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "mandarin": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "mango": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "corn flour": {
+      "tags": [
+        "meal_breakfast",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "pear": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "plum": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "sorghum bran": {
+      "tags": [
+        "meal_breakfast",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "sorghum flour": {
+      "tags": [
+        "meal_breakfast",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "sorghum grain": {
+      "tags": [
+        "meal_breakfast",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "sorghum": {
+      "tags": [
+        "meal_breakfast",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "lamb": {
+      "tags": [
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "bison": {
+      "tags": [
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "pawpaw": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "rutabaga": {
+      "tags": [
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "blackberries": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "tomatillos": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "leeks": {
+      "tags": [
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "green onion": {
+      "tags": [
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "shallots": {
+      "tags": [
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "juice": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium",
+        "meal_snack"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "anchovies": {
+      "tags": [
+        "protein",
+        "iron",
+        "vitamin_b12",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "beet greens": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "fennel": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "halibut": {
+      "tags": [
+        "protein",
+        "iron",
+        "vitamin_b12",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "lobster": {
+      "tags": [
+        "protein",
+        "iron",
+        "vitamin_b12",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "mahi mahi": {
+      "tags": [
+        "protein",
+        "iron",
+        "vitamin_b12",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "parsnips": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "radicchio": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "radishes": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    },
+    "scallops": {
+      "tags": [
+        "protein",
+        "iron",
+        "vitamin_b12",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "sea bass": {
+      "tags": [
+        "protein",
+        "iron",
+        "vitamin_b12",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "snapper": {
+      "tags": [
+        "protein",
+        "iron",
+        "vitamin_b12",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "snow crab": {
+      "tags": [
+        "protein",
+        "iron",
+        "vitamin_b12",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "squid (calamari)": {
+      "tags": [
+        "protein",
+        "iron",
+        "vitamin_b12",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "swordfish": {
+      "tags": [
+        "protein",
+        "iron",
+        "vitamin_b12",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "tuna": {
+      "tags": [
+        "protein",
+        "iron",
+        "vitamin_b12",
+        "potassium",
+        "magnesium",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
+    },
+    "turnips": {
+      "tags": [
+        "vitamin_c",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
+    }
+  },
+  "condition_avoid": {
+    "prediabetes": {
+      "foods": [
+        "sugar",
+        "sweets",
+        "white rice",
+        "refined flour",
+        "soda",
+        "honey",
+        "juice"
+      ],
+      "reason": "Directly spikes blood glucose levels and increases insulin resistance."
+    },
+    "hypertriglyceridemia": {
+      "foods": [
+        "fried food",
+        "butter",
+        "trans fats",
+        "excessive oil",
+        "alcohol",
+        "sugary drinks"
+      ],
+      "reason": "Can significantly raise serum triglyceride levels and arterial risk."
+    },
+    "hyperlipidemia": {
+      "foods": [
+        "cheese",
+        "cream",
+        "saturated fats",
+        "trans fats",
+        "red meat",
+        "fried food"
+      ],
+      "reason": "May further elevate LDL (bad) cholesterol levels."
+    },
+    "low_hdl": {
+      "foods": [
+        "processed foods",
+        "trans fats",
+        "refined carbs",
+        "processed snacks"
+      ],
+      "reason": "Directly contributes to lower protective (HDL) cholesterol levels."
+    },
+    "hypertension": {
+      "foods": [
+        "salt",
+        "pickles",
+        "processed snacks",
+        "canned soup",
+        "soy sauce",
+        "papads"
+      ],
+      "reason": "Excess sodium increases vascular pressure and fluid retention."
+    },
+    "iron_deficiency_anemia": {
+      "foods": [
+        "tea with meals",
+        "coffee with meals",
+        "excess calcium with iron meals"
+      ],
+      "reason": "Tannins and polyphenols may inhibit non-heme iron absorption."
+    },
+    "kidney_strain": {
+      "foods": [
+        "excess salt",
+        "processed meat",
+        "excessive red meat",
+        "preservatives"
+      ],
+      "reason": "Increases filtration workload and potential waste buildup."
+    },
+    "liver_stress": {
+      "foods": [
+        "alcohol",
+        "sugar",
+        "excess fructose",
+        "deep fried foods"
+      ],
+      "reason": "Directly induces hepatic inflammation and fat accumulation."
+    },
+    "high_uric_acid": {
+      "foods": [
+        "red meat",
+        "organ meat",
+        "seafood (anchovies)",
+        "alcohol",
+        "sugary drinks"
+      ],
+      "reason": "High purine content may trigger joint inflammation and gout."
+    },
+    "thyroid_issues": {
+      "foods": [
+        "excess raw cruciferous vegetables",
+        "unfermented soy",
+        "processed gluten"
+      ],
+      "reason": "Goitrogens may interfere with iodine uptake in thyroid tissue."
+    },
+    "hypocalcemia": {
+      "foods": [
+        "excess caffeine",
+        "excess sodium",
+        "carbonated drinks"
+      ],
+      "reason": "May interfere with intestinal calcium absorption and bone health."
+    },
+    "vitamin_d_deficiency": {
+      "foods": [
+        "avoid total indoor confinement"
+      ],
+      "reason": "Sunlight is critical for precursor conversion (Vitamin D synthesis)."
+    },
+    "protein_deficiency": {
+      "foods": [
+        "refined junk food",
+        "low protein fillers"
+      ],
+      "reason": "Lacks the essential amino acid substrate for muscle repair."
+    }
+  },
+  "synergies": {
+    "iron": {
+      "enhancers": [
+        "vitamin_c"
+      ],
+      "inhibitors": [
+        "tannins",
+        "high_calcium_with_meal"
+      ],
+      "protocol": "Consume iron-rich foods with citric acid sources to maximize non-heme bioavailability."
+    },
+    "calcium": {
+      "enhancers": [
+        "vitamin_d",
+        "magnesium"
+      ],
+      "inhibitors": [
+        "oxalates",
+        "high_sodium"
+      ],
+      "protocol": "Ensure synergistic Vitamin D levels for intestinal calcium absorption."
+    },
+    "vitamin_b12": {
+      "enhancers": [
+        "folate"
+      ],
+      "protocol": "B12 and Folate synergy is critical for DNA synthesis and RBC maturation."
+    },
+    "protein": {
+      "enhancers": [
+        "vitamin_b6"
+      ],
+      "protocol": "B6 is a key co-factor in amino acid metabolism and nitrogen balance."
+    }
+  }
+}

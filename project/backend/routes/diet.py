@@ -154,8 +154,8 @@ def upload_report():
         # verify_jwt_in_request_optional is a no-op if the runtime does not provide it
         verify_jwt_in_request_optional()
         identity = get_jwt_identity()
-        if identity and isinstance(identity, dict):
-            user_id = identity.get('id')
+        if identity:
+            user_id = identity.get('id') if isinstance(identity, dict) else identity
             if user_id:
                 try:
                     current_user = User.query.get(user_id)
