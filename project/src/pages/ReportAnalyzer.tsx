@@ -79,6 +79,7 @@ interface AnalysisResult {
   diet_plan_text: string;
   diet_source: 'gemini' | 'rules_fallback' | 'error';
   diet_warning?: string;
+  mode?: 'file' | 'manual';
 }
 
 // ---------- Helper components ----------
@@ -110,6 +111,14 @@ const ReportAnalyzer = () => {
   const [error, setError] = useState('');
   const [showExtractedText, setShowExtractedText] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [healthData, setHealthData] = useState({
+    age: '',
+    weight: '',
+    height: '',
+    activityLevel: 'moderate',
+    dietaryPreference: 'none',
+    healthConditions: ''
+  });
 
   // File handlers
   const handleFileSelect = useCallback((f: File) => {
@@ -135,6 +144,13 @@ const ReportAnalyzer = () => {
     }
   }, []);
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    setHealthData({
+      ...healthData,
+      [e.target.name]: e.target.value
+    });
+  };
+
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
@@ -149,7 +165,7 @@ const ReportAnalyzer = () => {
 
   // Submit
   const handleSubmit = async () => {
-    if (!file) return;
+    if (!file && !healthData.age) return;
     setLoading(true);
     setError('');
     setProgress(0);
@@ -157,7 +173,7 @@ const ReportAnalyzer = () => {
     try {
       const data = await analyzeReport(file, (ev) => {
         if (ev.total) setProgress(Math.round((ev.loaded * 100) / ev.total));
-      });
+      }, !file ? healthData : undefined);
 
       if (data.success) {
         setResult(data);
@@ -181,6 +197,14 @@ const ReportAnalyzer = () => {
     setError('');
     setProgress(0);
     setShowExtractedText(false);
+    setHealthData({
+      age: '',
+      weight: '',
+      height: '',
+      activityLevel: 'moderate',
+      dietaryPreference: 'none',
+      healthConditions: ''
+    });
   };
 
   // ---- RESULTS VIEW ----
@@ -276,7 +300,13 @@ const ReportAnalyzer = () => {
               </div>
 
               {paramCount === 0 ? (
-                <p className="text-gray-500">No medical parameters were detected.</p>
+                <div className="text-center py-8 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
+                  <p className="text-gray-400 italic text-sm">
+                    {result.mode === 'manual' 
+                      ? "No lab parameters provided. Recommendations are generated based on your health profile context."
+                      : "No medical parameters were detected in the extracted report text."}
+                  </p>
+                </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -642,6 +672,106 @@ const ReportAnalyzer = () => {
             </label>
           </div>
 
+          {/* OR Divider */}
+          {!loading && !file && (
+            <div className="relative my-10">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-white text-gray-500 font-bold uppercase tracking-widest text-xs">
+                  Or Enter Parameters Manually
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Manual Entry Form */}
+          {!loading && !file && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-gray-700 text-sm font-semibold mb-2 block">Age</label>
+                  <input
+                    type="number"
+                    name="age"
+                    value={healthData.age}
+                    onChange={handleInputChange}
+                    placeholder="25"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 transition-all outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-gray-700 text-sm font-semibold mb-2 block">Weight (kg)</label>
+                  <input
+                    type="number"
+                    name="weight"
+                    value={healthData.weight}
+                    onChange={handleInputChange}
+                    placeholder="70"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 transition-all outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-gray-700 text-sm font-semibold mb-2 block">Height (cm)</label>
+                  <input
+                    type="number"
+                    name="height"
+                    value={healthData.height}
+                    onChange={handleInputChange}
+                    placeholder="170"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 transition-all outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-gray-700 text-sm font-semibold mb-2 block">Activity Level</label>
+                  <select
+                    name="activityLevel"
+                    value={healthData.activityLevel}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 transition-all outline-none bg-white"
+                  >
+                    <option value="sedentary">Sedentary</option>
+                    <option value="light">Light Activity</option>
+                    <option value="moderate">Moderate Activity</option>
+                    <option value="active">Very Active</option>
+                    <option value="extreme">Extremely Active</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-gray-700 text-sm font-semibold mb-2 block">Dietary Preference</label>
+                  <select
+                    name="dietaryPreference"
+                    value={healthData.dietaryPreference}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 transition-all outline-none bg-white"
+                  >
+                    <option value="none">No Preference</option>
+                    <option value="vegetarian">Vegetarian</option>
+                    <option value="vegan">Vegan</option>
+                    <option value="keto">Keto</option>
+                    <option value="paleo">Paleo</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-gray-700 text-sm font-semibold mb-2 block">Health Conditions & Allergies</label>
+                <textarea
+                  name="healthConditions"
+                  value={healthData.healthConditions}
+                  onChange={handleInputChange}
+                  rows={3}
+                  placeholder="e.g., Diabetes, High blood pressure, Lactose intolerance..."
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 transition-all outline-none resize-none"
+                />
+              </div>
+            </div>
+          )}
+
           {/* Progress Bar */}
           {loading && (
             <motion.div
@@ -682,21 +812,30 @@ const ReportAnalyzer = () => {
           {/* Submit */}
           <motion.button
             type="button"
-            disabled={!file || loading}
-            whileHover={!loading && file ? { scale: 1.02 } : {}}
-            whileTap={!loading && file ? { scale: 0.98 } : {}}
+            disabled={(!file && !healthData.age) || loading}
+            whileHover={!loading && (file || healthData.age) ? { scale: 1.02 } : {}}
+            whileTap={!loading && (file || healthData.age) ? { scale: 0.98 } : {}}
             onClick={handleSubmit}
-            className="mt-8 w-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white px-6 py-4 rounded-xl font-semibold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            className="mt-8 w-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white px-6 py-4 rounded-xl font-semibold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-bold tracking-tight"
           >
             {loading ? (
               <>
                 <Loader className="animate-spin h-5 w-5 mr-2" />
-                Analyzing Report...
+                {file ? 'Analyzing Report...' : 'Generating Diet Plan...'}
               </>
             ) : (
               <>
-                <Microscope className="h-5 w-5 mr-2" />
-                Analyze Report
+                {file ? (
+                  <>
+                    <Microscope className="h-5 w-5 mr-2" />
+                    Analyze Report
+                  </>
+                ) : (
+                  <>
+                    <Utensils className="h-5 w-5 mr-2" />
+                    Generate Diet Plan
+                  </>
+                )}
               </>
             )}
           </motion.button>

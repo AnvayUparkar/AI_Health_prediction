@@ -57,9 +57,10 @@ export const getWorkoutPlan = async (goal?: string, level?: string) => {
     return res.data;
 };
 
-export const analyzeReport = async (file: File, onUploadProgress?: (progressEvent: AxiosProgressEvent) => void) => {
+export const analyzeReport = async (file: File | null, onUploadProgress?: (progressEvent: AxiosProgressEvent) => void, healthData?: any) => {
     const fd = new FormData();
-    fd.append('report', file);
+    if (file) fd.append('report', file);
+    if (healthData) fd.append('health_data', JSON.stringify(healthData));
     const res = await api.post('/api/analyze-report', fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress,

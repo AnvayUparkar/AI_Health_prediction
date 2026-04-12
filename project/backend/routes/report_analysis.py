@@ -12,6 +12,9 @@ This endpoint orchestrates the full medical-report diet recommendation pipeline:
     5. Diet recommendation  (via ``backend.report_diet_engine``)
     6. Return structured JSON response
 
+This endpoint also supports **Manual Health Entry** by providing a ``health_data``
+JSON string instead of (or in addition to) the ``report`` file.
+
 This is a NEW endpoint that does NOT conflict with the existing
 ``POST /api/upload-report`` in ``diet.py``.
 """
@@ -19,6 +22,7 @@ This is a NEW endpoint that does NOT conflict with the existing
 import os
 import tempfile
 import logging
+import json
 from flask import Blueprint, request, jsonify
 
 from backend.ocr_scanner import extract_text
@@ -64,14 +68,26 @@ def analyze_report():
             "important_parameters": { ... },
             "report_summary": "...",
             "diet_recommendation": { ... },
-            "diet_plan_text": "..."
+            "diet_plan_text": "...",
+            "mode": "file" | "manual"
         }
     """
     # ----------------------------------------------------------------
-    # 1. Validate the uploaded file
+    # 1. Check for manual data vs file upload
     # ----------------------------------------------------------------
+    health_data = None
+    health_data_str = request.form.get("health_data") or request.form.get("healthData")
+    if health_data_str:
+        try:
+            health_data = json.loads(health_data_str)
+        except Exception:
+            health_data = None
+
     if "report" not in request.files:
-        return jsonify({"success": False, "error": 'No file provided. Use form field "report".'}), 400
+        if health_data:
+            # Manual Mode: Proceed without OCR
+            return _handle_manual_analysis(health_data)
+        return jsonify({"success": False, "error": 'No file or health data provided.'}), 400
 
     file = request.files["report"]
     filename = getattr(file, "filename", "") or ""
@@ -147,9 +163,18 @@ def analyze_report():
     # ----------------------------------------------------------------
     # Prefer Gemini-powered generation; falls back to rule-based engine
     # automatically if GEMINI_API_KEY is not set or API is unavailable.
-    diet_preference  = request.form.get("diet_preference",  "balanced")
+    diet_preference  = request.form.get("diet_preference") or (health_data.get("dietaryPreference") if health_data else "balanced")
     cuisine_pref     = request.form.get("cuisine_preference", "Indian")
     extra_context    = request.form.get("extra_context", "")
+
+    # If we have health data (even with a file), enrich the context
+    if health_data:
+        manual_context = (
+            f"Patient Profile: Age {health_data.get('age')}, Weight {health_data.get('weight')}kg, "
+            f"Height {health_data.get('height')}cm, Activity: {health_data.get('activityLevel')}. "
+            f"Conditions: {health_data.get('healthConditions')}."
+        )
+        extra_context = f"{manual_context}\n{extra_context}"
 
     gemini_result = generate_diet_plan_with_gemini(
         all_parameters,
@@ -186,10 +211,57 @@ def analyze_report():
     if diet_error:
         response["diet_warning"] = diet_error
 
+    response["mode"] = "file"
+
     logger.info(
         "Report analyzed: %d parameters found, %d important",
         len(all_parameters),
         len(important_params),
     )
+
+    return jsonify(response), 200
+
+
+def _handle_manual_analysis(health_data):
+    """Internal helper to process manual health entry using the Gemini engine."""
+    diet_preference = health_data.get("dietaryPreference", "balanced")
+    
+    # Calculate BMI for extra context
+    bmi_str = ""
+    try:
+        w = float(health_data.get('weight', 0))
+        h = float(health_data.get('height', 0)) / 100
+        if h > 0:
+            bmi = w / (h * h)
+            bmi_str = f"BMI: {bmi:.1f}. "
+    except:
+        pass
+
+    manual_context = (
+        f"{bmi_str}Patient Profile: Age {health_data.get('age')}, Weight {health_data.get('weight')}kg, "
+        f"Height {health_data.get('height')}cm, Activity: {health_data.get('activityLevel')}. "
+        f"Pathology Context: {health_data.get('healthConditions')}."
+    )
+
+    gemini_result = generate_diet_plan_with_gemini(
+        {}, # No lab parameters
+        diet_preference=diet_preference,
+        extra_context=manual_context,
+        fallback_to_rules=True
+    )
+
+    response = {
+        "success": True,
+        "extracted_text": "No report uploaded (Manual Entry mode).",
+        "all_parameters": {},
+        "important_parameters": {},
+        "report_summary": f"Manual Profile: {health_data.get('age')}yr old, {health_data.get('weight')}kg.",
+        "diet_recommendation": gemini_result["diet_plan"],
+        "diet_plan_text": gemini_result["diet_plan_text"],
+        "diet_source": gemini_result["source"],
+        "mode": "manual"
+    }
+    if gemini_result["error"]:
+        response["diet_warning"] = gemini_result["error"]
 
     return jsonify(response), 200
