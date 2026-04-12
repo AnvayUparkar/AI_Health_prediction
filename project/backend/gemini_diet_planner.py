@@ -364,6 +364,16 @@ def build_diet_prompt(
           "lifestyle_tips": [
             "Practical lifestyle habits that complement the diet"
           ],
+          "clinical_protocol": [
+            "High-level clinical strategy (e.g., 'Metabolic optimization', 'Renal protection')"
+          ],
+          "synergy_pairing": [
+            "Biochemical synergy pairs (e.g., 'Vitamin C + Iron for 3x absorption')"
+          ],
+          "conditions_profile": [
+            "Clinical names of detected conditions"
+          ],
+          "status": "Overall health summary/title for the protocol",
           "parameter_reasoning": {
             "ParameterName": "Why specific foods were recommended for this value"
           },
@@ -670,6 +680,10 @@ def _empty_diet_plan(summary: str = "") -> Dict[str, Any]:
         },
         "hydration_tips": [],
         "lifestyle_tips": [],
+        "clinical_protocol": [],
+        "synergy_pairing": [],
+        "conditions_profile": [],
+        "status": "Balanced Nutrition Protocol",
         "parameter_reasoning": {},
         "urgent_flags": [],
         "summary": summary,

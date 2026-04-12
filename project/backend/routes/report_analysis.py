@@ -247,7 +247,8 @@ def _handle_manual_analysis(health_data):
         {}, # No lab parameters
         diet_preference=diet_preference,
         extra_context=manual_context,
-        fallback_to_rules=True
+        fallback_to_rules=True,
+        raw_text=health_data.get('healthConditions', '')
     )
 
     response = {

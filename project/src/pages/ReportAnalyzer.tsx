@@ -17,6 +17,9 @@ import {
   Lightbulb,
   Heart,
   FileSearch,
+  Stethoscope,
+  Activity,
+  BrainCircuit,
 } from 'lucide-react';
 import AnimatedBackground from '../components/AnimatedBackground';
 import GlassCard from '../components/GlassCard';
@@ -356,6 +359,56 @@ const ReportAnalyzer = () => {
                 {dr.summary && (
                   <GlassCard className="p-5 mb-6 bg-gradient-to-r from-teal-50 to-cyan-50">
                     <p className="text-gray-700 text-sm leading-relaxed italic">"{dr.summary}"</p>
+                  </GlassCard>
+                )}
+
+                {/* Status & Clinical Protocol Title */}
+                {dr.status && (
+                  <div className="mb-6 flex flex-col items-center">
+                    <div className="bg-teal-100 text-teal-800 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-2 shadow-sm border border-teal-200">
+                      {dr.status}
+                    </div>
+                    <h2 className="text-3xl font-extrabold text-gray-900 text-center bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-cyan-600">
+                      Perfect Clinical Protocol
+                    </h2>
+                  </div>
+                )}
+
+                {/* Conditions Profile */}
+                {dr.conditions_profile && dr.conditions_profile.length > 0 && (
+                  <GlassCard className="p-6 mb-6 bg-gradient-to-br from-teal-50/50 to-white">
+                    <div className="flex items-center mb-4">
+                      <Stethoscope className="h-6 w-6 text-teal-600 mr-3" />
+                      <h2 className="text-2xl font-bold text-gray-800">Conditions Detected Profile</h2>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {dr.conditions_profile.map((cond, idx) => (
+                        <span key={idx} className="bg-teal-50 text-teal-700 px-3 py-1 rounded-lg text-sm font-semibold border border-teal-100 shadow-sm flex items-center">
+                          <Activity className="h-3.5 w-3.5 mr-1.5 opacity-70" />
+                          {cond}
+                        </span>
+                      ))}
+                    </div>
+                  </GlassCard>
+                )}
+
+                {/* Clinical Protocol Registry */}
+                {dr.clinical_protocol && dr.clinical_protocol.length > 0 && (
+                  <GlassCard className="p-6 mb-6 border-l-4 border-l-cyan-500">
+                    <div className="flex items-center mb-4">
+                      <BrainCircuit className="h-6 w-6 text-cyan-600 mr-3" />
+                      <h2 className="text-2xl font-bold text-gray-800">Clinical Optimization Protocol</h2>
+                    </div>
+                    <div className="space-y-3">
+                      {dr.clinical_protocol.map((step, idx) => (
+                        <div key={idx} className="flex items-start bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+                          <div className="bg-cyan-100 text-cyan-700 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0 mt-0.5">
+                            {idx + 1}
+                          </div>
+                          <p className="text-gray-700 text-sm leading-relaxed font-medium">{step}</p>
+                        </div>
+                      ))}
+                    </div>
                   </GlassCard>
                 )}
 
