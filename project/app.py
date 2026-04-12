@@ -32,6 +32,7 @@ from backend.routes.report_analysis import report_analysis_bp
 from backend.routes.health_analysis import health_analysis_bp
 from backend.routes.google_fit_sync import google_fit_sync_bp
 from backend.routes.google_fit_debug import google_fit_debug_bp
+from backend.routes.health_connect_sync import health_connect_sync_bp
 
 def create_app(config_overrides: Optional[dict] = None):
     app = Flask(__name__, static_folder=None)
@@ -71,6 +72,7 @@ def create_app(config_overrides: Optional[dict] = None):
     app.register_blueprint(health_analysis_bp, url_prefix='/api')
     app.register_blueprint(google_fit_sync_bp, url_prefix='/api')
     app.register_blueprint(google_fit_debug_bp, url_prefix='/api')
+    app.register_blueprint(health_connect_sync_bp, url_prefix='/api')
 
     @app.route('/health', methods=['GET'])
     def health():

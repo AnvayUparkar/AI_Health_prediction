@@ -47,21 +47,59 @@ def _find_dataset(datasets: list, data_type: str) -> dict:
 
 
 def _sum_steps_from_dataset(ds: dict) -> int:
-    """Sum step values from a single dataset, skipping cumulative sources."""
-    total = 0
+    """Sum step values from a single dataset.
+    
+    Google Fit returns steps from multiple origin sources:
+      - 'merge_step_deltas': already delta values, safe to sum directly
+      - 'estimated_steps': ML-estimated deltas, safe to sum
+      - 'cumulative': running totals — we compute (max - min) to get the delta
+      - everything else: treated as delta values
+    
+    On OnePlus/some devices, the ONLY source is 'cumulative'. Skipping it
+    would result in 0 steps every day. Instead, we extract the delta.
+    """
+    delta_total = 0
+    cumulative_values = []  # Collect all cumulative readings to compute delta
+    
     for point in ds.get('point', []):
         origin = point.get('originDataSourceId', '')
-        # Only skip cumulative (running total) sources — NOT raw sources
-        if 'cumulative' in origin.lower():
-            print(f"    [SKIP cumulative] {origin}")
-            continue
         val_list = point.get('value', [])
-        if val_list:
-            v = val_list[0]
-            step_val = v.get('intVal') or int(v.get('fpVal', 0) or 0)
-            total += step_val
-            print(f"    [+{step_val} steps] from: {origin}  (running total: {total})")
-    return total
+        if not val_list:
+            continue
+        v = val_list[0]
+        step_val = v.get('intVal') or int(v.get('fpVal', 0) or 0)
+        
+        if 'cumulative' in origin.lower():
+            # Collect cumulative readings — we'll compute the delta after
+            cumulative_values.append(step_val)
+            print(f"    [CUMULATIVE] {step_val} from: {origin}")
+        else:
+            # Delta source — sum directly
+            delta_total += step_val
+            print(f"    [+{step_val} steps] from: {origin}  (running total: {delta_total})")
+    
+    # If we found cumulative readings, extract the step count
+    if cumulative_values and delta_total == 0:
+        if len(cumulative_values) == 1:
+            # Single cumulative reading in this bucket = that IS the day's total
+            delta_total = cumulative_values[0]
+            print(f"    [CUMULATIVE SINGLE] Using {delta_total} steps directly (only 1 reading in bucket)")
+        else:
+            # Multiple readings: delta = max - min
+            cumulative_delta = max(cumulative_values) - min(cumulative_values)
+            if cumulative_delta > 0:
+                delta_total = cumulative_delta
+                print(f"    [CUMULATIVE DELTA] {cumulative_delta} steps (max={max(cumulative_values)}, min={min(cumulative_values)})")
+            else:
+                # max == min means no movement, but the value itself may be the day total
+                # (Google Fit sometimes reports the daily sum as a single cumulative point)
+                delta_total = max(cumulative_values)
+                print(f"    [CUMULATIVE FLAT] Using {delta_total} steps (all readings identical)")
+    elif cumulative_values and delta_total > 0:
+        cumulative_delta = max(cumulative_values) - min(cumulative_values) if len(cumulative_values) > 1 else cumulative_values[0]
+        print(f"    [CUMULATIVE IGNORED] {cumulative_delta} (already have {delta_total} from delta sources)")
+    
+    return delta_total
 
 
 def _avg_hr_from_dataset(ds: dict) -> tuple:
@@ -297,9 +335,10 @@ def sync_google_fit():
         # Convert local midnight back to UTC
         today_midnight_utc_ms = local_midnight_ms + offset_ms
 
-        # 7-day window: from 6 days before today's local midnight to now
+        # 7-day window: from 6 days before today's local midnight
+        # to TOMORROW's local midnight (ensures today's full bucket is included)
         start_time_ms = today_midnight_utc_ms - (6 * 86400000)
-        end_time_ms = now_utc_ms
+        end_time_ms = today_midnight_utc_ms + 86400000  # tomorrow midnight UTC
 
         print(f"[GoogleFit] Time range (epoch ms):")
         print(f"  start = {start_time_ms}  (local midnight - 6 days)")
@@ -343,6 +382,7 @@ def sync_google_fit():
                 existing.sleep_hours = day_data['sleep_hours']
                 existing.diet_plan = json.dumps(analysis.get('diet_plan', []))
                 existing.recommendations = json.dumps(analysis.get('recommendations', []))
+                existing.data_source = 'google_fit'
                 saved_records.append(existing.to_dict())
                 logger.info("Updated record for %s", date_str)
             else:
@@ -358,6 +398,7 @@ def sync_google_fit():
                     sleep_hours=day_data['sleep_hours'],
                     diet_plan=json.dumps(analysis.get('diet_plan', [])),
                     recommendations=json.dumps(analysis.get('recommendations', [])),
+                    data_source='google_fit',
                     # Force Noon of the local date to ensure it stays in the correct 24h filter window
                     created_at=day_start + timedelta(hours=12) 
                 )

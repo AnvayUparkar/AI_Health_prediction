@@ -57,6 +57,7 @@ class HealthAnalysis(db.Model):
     sleep_hours = db.Column(db.Float, nullable=True)
     diet_plan = db.Column(db.Text)  # Stored as JSON string
     recommendations = db.Column(db.Text)  # Stored as JSON string
+    data_source = db.Column(db.String(30), default='google_fit')  # google_fit | health_connect | manual
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
@@ -81,6 +82,7 @@ class HealthAnalysis(db.Model):
             },
             "diet_plan": diet,
             "recommendations": recs,
+            "data_source": self.data_source or "google_fit",
             "created_at": self.created_at.isoformat()
         }
 
