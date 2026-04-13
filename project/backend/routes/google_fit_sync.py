@@ -5,8 +5,9 @@ from datetime import datetime, timedelta
 import requests
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
-from backend.models import db, HealthAnalysis
+from backend.models import db, HealthAnalysis, User
 from backend.db_service import DBService
+from backend.routes.google_auth import get_user_google_creds
 from backend.health_analyzer import analyze_health_data, analyze_weekly_data
 
 google_fit_sync_bp = Blueprint('google_fit_sync', __name__)
@@ -306,11 +307,20 @@ def sync_google_fit():
     data = request.json
     access_token = data.get('google_token')
     
-    if not access_token:
-        return jsonify({"success": False, "error": "Google token required"}), 400
-
     user_identity = get_jwt_identity()
     user_id = user_identity.get('id') if isinstance(user_identity, dict) else user_identity
+    
+    # Fallback to stored token if none provided in request
+    if not access_token:
+        user = User.query.get(int(user_id))
+        if user:
+            creds = get_user_google_creds(user)
+            if creds:
+                access_token = creds.token
+            else:
+                return jsonify({"success": False, "error": "Google account not linked or re-authentication required."}), 401
+        else:
+            return jsonify({"success": False, "error": "User not found"}), 404
 
     timezone_offset = data.get('timezone_offset', 0) # minutes from UTC (e.g. -330 for IST)
 

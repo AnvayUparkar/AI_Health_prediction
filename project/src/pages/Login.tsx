@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LogIn, Mail, Lock, Loader } from 'lucide-react';
+import { LogIn, Mail, Lock, Loader, Chrome } from 'lucide-react';
+import api from '../services/api';
 import { login } from '../services/api';
 
 const Login: React.FC = () => {
@@ -15,17 +16,17 @@ const Login: React.FC = () => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
-    
+
     try {
       const data = await login(email, password);
       if (data && data.access_token) {
         // Store token and user info
         localStorage.setItem('token', data.access_token);
         localStorage.setItem('user', JSON.stringify(data.user || {}));
-        
+
         // Dispatch storage event for navbar to detect
         window.dispatchEvent(new Event('storage'));
-        
+
         // Navigate to home
         navigate('/');
       } else {
@@ -35,6 +36,19 @@ const Login: React.FC = () => {
       setError(err.response?.data?.error || err.message || 'Login failed');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleGoogleConnect = async () => {
+    try {
+      const response = await api.get('/api/auth/google/url');
+      if (response.data.success && response.data.url) {
+        window.location.href = response.data.url;
+      } else {
+        setError('Failed to get Google Auth URL');
+      }
+    } catch (err: any) {
+      setError('Error initiating Google connection');
     }
   };
 
@@ -131,6 +145,26 @@ const Login: React.FC = () => {
                   <span>Login</span>
                 </>
               )}
+            </motion.button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white/50 backdrop-blur-sm text-gray-500">Or sync health data</span>
+              </div>
+            </div>
+
+            <motion.button
+              type="button"
+              onClick={handleGoogleConnect}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-xl font-semibold shadow-sm hover:bg-gray-50 transition-all duration-200 flex items-center justify-center space-x-2"
+            >
+              <Chrome className="h-5 w-5 text-blue-500" />
+              <span>Connect Google Account</span>
             </motion.button>
           </form>
 

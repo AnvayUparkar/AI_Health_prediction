@@ -76,7 +76,7 @@ const Home = () => {
   ];
 
   // Filter services based on user role
-  const visibleServices = mainServices.filter(service => 
+  const visibleServices = mainServices.filter(service =>
     !service.roles || (user && user.role && service.roles.includes(user.role))
   );
 

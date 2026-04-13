@@ -22,6 +22,10 @@ class User(db.Model):
     lastStepReward = db.Column(db.Integer, default=0)
     streak = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Google OAuth fields
+    google_token_json = db.Column(db.Text, nullable=True) # Stores the full creds JSON
+    google_last_auth_at = db.Column(db.DateTime, nullable=True)
 
     def set_password(self, password: str):
         self.password_hash = generate_password_hash(password)

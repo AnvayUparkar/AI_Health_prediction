@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 import logging
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from bson import ObjectId
 from backend.models import db, User, ShopItem
 from backend.db_service import DBService
 
@@ -29,38 +30,78 @@ def update_steps():
     user_id = identity.get('id') if isinstance(identity, dict) else identity
     
     data = request.get_json() or {}
-    steps = data.get('steps', 0)
+    # Fetch latest steps from DB (Cloud Sync)
+    latest_analysis = DBService.get_latest_health_analysis(user_id)
+    steps = 0
+    if latest_analysis:
+        # Handle dict from Mongo or model from SQL
+        if isinstance(latest_analysis, dict):
+            steps = latest_analysis.get('metrics', {}).get('steps', 0)
+        else:
+            steps = getattr(latest_analysis, 'steps', 0)
     
-    user = User.query.get(user_id)
+    # If frontend sent more recent steps, optionally use them (but following user request to use cloud sync)
+    # We will stick to the latest database record to ensure 'cloud sync' is the source of truth.
+
+    # Robust ID check: handle MongoDB strings (hex) vs SQL Integers
+    user = None
+    if isinstance(user_id, str) and user_id.isdigit():
+        user = User.query.get(int(user_id))
+    elif isinstance(user_id, int):
+        user = User.query.get(user_id)
+    
+    # If not in SQL, check MongoDB
     if not user:
+        try:
+            mongodb = DBService.get_mongo_db()
+            if mongodb is not None:
+                # Find user in Mongo
+                user_data = mongodb.users.find_one({"_id": ObjectId(user_id)})
+                if user_data:
+                    # Map Mongo dict to a pseudo-object for logic below
+                    user_data['id'] = str(user_data['_id'])
+                    user = user_data
+        except Exception as e:
+            logger.error(f"Mongo user lookup failed in gamification: {e}")
+
+    if not user:
+        logger.error(f"Gamification update failed: User {user_id} not found in any database.")
         return jsonify({"success": False, "error": "User not found"}), 404
     
-    earned_points = calculate_points(steps, user.lastStepReward)
-    
-    if earned_points > 0:
-        user.points += earned_points
-        user.lastStepReward = steps
-        db.session.commit()
-        
-        # Sync to Mongo
-        DBService.update_user_gamification(user_id, user.points, user.lastStepReward, user.streak)
-        
-    next_milestone = ((steps // 3000) + 1) * 3000
-    progress_percent = (steps % 3000) / 3000 * 100
+    # Extract points/reward data from object or dict
+    u_points = user.points if isinstance(user, User) else user.get('points', 0)
+    u_last_reward = user.lastStepReward if isinstance(user, User) else user.get('lastStepReward', 0)
+    u_streak = user.streak if isinstance(user, User) else user.get('streak', 0)
+
+    earned_points = calculate_points(steps, u_last_reward)
+    new_total_points = u_points + earned_points
+    streak = u_streak
     
     # Update streak (simple logic: if steps >= 3000, ensure streak is active)
-    # Note: Real streak logic would check last update date, but sticking to requested logic.
-    if steps >= 3000 and user.streak == 0:
-        user.streak = 1
-        db.session.commit()
+    if steps >= 3000 and streak == 0:
+        streak = 1
     
+    if isinstance(user, User):
+        user.points = new_total_points
+        user.lastStepReward = steps
+        user.streak = streak
+        db.session.commit()
+    else:
+        # Mongo Update
+        DBService._async_mongo_write('users', 'update', {
+            "points": new_total_points,
+            "lastStepReward": steps,
+            "streak": streak
+        }, {"_id": ObjectId(user['id'])})
+
     return jsonify({
         "success": True,
-        "points": user.points,
+        "currentSteps": steps,
         "earnedPoints": earned_points,
-        "nextMilestone": next_milestone,
-        "progressPercent": round(progress_percent, 1),
-        "streak": user.streak
+        "totalPoints": new_total_points,
+        "streak": streak,
+        "progressPercent": min(int((steps % 3000) / 3000 * 100), 100),
+        "nextMilestone": ((steps // 3000) + 1) * 3000
     }), 200
 
 @gamification_bp.route('/shop', methods=['GET'])

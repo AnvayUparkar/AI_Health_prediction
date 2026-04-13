@@ -34,6 +34,7 @@ from backend.routes.google_fit_sync import google_fit_sync_bp
 from backend.routes.google_fit_debug import google_fit_debug_bp
 from backend.routes.health_connect_sync import health_connect_sync_bp
 from backend.routes.gamification import gamification_bp
+from backend.routes.google_auth import google_auth_bp
 from backend.db_service import DBService
 
 def create_app(config_overrides: Optional[dict] = None):
@@ -76,6 +77,7 @@ def create_app(config_overrides: Optional[dict] = None):
     app.register_blueprint(google_fit_debug_bp, url_prefix='/api')
     app.register_blueprint(health_connect_sync_bp, url_prefix='/api')
     app.register_blueprint(gamification_bp, url_prefix='/api')
+    app.register_blueprint(google_auth_bp, url_prefix='/api')
 
     @app.route('/health', methods=['GET'])
     def health():

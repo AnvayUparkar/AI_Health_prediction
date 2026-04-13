@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Menu, X, User, LogOut } from 'lucide-react';
+import api from '../services/api';
 
 const FloatingNavbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -53,7 +54,14 @@ const FloatingNavbar = () => {
     return () => window.removeEventListener('storage', checkAuth);
   }, [location]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      // Clear Google token from backend if possible
+      await api.post('/api/auth/google/logout').catch(() => {});
+    } catch (e) {
+      // Silently fail if not authenticated or network error
+    }
+    
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('access_token');

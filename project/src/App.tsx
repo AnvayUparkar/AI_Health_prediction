@@ -13,6 +13,7 @@ import Predictions from './pages/Predictions';
 import DietPlanner from './pages/DietPlanner';
 import ReportAnalyzer from './pages/ReportAnalyzer';
 import Shop from './pages/Shop';
+import GoogleCallback from './pages/GoogleCallback';
 import GamificationWidget from './components/GamificationWidget';
 
 // ProtectedRoute Component
@@ -34,6 +35,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/google-callback" element={<GoogleCallback />} />
           <Route path="/about" element={<About />} />
           <Route path="/what-we-do" element={<WhatWeDo />} />
           

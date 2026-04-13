@@ -10,27 +10,36 @@ const GamificationWidget: React.FC = () => {
   const [points, setPoints] = useState(0);
   const [streak, setStreak] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [steps] = useState(0);
+  const [steps, setSteps] = useState(0);
   const [isPulsing, setIsPulsing] = useState(false);
   const [showPointEarned, setShowPointEarned] = useState<number | null>(null);
+  const [exists, setExists] = useState(false); // Visibility toggle
 
   useEffect(() => {
     // Initial fetch of user data from localStorage
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      const user = JSON.parse(userData);
-      setPoints(user.points || 0);
-      setStreak(user.streak || 0);
-    }
+    const updateLocalState = () => {
+      const userData = localStorage.getItem('user');
+      const token = localStorage.getItem('token');
+      
+      if (token && userData) {
+        try {
+          const user = JSON.parse(userData);
+          setPoints(user.points || 0);
+          setStreak(user.streak || 0);
+          setExists(true);
+        } catch (e) {
+          setExists(false);
+        }
+      } else {
+        setExists(false);
+      }
+    };
+    
+    updateLocalState();
 
     // Listen for custom events or storage changes
     const handleUpdate = () => {
-      const updated = localStorage.getItem('user');
-      if (updated) {
-        const u = JSON.parse(updated);
-        setPoints(u.points || 0);
-        setStreak(u.streak || 0);
-      }
+      updateLocalState();
     };
     window.addEventListener('storage', handleUpdate);
     window.addEventListener('userUpdated', handleUpdate);
@@ -45,9 +54,10 @@ const GamificationWidget: React.FC = () => {
     const fetchProgress = async () => {
       try {
         // We use a default value of 2100 for demonstration if no data exists
-        const res = await updateSteps(steps || 2100);
+        const res = await updateSteps(0); // Trigger backend to fetch cloud sync data
         if (res.success) {
           setProgress(res.progressPercent);
+          setSteps(res.currentSteps || 0); // Store real steps
           if (res.earnedPoints > 0) {
             triggerPointAnimation(res.earnedPoints);
           }
@@ -59,7 +69,14 @@ const GamificationWidget: React.FC = () => {
 
     const token = localStorage.getItem('token');
     if (token) fetchProgress();
-  }, []);
+    
+    // Add interval to refresh stats occasionally or listen for sync events
+    const interval = setInterval(() => {
+      if (localStorage.getItem('token')) fetchProgress();
+    }, 30000); // 30s refresh
+    
+    return () => clearInterval(interval);
+  }, [exists]); // Re-run when 'exists' (auth state) changes
 
   const triggerPointAnimation = (amount: number) => {
     setShowPointEarned(amount);
@@ -70,7 +87,7 @@ const GamificationWidget: React.FC = () => {
     }, 3000);
   };
 
-  if (!localStorage.getItem('token')) return null;
+  if (!exists) return null;
 
   return (
     <>
@@ -175,7 +192,7 @@ const GamificationWidget: React.FC = () => {
                 <div className="mb-6">
                   <div className="flex justify-between items-end mb-2">
                     <p className="text-[10px] text-purple-600 font-black uppercase tracking-widest">Daily Step Goal</p>
-                    <p className="text-xs font-bold text-gray-900">2,100 / 3,000</p>
+                    <p className="text-xs font-bold text-gray-900">{steps.toLocaleString()} / 3,000</p>
                   </div>
                   <div className="h-3 bg-purple-100/50 rounded-full overflow-hidden">
                     <motion.div
@@ -186,7 +203,12 @@ const GamificationWidget: React.FC = () => {
                     />
                   </div>
                   <p className="mt-2 text-[10px] text-gray-600 italic font-bold">
-                    Keep moving! 900 more steps to +10 Points
+                    {steps < 3000 
+                      ? `Keep moving! ${3000 - steps} more steps to +10 Points`
+                      : steps % 3000 === 0 
+                        ? "Milestone reached! Check your points. 🎉"
+                        : `Keep moving! ${3000 - (steps % 3000)} more steps to +10 Points`
+                    }
                   </p>
                 </div>
 
