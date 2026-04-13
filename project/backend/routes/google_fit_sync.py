@@ -5,7 +5,8 @@ from datetime import datetime, timedelta
 import requests
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
-from backend.models import db, HealthAnalysis, User
+from backend.models import db, HealthAnalysis
+from backend.db_service import DBService
 from backend.health_analyzer import analyze_health_data, analyze_weekly_data
 
 google_fit_sync_bp = Blueprint('google_fit_sync', __name__)
@@ -315,10 +316,6 @@ def sync_google_fit():
 
     try:
         # 1. Fetch 7 days of history aligned to LOCAL midnight
-        #
-        # CRITICAL FIX: datetime.utcnow().timestamp() on Windows treats the
-        # naive datetime as LOCAL time (IST), silently shifting by 5:30h.
-        # Using time.time() + pure integer math avoids ALL timezone traps.
         import time as _time
 
         now_utc_ms = int(_time.time() * 1000)
@@ -383,6 +380,10 @@ def sync_google_fit():
                 existing.diet_plan = json.dumps(analysis.get('diet_plan', []))
                 existing.recommendations = json.dumps(analysis.get('recommendations', []))
                 existing.data_source = 'google_fit'
+                
+                # Integrated MongoDB Sync
+                DBService.sync_health_analysis_to_mongo(existing)
+                
                 saved_records.append(existing.to_dict())
                 logger.info("Updated record for %s", date_str)
             else:
@@ -404,6 +405,10 @@ def sync_google_fit():
                 )
                 db.session.add(new_record)
                 db.session.flush() # Flush to get ID, but don't let default override our date
+                
+                # Integrated MongoDB Sync
+                DBService.sync_health_analysis_to_mongo(new_record)
+                
                 saved_records.append(new_record.to_dict())
                 logger.info("Created new record for %s", date_str)
         

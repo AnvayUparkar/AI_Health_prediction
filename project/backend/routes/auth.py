@@ -3,7 +3,7 @@
 # Uses flask_jwt_extended for tokens. Tokens expire in 7 days by default.
 
 from flask import Blueprint, request, jsonify
-from backend.models import db, User
+from backend.db_service import DBService
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import timedelta
@@ -24,20 +24,18 @@ def signup():
     if not (name and email and password):
         return jsonify({'error': 'Name, email and password are required'}), 400
 
-    existing = User.query.filter_by(email=email).first()
+    existing = DBService.get_user_by_email(email)
     if existing:
         return jsonify({'error': 'Email already exists'}), 409
 
-    user = User(name=name, email=email)
-    user.set_password(password)
-    db.session.add(user)
     try:
-        db.session.commit()
+        user = DBService.create_user(name, email, generate_password_hash(password))
+        
+        # Handle if user is a dict (Mongo) or object (SQL)
+        user_dict = user if isinstance(user, dict) else user.to_dict()
+        return jsonify({'success': True, 'user': user_dict}), 201
     except IntegrityError:
-        db.session.rollback()
         return jsonify({'error': 'Failed to create user'}), 500
-
-    return jsonify({'success': True, 'user': user.to_dict()}), 201
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
@@ -52,9 +50,19 @@ def login():
     if not (email and password):
         return jsonify({'error': 'Email and password required'}), 400
 
-    user = User.query.filter_by(email=email).first()
-    if not user or not user.check_password(password):
+    user = DBService.get_user_by_email(email)
+    
+    # helper for checking password regardless of user type
+    def verify(u, p):
+        if isinstance(u, dict):
+            return check_password_hash(u['password_hash'], p)
+        return u.check_password(p)
+
+    if not user or not verify(user, password):
         return jsonify({'error': 'Invalid credentials'}), 401
 
-    access_token = create_access_token(identity=str(user.id), expires_delta=timedelta(days=7))
-    return jsonify({'access_token': access_token, 'user': user.to_dict()})
+    user_id = user['id'] if isinstance(user, dict) else str(user.id)
+    user_dict = user if isinstance(user, dict) else user.to_dict()
+    
+    access_token = create_access_token(identity=user_id, expires_delta=timedelta(days=7))
+    return jsonify({'access_token': access_token, 'user': user_dict})

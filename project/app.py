@@ -33,6 +33,7 @@ from backend.routes.health_analysis import health_analysis_bp
 from backend.routes.google_fit_sync import google_fit_sync_bp
 from backend.routes.google_fit_debug import google_fit_debug_bp
 from backend.routes.health_connect_sync import health_connect_sync_bp
+from backend.db_service import DBService
 
 def create_app(config_overrides: Optional[dict] = None):
     app = Flask(__name__, static_folder=None)
@@ -109,6 +110,20 @@ def create_app(config_overrides: Optional[dict] = None):
         try:
             init_db(app)
             print(f"[OK] Initialized SQLite DB at {app.config['SQLALCHEMY_DATABASE_URI']}")
+            
+            # Log Migration Settings
+            db_mode = os.environ.get('DB_MODE', 'sql')
+            read_from = os.environ.get('READ_FROM', 'sql')
+            print(f"[INFO] Migration Mode: {db_mode.upper()}")
+            print(f"[INFO] Reading From: {read_from.upper()}")
+            
+            # Try Mongo init if not strictly SQL
+            if db_mode != 'sql' or read_from == 'mongo':
+                mongo_db = DBService.get_mongo_db()
+                if mongo_db is not None:
+                    print(f"[OK] Connected to MongoDB Atlas")
+                else:
+                    print(f"[WARN] Failed to connect to MongoDB - falling back to SQL only")
         except Exception as e:
             print(f"[ERROR] DB init failed: {e}")
 

@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from backend.models import db, Appointment
+from backend.db_service import DBService
 from datetime import datetime
 
 appointments_bp = Blueprint('appointments', __name__)
@@ -26,52 +26,68 @@ def create_appointment():
         except ValueError:
             return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
         
-        # Create appointment
-        appointment = Appointment(
-            name=data['name'],
-            email=data['email'],
-            phone=data['phone'],
-            mode=data['mode'],
-            appointment_date=appointment_date,
-            appointment_time=data['time'],
-            reason=data['reason'],
-            status='pending'
-        )
+        # Create appointment using DBService
+        appointment_data = {
+            'name': data['name'],
+            'email': data['email'],
+            'phone': data['phone'],
+            'mode': data['mode'],
+            'appointment_date': appointment_date,
+            'appointment_time': data['time'],
+            'reason': data['reason'],
+            'status': 'pending'
+        }
         
-        db.session.add(appointment)
-        db.session.commit()
+        appointment = DBService.create_appointment(appointment_data)
+        
+        # Determine ID to return (SQL int or Mongo string)
+        apt_id = appointment['id'] if isinstance(appointment, dict) else appointment.id
         
         return jsonify({
             'message': 'Appointment booked successfully',
-            'appointment_id': appointment.id,
+            'appointment_id': apt_id,
             'status': 'pending'
         }), 201
         
     except Exception as e:
-        db.session.rollback()
         print(f"Error creating appointment: {str(e)}")
         return jsonify({'error': 'Failed to create appointment'}), 500
 
 
-@appointments_bp.route('/appointments/<int:appointment_id>', methods=['GET'])
+@appointments_bp.route('/appointments/<string:appointment_id>', methods=['GET'])
 def get_appointment(appointment_id):
-    """Get appointment details by ID"""
+    """Get appointment details by ID (string to support Mongo ObjectId)"""
     try:
-        appointment = Appointment.query.get(appointment_id)
+        appointment = DBService.get_appointment(appointment_id)
         if not appointment:
             return jsonify({'error': 'Appointment not found'}), 404
         
+        # Handle both dict and model object
+        is_dict = isinstance(appointment, dict)
+        
+        def get_val(obj, key, model_key=None):
+            if is_dict: return obj.get(key)
+            return getattr(obj, model_key or key)
+
+        created_at = get_val(appointment, 'created_at')
+        if not isinstance(created_at, str) and created_at:
+            created_at = created_at.isoformat()
+
+        apt_date = get_val(appointment, 'appointment_date')
+        if not isinstance(apt_date, str) and apt_date:
+            apt_date = apt_date.strftime('%Y-%m-%d')
+
         return jsonify({
-            'id': appointment.id,
-            'name': appointment.name,
-            'email': appointment.email,
-            'phone': appointment.phone,
-            'mode': appointment.mode,
-            'date': appointment.appointment_date.strftime('%Y-%m-%d'),
-            'time': appointment.appointment_time,
-            'reason': appointment.reason,
-            'status': appointment.status,
-            'created_at': appointment.created_at.isoformat()
+            'id': get_val(appointment, 'id'),
+            'name': get_val(appointment, 'name'),
+            'email': get_val(appointment, 'email'),
+            'phone': get_val(appointment, 'phone'),
+            'mode': get_val(appointment, 'mode'),
+            'date': apt_date,
+            'time': get_val(appointment, 'appointment_time'),
+            'reason': get_val(appointment, 'reason'),
+            'status': get_val(appointment, 'status'),
+            'created_at': created_at
         }), 200
         
     except Exception as e:
@@ -84,36 +100,42 @@ def list_appointments():
     """List all appointments (with optional filters)"""
     try:
         # Get query parameters for filtering
-        status = request.args.get('status')
-        mode = request.args.get('mode')
-        date = request.args.get('date')
+        filters = {
+            'status': request.args.get('status'),
+            'mode': request.args.get('mode'),
+            'date': request.args.get('date')
+        }
         
-        # Build query
-        query = Appointment.query
+        appointments = DBService.list_appointments(filters)
         
-        if status:
-            query = query.filter_by(status=status)
-        if mode:
-            query = query.filter_by(mode=mode)
-        if date:
-            appointment_date = datetime.strptime(date, '%Y-%m-%d').date()
-            query = query.filter_by(appointment_date=appointment_date)
-        
-        appointments = query.order_by(Appointment.created_at.desc()).all()
-        
+        result_list = []
+        for apt in appointments:
+            is_dict = isinstance(apt, dict)
+            def gv(obj, k, mk=None):
+                if is_dict: return obj.get(k)
+                return getattr(obj, mk or k)
+
+            ca = gv(apt, 'created_at')
+            if ca and not isinstance(ca, str): ca = ca.isoformat()
+            
+            ad = gv(apt, 'appointment_date')
+            if ad and not isinstance(ad, str): ad = ad.strftime('%Y-%m-%d')
+
+            result_list.append({
+                'id': gv(apt, 'id'),
+                'name': gv(apt, 'name'),
+                'email': gv(apt, 'email'),
+                'phone': gv(apt, 'phone'),
+                'mode': gv(apt, 'mode'),
+                'date': ad,
+                'time': gv(apt, 'appointment_time'),
+                'reason': gv(apt, 'reason'),
+                'status': gv(apt, 'status'),
+                'created_at': ca
+            })
+
         return jsonify({
-            'appointments': [{
-                'id': apt.id,
-                'name': apt.name,
-                'email': apt.email,
-                'phone': apt.phone,
-                'mode': apt.mode,
-                'date': apt.appointment_date.strftime('%Y-%m-%d'),
-                'time': apt.appointment_time,
-                'reason': apt.reason,
-                'status': apt.status,
-                'created_at': apt.created_at.isoformat()
-            } for apt in appointments]
+            'appointments': result_list
         }), 200
         
     except Exception as e:
@@ -121,7 +143,7 @@ def list_appointments():
         return jsonify({'error': 'Failed to list appointments'}), 500
 
 
-@appointments_bp.route('/appointments/<int:appointment_id>', methods=['PATCH'])
+@appointments_bp.route('/appointments/<string:appointment_id>', methods=['PATCH'])
 def update_appointment_status(appointment_id):
     """Update appointment status"""
     try:
@@ -133,38 +155,32 @@ def update_appointment_status(appointment_id):
         if data['status'] not in ['pending', 'confirmed', 'completed', 'cancelled']:
             return jsonify({'error': 'Invalid status'}), 400
         
-        appointment = Appointment.query.get(appointment_id)
+        appointment = DBService.update_appointment_status(appointment_id, data['status'])
         if not appointment:
             return jsonify({'error': 'Appointment not found'}), 404
         
-        appointment.status = data['status']
-        db.session.commit()
+        status = appointment['status'] if isinstance(appointment, dict) else appointment.status
         
         return jsonify({
             'message': 'Appointment status updated',
-            'status': appointment.status
+            'status': status
         }), 200
         
     except Exception as e:
-        db.session.rollback()
         print(f"Error updating appointment: {str(e)}")
         return jsonify({'error': 'Failed to update appointment'}), 500
 
 
-@appointments_bp.route('/appointments/<int:appointment_id>', methods=['DELETE'])
+@appointments_bp.route('/appointments/<string:appointment_id>', methods=['DELETE'])
 def delete_appointment(appointment_id):
     """Delete an appointment"""
     try:
-        appointment = Appointment.query.get(appointment_id)
-        if not appointment:
+        success = DBService.delete_appointment(appointment_id)
+        if not success:
             return jsonify({'error': 'Appointment not found'}), 404
-        
-        db.session.delete(appointment)
-        db.session.commit()
         
         return jsonify({'message': 'Appointment deleted successfully'}), 200
         
     except Exception as e:
-        db.session.rollback()
         print(f"Error deleting appointment: {str(e)}")
         return jsonify({'error': 'Failed to delete appointment'}), 500

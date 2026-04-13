@@ -21,6 +21,7 @@ from datetime import datetime, timedelta
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from backend.models import db, HealthAnalysis
+from backend.db_service import DBService
 from backend.health_analyzer import analyze_weekly_data, generate_fallback_analysis
 
 logger = logging.getLogger(__name__)
@@ -154,6 +155,10 @@ def sync_health_connect():
                     existing.diet_plan = json.dumps(analysis.get('diet_plan', []))
                     existing.recommendations = json.dumps(analysis.get('recommendations', []))
                     existing.data_source = 'health_connect'
+                    
+                    # MongoDB Sync Integration
+                    DBService.sync_health_analysis_to_mongo(existing)
+                    
                     saved_records.append(existing.to_dict())
                     logger.info("[HealthConnect] Updated %s (steps: %d)", date_str, day_data['steps'])
                 else:
@@ -177,6 +182,10 @@ def sync_health_connect():
                 )
                 db.session.add(new_record)
                 db.session.flush()
+                
+                # MongoDB Sync Integration
+                DBService.sync_health_analysis_to_mongo(new_record)
+                
                 saved_records.append(new_record.to_dict())
                 logger.info("[HealthConnect] Created %s (steps: %d)", date_str, day_data['steps'])
 

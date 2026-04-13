@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend.health_analyzer import analyze_health_data
 from backend.models import db, HealthAnalysis
+from backend.db_service import DBService
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +62,9 @@ def health_analysis():
         db.session.add(new_analysis)
         db.session.commit()
         
+        # MongoDB Sync Integration
+        DBService.sync_health_analysis_to_mongo(new_analysis)
+        
         return jsonify({
             "success": True,
             "data": analysis_result
@@ -82,12 +87,17 @@ def get_latest_health_analysis():
     
     Returns the latest health analysis for the current user.
     """
-    current_user = get_jwt_identity()
     identity = get_jwt_identity()
+    current_user = get_jwt_identity()
     user_id = identity.get('id') if isinstance(identity, dict) else identity
     
     try:
-        # Get the most recent analysis for this user
+        # MongoDB Read Integration
+        mongo_data = DBService.get_latest_health_analysis(user_id)
+        if mongo_data and isinstance(mongo_data, dict):
+            return jsonify({"success": True, "data": mongo_data}), 200
+
+        # Original SQL logic
         latest = HealthAnalysis.query.filter_by(user_id=user_id).order_by(HealthAnalysis.created_at.desc()).first()
         
         if not latest:
@@ -124,18 +134,32 @@ def get_health_report():
     try:
         # 1. Fetch records from the last 14 days to ensures we have enough to choose from
         seven_days_ago = datetime.utcnow() - timedelta(days=14)
-        reports = HealthAnalysis.query.filter(
-            HealthAnalysis.user_id == user_id,
-            HealthAnalysis.created_at >= seven_days_ago
-        ).order_by(HealthAnalysis.created_at.desc()).all()
+        
+        # MongoDB Integration: Selective read based on configuration
+        if os.environ.get('READ_FROM') == 'mongo':
+            reports = DBService.get_health_report(user_id, days=14)
+        else:
+            reports = HealthAnalysis.query.filter(
+                HealthAnalysis.user_id == user_id,
+                HealthAnalysis.created_at >= seven_days_ago
+            ).order_by(HealthAnalysis.created_at.desc()).all()
         
         # 2. Extract UNIQUE days to prevent the "Empty Bars" bug
         unique_days = {}
         for r in reports:
+            # Handle both dict (Mongo) and Model (SQL)
+            is_dict = isinstance(r, dict)
+            r_dict = r if is_dict else r.to_dict()
+            created_at = r['created_at'] if is_dict else r.created_at
+            
             # We use the DATE part as the key to ensure only 1 record per day is shown
-            date_key = r.created_at.strftime('%Y-%m-%d')
+            if isinstance(created_at, str):
+                date_key = created_at[:10]
+            else:
+                date_key = created_at.strftime('%Y-%m-%d')
+                
             if date_key not in unique_days:
-                unique_days[date_key] = r.to_dict()
+                unique_days[date_key] = r_dict
         
         # 3. Get the 7 most recent unique days and sort chronologically (Oldest to Newest)
         sorted_keys = sorted(unique_days.keys(), reverse=True)[:7]
