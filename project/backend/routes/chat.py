@@ -4,6 +4,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import google.generativeai as genai
 import time
+from backend.models import User, db
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +46,19 @@ Example structured tone:
 *Please consult a doctor for a proper diagnosis.*"
 """
 
+DOCTOR_SYSTEM_PROMPT = """
+You are a peer-to-peer Clinical Co-Pilot and Senior Medical Consultant assisting a licensed healthcare professional.
+
+Role:
+- Act as a high-level medical advisor providing evidence-based insights.
+- You ARE allowed to suggest clinical protocols, medication classes, and standard dosage ranges for professional consideration.
+- Maintain a highly technical but collegial professional tone.
+- Help the doctor interpret complex report values and suggest potential treatment paths.
+
+Disclaimer (Always include):
+"This is a clinical suggestion based on standard protocols. Please exercise your own medical judgement before prescribing."
+"""
+
 def _is_emergency(text: str) -> bool:
     text_lower = text.lower()
     return any(keyword in text_lower for keyword in EMERGENCY_KEYWORDS)
@@ -54,9 +68,12 @@ def _is_emergency(text: str) -> bool:
 def handle_chat():
     try:
         user_id = get_jwt_identity()
+        user = User.query.get(user_id)
+        
         data = request.get_json()
         message = data.get("message", "").strip()
-        history = data.get("history", []) # Expected format: [{"role": "user"|"model", "content": "..."}]
+        history = data.get("history", [])
+        report_context = data.get("report_context") # Optional dict from recently analyzed report
         
         if not message:
             return jsonify({"error": "Message is required"}), 400
@@ -79,6 +96,18 @@ def handle_chat():
             role = "user" if msg.get("role") == "user" else "model"
             gemini_history.append({"role": role, "parts": [msg.get("content", "")]})
         
+        # Select prompt and inject context
+        is_doctor = user and user.role == 'doctor'
+        base_prompt = DOCTOR_SYSTEM_PROMPT if is_doctor else SYSTEM_PROMPT
+        
+        if report_context:
+            context_str = "\n\nACTIVE PATIENT REPORT CONTEXT:\n"
+            for param, info in report_context.items():
+                context_str += f"- {param}: {info.get('value')} {info.get('unit')} (Status: {info.get('status')})\n"
+            current_system_prompt = base_prompt + context_str
+        else:
+            current_system_prompt = base_prompt
+
         last_err = None
         ai_text = None
         
@@ -86,7 +115,7 @@ def handle_chat():
             try:
                 model = genai.GenerativeModel(
                     model_name=candidate,
-                    system_instruction=SYSTEM_PROMPT
+                    system_instruction=current_system_prompt
                 )
                 chat = model.start_chat(history=gemini_history)
                 response = chat.send_message(message)

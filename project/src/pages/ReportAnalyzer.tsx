@@ -180,6 +180,10 @@ const ReportAnalyzer = () => {
 
       if (data.success) {
         setResult(data);
+        // Store clinical context for the chatbot to pick up
+        if (data.important_parameters) {
+          sessionStorage.setItem('active_clinical_context', JSON.stringify(data.important_parameters));
+        }
       } else {
         setError(data.error || 'Analysis failed. Please try again.');
       }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, User, Bot, Loader2, AlertCircle } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, Loader2, AlertCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 interface Message {
@@ -70,6 +70,9 @@ export const AIChatBot: React.FC = () => {
     setInputText("");
     setIsLoading(true);
 
+    // Check for clinical context from recently analyzed reports
+    const clinicalContext = sessionStorage.getItem('active_clinical_context');
+    
     try {
       const response = await fetch('http://localhost:5000/api/chat', {
         method: 'POST',
@@ -79,7 +82,8 @@ export const AIChatBot: React.FC = () => {
         },
         body: JSON.stringify({
           message: text,
-          history: historyPayload
+          history: historyPayload,
+          report_context: clinicalContext ? JSON.parse(clinicalContext) : null
         })
       });
 
