@@ -3,14 +3,14 @@ import os
 
 db_path = os.path.join(os.path.dirname(__file__), '..', 'app.db')
 
-def inspect_db():
+def list_users():
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    cursor.execute("PRAGMA table_info(users)")
-    columns = cursor.fetchall()
-    for col in columns:
-        print(col)
+    cursor.execute("SELECT id, name, email FROM users")
+    users = cursor.fetchall()
+    for u in users:
+        print(u)
     conn.close()
 
 if __name__ == "__main__":
-    inspect_db()
+    list_users()

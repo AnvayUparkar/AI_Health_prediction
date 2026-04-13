@@ -15,12 +15,17 @@ auth_bp = Blueprint('auth', __name__)
 def signup():
     """
     POST /auth/signup
-    Body: { name, email, password }
+    Body: { name, email, password, role }
     """
     data = request.get_json() or {}
     name = data.get('name', '').strip()
     email = data.get('email', '').strip().lower()
     password = data.get('password', '')
+    role = data.get('role', 'user').strip().lower()
+    
+    if role not in ["doctor", "nurse", "user"]:
+        role = "user"
+
     if not (name and email and password):
         return jsonify({'error': 'Name, email and password are required'}), 400
 
@@ -29,7 +34,7 @@ def signup():
         return jsonify({'error': 'Email already exists'}), 409
 
     try:
-        user = DBService.create_user(name, email, generate_password_hash(password))
+        user = DBService.create_user(name, email, generate_password_hash(password), role=role)
         
         # Handle if user is a dict (Mongo) or object (SQL)
         user_dict = user if isinstance(user, dict) else user.to_dict()
@@ -42,7 +47,7 @@ def login():
     """
     POST /auth/login
     Body: { email, password }
-    Returns: { access_token }
+    Returns: { access_token, user }
     """
     data = request.get_json() or {}
     email = (data.get('email') or '').strip().lower()
@@ -62,7 +67,13 @@ def login():
         return jsonify({'error': 'Invalid credentials'}), 401
 
     user_id = user['id'] if isinstance(user, dict) else str(user.id)
+    user_role = user['role'] if isinstance(user, dict) else user.role
     user_dict = user if isinstance(user, dict) else user.to_dict()
     
-    access_token = create_access_token(identity=user_id, expires_delta=timedelta(days=7))
+    # Include role in JWT claims for easy middleware verification
+    access_token = create_access_token(
+        identity=user_id, 
+        additional_claims={"role": user_role},
+        expires_delta=timedelta(days=7)
+    )
     return jsonify({'access_token': access_token, 'user': user_dict})

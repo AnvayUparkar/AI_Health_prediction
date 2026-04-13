@@ -4,6 +4,7 @@ import types
 import traceback
 from typing import Tuple, Any, Dict
 from flask import Blueprint, request, jsonify, current_app
+from backend.authorize_roles import authorize_roles
 import joblib
 import numpy as np
 import pandas as pd
@@ -482,6 +483,7 @@ def predict_with_type(prediction_type: str, features: Dict[str, Any]) -> Tuple[D
 
 
 @predict_bp.route('/predict', methods=['OPTIONS', 'POST'])
+@authorize_roles('doctor')
 def predict():
     """
     Main prediction endpoint that handles both diabetes and lung cancer predictions.

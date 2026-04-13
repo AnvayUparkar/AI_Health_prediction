@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 from pymongo import MongoClient
 from bson import ObjectId
-from backend.models import db, User, HealthAnalysis, Appointment, Doctor
+from backend.models import db, User, HealthAnalysis, Appointment, Doctor, ShopItem
 from sqlalchemy.exc import IntegrityError
 
 logger = logging.getLogger(__name__)
@@ -76,14 +76,16 @@ class DBService:
                 user_data = mongodb.users.find_one({"email": email.lower()})
                 if user_data:
                     user_data['id'] = str(user_data.pop('_id'))
+                    if 'role' not in user_data:
+                        user_data['role'] = 'user'
                     return user_data
         
         return User.query.filter_by(email=email.lower()).first()
 
     @staticmethod
-    def create_user(name: str, email: str, password_hash: str):
+    def create_user(name: str, email: str, password_hash: str, role: str = 'user'):
         # 1. Primary Write (SQL)
-        user = User(name=name, email=email, password_hash=password_hash)
+        user = User(name=name, email=email, password_hash=password_hash, role=role)
         db.session.add(user)
         try:
             db.session.commit()
@@ -95,6 +97,7 @@ class DBService:
                     "name": name,
                     "email": email.lower(),
                     "password_hash": password_hash,
+                    "role": role,
                     "created_at": datetime.utcnow()
                 }
                 DBService._async_mongo_write('users', 'insert', mongo_data)
@@ -103,6 +106,69 @@ class DBService:
         except IntegrityError as e:
             db.session.rollback()
             raise e
+
+    @staticmethod
+    def update_user_gamification(user_id: Any, points: int, last_step_reward: int, streak: int):
+        # 1. SQL Write
+        user = User.query.get(user_id)
+        if user:
+            user.points = points
+            user.lastStepReward = last_step_reward
+            user.streak = streak
+            db.session.commit()
+            
+            # 2. Mongo Write (Async)
+            if os.environ.get('DB_MODE') in ['hybrid', 'mongo']:
+                mongo_data = {
+                    "points": points,
+                    "lastStepReward": last_step_reward,
+                    "streak": streak
+                }
+                filter_query = {"sql_id": int(user_id)}
+                DBService._async_mongo_write('users', 'update', mongo_data, filter_query)
+        return user
+
+    # --- Shop Operations ---
+
+    @staticmethod
+    def get_shop_items():
+        mode = os.environ.get('READ_FROM', 'sql')
+        if mode == 'mongo':
+            mongodb = DBService.get_mongo_db()
+            if mongodb is not None:
+                items = list(mongodb.shop_items.find())
+                for item in items:
+                    item['id'] = str(item.pop('_id'))
+                return items
+        
+        return ShopItem.query.all()
+
+    @staticmethod
+    def process_purchase(user_id: Any, item_id: Any):
+        # 1. Fetch user and item
+        user = User.query.get(user_id)
+        # Handle string IDs for items if they came from Mongo
+        if isinstance(item_id, str) and len(item_id) == 24:
+             # This is a Mongo ID case, but currently we rely on SQL for logic
+             # We should probably fetch the item first
+             pass
+        
+        item = ShopItem.query.get(item_id)
+        if not user or not item:
+            return False, "User or Item not found"
+        
+        if user.points < item.points_cost:
+            return False, "Insufficient points"
+        
+        # 2. Deduct points (SQL)
+        user.points -= item.points_cost
+        db.session.commit()
+        
+        # 3. Sync to Mongo (Async)
+        if os.environ.get('DB_MODE') in ['hybrid', 'mongo']:
+            DBService._async_mongo_write('users', 'update', {"points": user.points}, {"sql_id": int(user_id)})
+            
+        return True, "Purchase successful"
 
     # --- Health Analysis Operations ---
 

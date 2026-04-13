@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Sun as Lung, Activity, ArrowRight, Brain, Heart, Zap, Calendar, HeartPulse, LineChart, Utensils } from 'lucide-react';
@@ -7,6 +8,18 @@ import FeatureCard from '../components/FeatureCard';
 import HealthAnalysisCard from '../components/HealthAnalysisCard';
 
 const Home = () => {
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      try {
+        setUser(JSON.parse(userData));
+      } catch (e) {
+        console.error("Failed to parse user data", e);
+      }
+    }
+  }, []);
 
   const additionalFeatures = [
     {
@@ -35,7 +48,8 @@ const Home = () => {
       hoverColor: "blue-500",
       features: ["Online & Offline consultations", "Flexible scheduling", "Experienced doctors"],
       link: "/book-appointment",
-      ctaText: "Book Appointment"
+      ctaText: "Book Appointment",
+      roles: ["doctor", "nurse", "user"]
     },
     {
       icon: LineChart,
@@ -45,7 +59,8 @@ const Home = () => {
       hoverColor: "purple-500",
       features: ["Multiple prediction models", "Instant results", "Comprehensive analysis"],
       link: "/predictions",
-      ctaText: "Start Prediction"
+      ctaText: "Start Prediction",
+      roles: ["doctor"] // Restricted
     },
     {
       icon: Utensils,
@@ -55,9 +70,15 @@ const Home = () => {
       hoverColor: "green-500",
       features: ["Personalized meal plans", "Report-based recommendations", "Nutritionist-approved"],
       link: "/diet-planner",
-      ctaText: "Get Diet Plan"
+      ctaText: "Get Diet Plan",
+      roles: ["doctor", "nurse", "user"]
     }
   ];
+
+  // Filter services based on user role
+  const visibleServices = mainServices.filter(service => 
+    !service.roles || (user && user.role && service.roles.includes(user.role))
+  );
 
   return (
     <div className="relative min-h-screen">
@@ -142,11 +163,11 @@ const Home = () => {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-20">
-            {mainServices.map((service, index) => {
+          <div className={`grid grid-cols-1 md:grid-cols-2 ${visibleServices.length + 1 === 3 ? 'lg:grid-cols-3 xl:grid-cols-3' : 'lg:grid-cols-2 xl:grid-cols-4'} gap-8 mb-20`}>
+            {visibleServices.map((service, index) => {
               const IconComponent = service.icon;
               return (
-                <GlassCard key={index} className="p-8 group" delay={index * 0.2}>
+                <GlassCard key={index} className="p-8 group h-full flex flex-col" delay={index * 0.2}>
                   <div className="flex flex-col h-full">
                     <div className="flex items-center space-x-4 mb-6">
                       <motion.div
@@ -188,6 +209,7 @@ const Home = () => {
                 </GlassCard>
               );
             })}
+            <HealthAnalysisCard />
           </div>
         </div>
       </section>
@@ -224,149 +246,150 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Assessment Cards Section */}
-      <section className="relative py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-              Start Your Health Assessment
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Choose from our AI-powered health prediction tools
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-8">
-            {/* Lung Cancer Card */}
-            <GlassCard className="p-8 group" delay={0}>
-              <div className="flex items-center space-x-4 mb-6">
-                <motion.div
-                  className="p-4 bg-gradient-to-r from-red-400 to-pink-500 rounded-2xl"
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                >
-                  <Lung className="h-8 w-8 text-white" />
-                </motion.div>
-                <h3 className="text-2xl font-bold text-gray-800 group-hover:text-red-500 transition-colors duration-300">
-                  Lung Cancer Risk Predictor
-                </h3>
-              </div>
-
-              <p className="text-gray-600 mb-6 leading-relaxed">
-                Assess your lung cancer risk based on lifestyle factors, medical history, and environmental exposures.
-                Our AI model analyzes 12 key risk factors to provide comprehensive risk assessment.
+      {/* Assessment Cards Section - Restricted to Doctors */}
+      {user?.role === 'doctor' && (
+        <section className="relative py-20 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="text-center mb-16"
+            >
+              <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                Start Your Health Assessment
+              </h2>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                Choose from our AI-powered health prediction tools
               </p>
+            </motion.div>
 
-              <div className="space-y-3 mb-8">
-                {['12 comprehensive risk factors', 'Takes 3-5 minutes to complete', 'Instant AI-powered analysis'].map((item, index) => (
-                  <div key={index} className="flex items-center space-x-3">
-                    <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
-                    <span className="text-gray-600">{item}</span>
-                  </div>
-                ))}
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-8">
+              {/* Lung Cancer Card */}
+              <GlassCard className="p-8 group" delay={0}>
+                <div className="flex items-center space-x-4 mb-6">
+                  <motion.div
+                    className="p-4 bg-gradient-to-r from-red-400 to-pink-500 rounded-2xl"
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                  >
+                    <Lung className="h-8 w-8 text-white" />
+                  </motion.div>
+                  <h3 className="text-2xl font-bold text-gray-800 group-hover:text-red-500 transition-colors duration-300">
+                    Lung Cancer Risk Predictor
+                  </h3>
+                </div>
 
-              <Link to="/lung-cancer">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="w-full bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-4 rounded-xl font-semibold flex items-center justify-center space-x-2 hover:shadow-xl transition-all duration-300"
-                >
-                  <span>Start Assessment</span>
-                  <ArrowRight className="h-5 w-5" />
-                </motion.button>
-              </Link>
-            </GlassCard>
+                <p className="text-gray-600 mb-6 leading-relaxed">
+                  Assess your lung cancer risk based on lifestyle factors, medical history, and environmental exposures.
+                  Our AI model analyzes 12 key risk factors to provide comprehensive risk assessment.
+                </p>
 
-            {/* Diabetes Card */}
-            <GlassCard className="p-8 group" delay={0.2}>
-              <div className="flex items-center space-x-4 mb-6">
-                <motion.div
-                  className="p-4 bg-gradient-to-r from-green-400 to-emerald-500 rounded-2xl"
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                >
-                  <Activity className="h-8 w-8 text-white" />
-                </motion.div>
-                <h3 className="text-2xl font-bold text-gray-800 group-hover:text-green-500 transition-colors duration-300">
-                  Diabetes Risk Predictor
-                </h3>
-              </div>
+                <div className="space-y-3 mb-8">
+                  {['12 comprehensive risk factors', 'Takes 3-5 minutes to complete', 'Instant AI-powered analysis'].map((item, index) => (
+                    <div key={index} className="flex items-center space-x-3">
+                      <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
+                      <span className="text-gray-600">{item}</span>
+                    </div>
+                  ))}
+                </div>
 
-              <p className="text-gray-600 mb-6 leading-relaxed">
-                Evaluate your diabetes risk through a comprehensive questionnaire covering symptoms, lifestyle,
-                and health indicators. Get insights into your metabolic health with our trained prediction model.
-              </p>
+                <Link to="/lung-cancer">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-full bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-4 rounded-xl font-semibold flex items-center justify-center space-x-2 hover:shadow-xl transition-all duration-300"
+                  >
+                    <span>Start Assessment</span>
+                    <ArrowRight className="h-5 w-5" />
+                  </motion.button>
+                </Link>
+              </GlassCard>
 
-              <div className="space-y-3 mb-8">
-                {['Comprehensive symptom analysis', 'Quick and easy questionnaire', 'Immediate risk assessment'].map((item, index) => (
-                  <div key={index} className="flex items-center space-x-3">
-                    <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
-                    <span className="text-gray-600">{item}</span>
-                  </div>
-                ))}
-              </div>
+              {/* Diabetes Card */}
+              <GlassCard className="p-8 group" delay={0.2}>
+                <div className="flex items-center space-x-4 mb-6">
+                  <motion.div
+                    className="p-4 bg-gradient-to-r from-green-400 to-emerald-500 rounded-2xl"
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                  >
+                    <Activity className="h-8 w-8 text-white" />
+                  </motion.div>
+                  <h3 className="text-2xl font-bold text-gray-800 group-hover:text-green-500 transition-colors duration-300">
+                    Diabetes Risk Predictor
+                  </h3>
+                </div>
 
-              <Link to="/diabetes">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-4 rounded-xl font-semibold flex items-center justify-center space-x-2 hover:shadow-xl transition-all duration-300"
-                >
-                  <span>Start Assessment</span>
-                  <ArrowRight className="h-5 w-5" />
-                </motion.button>
-              </Link>
-            </GlassCard>
+                <p className="text-gray-600 mb-6 leading-relaxed">
+                  Evaluate your diabetes risk through a comprehensive questionnaire covering symptoms, lifestyle,
+                  and health indicators. Get insights into your metabolic health with our trained prediction model.
+                </p>
 
-            {/* Heart Disease Card */}
-            <GlassCard className="p-8 group" delay={0.4}>
-              <div className="flex items-center space-x-4 mb-6">
-                <motion.div
-                  className="p-4 bg-gradient-to-r from-rose-400 to-red-500 rounded-2xl"
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                >
-                  <HeartPulse className="h-8 w-8 text-white" />
-                </motion.div>
-                <h3 className="text-2xl font-bold text-gray-800 group-hover:text-rose-500 transition-colors duration-300">
-                  Heart Disease Risk Predictor
-                </h3>
-              </div>
+                <div className="space-y-3 mb-8">
+                  {['Comprehensive symptom analysis', 'Quick and easy questionnaire', 'Immediate risk assessment'].map((item, index) => (
+                    <div key={index} className="flex items-center space-x-3">
+                      <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
+                      <span className="text-gray-600">{item}</span>
+                    </div>
+                  ))}
+                </div>
 
-              <p className="text-gray-600 mb-6 leading-relaxed">
-                Evaluate your cardiovascular risk using our elite ensemble model that analyzes your lifestyle, health markers, and dietary habits.
-              </p>
+                <Link to="/diabetes">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-4 rounded-xl font-semibold flex items-center justify-center space-x-2 hover:shadow-xl transition-all duration-300"
+                  >
+                    <span>Start Assessment</span>
+                    <ArrowRight className="h-5 w-5" />
+                  </motion.button>
+                </Link>
+              </GlassCard>
 
-              <div className="space-y-3 mb-8">
-                {['17 comprehensive risk factors', 'Elite Stacking Ensemble Model', 'Highly accurate assessment'].map((item, index) => (
-                  <div key={index} className="flex items-center space-x-3">
-                    <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
-                    <span className="text-gray-600">{item}</span>
-                  </div>
-                ))}
-              </div>
+              {/* Heart Disease Card */}
+              <GlassCard className="p-8 group" delay={0.4}>
+                <div className="flex items-center space-x-4 mb-6">
+                  <motion.div
+                    className="p-4 bg-gradient-to-r from-rose-400 to-red-500 rounded-2xl"
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                  >
+                    <HeartPulse className="h-8 w-8 text-white" />
+                  </motion.div>
+                  <h3 className="text-2xl font-bold text-gray-800 group-hover:text-rose-500 transition-colors duration-300">
+                    Heart Disease Risk Predictor
+                  </h3>
+                </div>
 
-              <Link to="/heart-disease">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="w-full bg-gradient-to-r from-rose-500 to-red-500 text-white px-6 py-4 rounded-xl font-semibold flex items-center justify-center space-x-2 hover:shadow-xl transition-all duration-300"
-                >
-                  <span>Start Assessment</span>
-                  <ArrowRight className="h-5 w-5" />
-                </motion.button>
-              </Link>
-            </GlassCard>
+                <p className="text-gray-600 mb-6 leading-relaxed">
+                  Evaluate your cardiovascular risk using our elite ensemble model that analyzes your lifestyle, health markers, and dietary habits.
+                </p>
 
-            {/* AI Health Analysis Card */}
-            <HealthAnalysisCard />
+                <div className="space-y-3 mb-8">
+                  {['17 comprehensive risk factors', 'Elite Stacking Ensemble Model', 'Highly accurate assessment'].map((item, index) => (
+                    <div key={index} className="flex items-center space-x-3">
+                      <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
+                      <span className="text-gray-600">{item}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <Link to="/heart-disease">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-full bg-gradient-to-r from-rose-500 to-red-500 text-white px-6 py-4 rounded-xl font-semibold flex items-center justify-center space-x-2 hover:shadow-xl transition-all duration-300"
+                  >
+                    <span>Start Assessment</span>
+                    <ArrowRight className="h-5 w-5" />
+                  </motion.button>
+                </Link>
+              </GlassCard>
+
+              {/* AI Health Analysis Card moved to services section */}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* CTA Section */}
       <section className="relative py-20 px-4 sm:px-6 lg:px-8">

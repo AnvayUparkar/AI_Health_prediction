@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 import logging
+from backend.authorize_roles import authorize_roles
 import json
 from datetime import datetime, timedelta
 from flask_jwt_extended import jwt_required, get_jwt_identity

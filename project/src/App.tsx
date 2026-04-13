@@ -12,6 +12,8 @@ import BookAppointment from './pages/BookAppointment';
 import Predictions from './pages/Predictions';
 import DietPlanner from './pages/DietPlanner';
 import ReportAnalyzer from './pages/ReportAnalyzer';
+import Shop from './pages/Shop';
+import GamificationWidget from './components/GamificationWidget';
 
 // ProtectedRoute Component
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
@@ -27,6 +29,7 @@ function App() {
     <Router>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
         <FloatingNavbar />
+        <GamificationWidget />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
@@ -88,6 +91,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ReportAnalyzer />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/shop" 
+            element={
+              <ProtectedRoute>
+                <Shop />
               </ProtectedRoute>
             } 
           />

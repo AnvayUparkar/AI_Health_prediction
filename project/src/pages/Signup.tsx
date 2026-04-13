@@ -10,6 +10,7 @@ const Signup: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState('user');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -33,7 +34,7 @@ const Signup: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const data = await signup(name, email, password);
+      const data = await signup(name, email, password, role);
       if (data && data.success) {
         setSuccess('Account created successfully! Redirecting to login...');
         setTimeout(() => navigate('/login'), 2000);
@@ -242,6 +243,33 @@ const Signup: React.FC = () => {
                     onChange={e => setConfirmPassword(e.target.value)}
                     required
                   />
+                </div>
+              </motion.div>
+
+              {/* Role Selection Field */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.55 }}
+              >
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Join As
+                </label>
+                <div className="relative group">
+                  <Shield className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-green-500 transition-colors duration-200" />
+                  <select
+                    className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white/70 backdrop-blur-sm hover:bg-white/90 appearance-none cursor-pointer text-gray-700"
+                    value={role}
+                    onChange={e => setRole(e.target.value)}
+                    required
+                  >
+                    <option value="user">Patient / User</option>
+                    <option value="nurse">Medical Professional / Nurse</option>
+                    <option value="doctor">Lead Doctor / Administrator</option>
+                  </select>
+                  <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                    <ArrowRight className="h-4 w-4 text-gray-400 rotate-90" />
+                  </div>
                 </div>
               </motion.div>
 

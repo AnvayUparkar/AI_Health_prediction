@@ -17,6 +17,10 @@ class User(db.Model):
     name = db.Column(db.String(120), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(256), nullable=False)
+    role = db.Column(db.String(20), default='user')
+    points = db.Column(db.Integer, default=0)
+    lastStepReward = db.Column(db.Integer, default=0)
+    streak = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def set_password(self, password: str):
@@ -26,7 +30,14 @@ class User(db.Model):
         return check_password_hash(self.password_hash, password)
 
     def to_dict(self):
-        return {"id": self.id, "name": self.name, "email": self.email}
+        return {
+            "id": self.id, 
+            "name": self.name, 
+            "email": self.email,
+            "role": self.role or "user",
+            "points": self.points or 0,
+            "streak": self.streak or 0
+        }
 
 class Doctor(db.Model):
     """Optional minimal Doctor model"""
@@ -43,6 +54,26 @@ class Appointment(db.Model):
     doctor_id = db.Column(db.Integer, db.ForeignKey('doctors.id'), nullable=True)
     date = db.Column(db.String(60), nullable=True)
     notes = db.Column(db.Text, nullable=True)
+
+class ShopItem(db.Model):
+    """Items available for purchase with points"""
+    __tablename__ = 'shop_items'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(256))
+    points_cost = db.Column(db.Integer, nullable=False)
+    image_url = db.Column(db.String(512))
+    category = db.Column(db.String(50), default='wellness')
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "pointsCost": self.points_cost,
+            "imageUrl": self.image_url,
+            "category": self.category
+        }
 
 class HealthAnalysis(db.Model):
     """Stores AI-powered health analysis results for a user"""

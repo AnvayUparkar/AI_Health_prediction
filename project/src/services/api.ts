@@ -23,8 +23,8 @@ api.interceptors.request.use((cfg) => {
 
 export default api;
 
-export const signup = async (name: string, email: string, password: string) => {
-    const res = await api.post('/auth/signup', { name, email, password });
+export const signup = async (name: string, email: string, password: string, role: string = 'user') => {
+    const res = await api.post('/auth/signup', { name, email, password, role });
     return res.data;
 };
 
@@ -46,6 +46,23 @@ export const uploadReport = async (file: File, onUploadProgress?: (progressEvent
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress
     });
+    return res.data;
+};
+
+// --- Gamification Endpoints ---
+
+export const updateSteps = async (steps: number) => {
+    const res = await api.post('/api/steps/update', { steps });
+    return res.data;
+};
+
+export const getShopItems = async () => {
+    const res = await api.get('/api/shop');
+    return res.data;
+};
+
+export const buyItem = async (itemId: number) => {
+    const res = await api.post('/api/shop/buy', { itemId });
     return res.data;
 };
 
