@@ -15,6 +15,7 @@ import ReportAnalyzer from './pages/ReportAnalyzer';
 import Shop from './pages/Shop';
 import GoogleCallback from './pages/GoogleCallback';
 import GamificationWidget from './components/GamificationWidget';
+import { AIChatBot } from './components/AIChatBot';
 
 // ProtectedRoute Component
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
@@ -31,6 +32,7 @@ function App() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
         <FloatingNavbar />
         <GamificationWidget />
+        <AIChatBot />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
