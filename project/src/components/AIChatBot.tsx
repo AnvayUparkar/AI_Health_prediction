@@ -131,7 +131,7 @@ export const AIChatBot: React.FC = () => {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-6 right-6 z-50 p-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full shadow-2xl hover:shadow-[0_0_20px_rgba(37,99,235,0.5)] transition-all flex items-center justify-center group"
+            className="fixed bottom-6 right-6 z-50 p-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-full shadow-2xl hover:shadow-[0_0_20px_rgba(147,51,234,0.5)] transition-all flex items-center justify-center group"
           >
             <MessageCircle className="h-7 w-7 group-hover:scale-110 transition-transform" />
           </motion.button>
@@ -148,7 +148,7 @@ export const AIChatBot: React.FC = () => {
             className="fixed bottom-6 right-6 z-50 w-[380px] h-[600px] max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden"
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 flex items-center justify-between text-white">
+            <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-4 flex items-center justify-between text-white">
               <div className="flex items-center space-x-3">
                 <div className="bg-white/20 p-2 rounded-full">
                   <Bot className="h-6 w-6 text-white" />
