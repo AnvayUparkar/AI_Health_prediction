@@ -252,7 +252,7 @@ const HealthAnalysisCard: React.FC = () => {
 
   return (
     <>
-      <GlassCard className="p-8 group overflow-hidden relative h-full flex flex-col" delay={0.6}>
+      <GlassCard className="p-8 group overflow-hidden relative h-full flex flex-col hover:shadow-[0_0_30px_rgba(59,130,246,0.4)]" delay={0.6}>
         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
           <Activity className="h-24 w-24 text-blue-500 rotate-12" />
         </div>

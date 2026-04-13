@@ -45,33 +45,36 @@ const Home = () => {
       title: "Book Doctor Appointment",
       description: "Schedule consultations with healthcare professionals. Choose between online video consultations or in-person visits at your convenience.",
       gradient: "from-purple-500 to-pink-500",
-      hoverColor: "purple-500",
+      hoverColorClass: "group-hover:text-purple-500 group-hover:drop-shadow-[0_0_4px_rgba(168,85,247,0.4)]",
       features: ["Online & Offline consultations", "Flexible scheduling", "Experienced doctors"],
       link: "/book-appointment",
       ctaText: "Book Appointment",
-      roles: ["doctor", "nurse", "user"]
+      roles: ["doctor", "nurse", "user"],
+      glow: "hover:shadow-[0_0_20px_rgba(168,85,247,0.2)]"
     },
     {
       icon: LineChart,
       title: "AI Health Predictions",
       description: "Access our suite of AI-powered health prediction tools. Get instant risk assessments for various conditions based on your health data.",
       gradient: "from-amber-500 to-red-500",
-      hoverColor: "amber-600",
+      hoverColorClass: "group-hover:text-amber-500 group-hover:drop-shadow-[0_0_4px_rgba(245,158,11,0.4)]",
       features: ["Multiple prediction models", "Instant results", "Comprehensive analysis"],
       link: "/predictions",
       ctaText: "Start Prediction",
-      roles: ["doctor"] // Restricted
+      roles: ["doctor"], // Restricted
+      glow: "hover:shadow-[0_0_20px_rgba(245,158,11,0.2)]"
     },
     {
       icon: Utensils,
       title: "Smart Diet Planner",
       description: "Receive personalized diet recommendations based on your health reports. AI-powered nutrition planning tailored to your specific needs.",
       gradient: "from-green-500 to-emerald-500",
-      hoverColor: "green-500",
+      hoverColorClass: "group-hover:text-green-500 group-hover:drop-shadow-[0_0_4px_rgba(16,185,129,0.4)]",
       features: ["Personalized meal plans", "Report-based recommendations", "Nutritionist-approved"],
       link: "/report-analyzer",
       ctaText: "Get Diet Plan",
-      roles: ["doctor", "nurse", "user"]
+      roles: ["doctor", "nurse", "user"],
+      glow: "hover:shadow-[0_0_20px_rgba(16,185,129,0.2)]"
     }
   ];
 
@@ -167,7 +170,7 @@ const Home = () => {
             {visibleServices.map((service, index) => {
               const IconComponent = service.icon;
               return (
-                <GlassCard key={index} className="p-8 group h-full flex flex-col" delay={index * 0.2}>
+                <GlassCard key={index} className={`p-8 group h-full flex flex-col ${service.glow}`} delay={index * 0.2}>
                   <div className="flex flex-col h-full">
                     <div className="flex items-center space-x-4 mb-6">
                       <motion.div
@@ -178,7 +181,7 @@ const Home = () => {
                       </motion.div>
                     </div>
 
-                    <h3 className={`text-2xl font-bold text-gray-800 mb-4 group-hover:text-${service.hoverColor} transition-colors duration-300`}>
+                    <h3 className={`text-2xl font-bold text-gray-800 mb-4 ${service.hoverColorClass} transition-all duration-300`}>
                       {service.title}
                     </h3>
 
