@@ -17,6 +17,7 @@ const GestureMonitor: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [sosFired, setSosFired] = useState(false);      // NEW: tracks SOS-triggered state
     const [sosCount, setSosCount] = useState(0);          // NEW: how many times triggered
+    const [coords, setCoords] = useState<{lat: number, lon: number} | null>(null);
 
     // ── Auth check ────────────────────────────────────────────────────────────
     useEffect(() => {
@@ -86,6 +87,18 @@ const GestureMonitor: React.FC = () => {
     const startCamera = async () => {
         setError(null);
         setSosFired(false);
+
+        // Capture GPS location once per session for Remote SOS integration
+        try {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => setCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+                (err) => console.warn('[Gesture] Geolocation failed:', err),
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+            );
+        } catch (e) {
+            console.warn('[Gesture] Browser does not support geolocation', e);
+        }
+
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: { width: 320, height: 240, frameRate: 10 },
@@ -116,6 +129,7 @@ const GestureMonitor: React.FC = () => {
         setStatus('idle');
         setHandDetected(false);
         setSosFired(false);
+        setCoords(null);
     };
 
     // ── Frame capture loop ────────────────────────────────────────────────────
@@ -137,10 +151,12 @@ const GestureMonitor: React.FC = () => {
                 info: {
                     patient_id: userName || 'GUEST',
                     room_number: 'WEB_INTERFACE',
+                    latitude: coords?.lat,
+                    longitude: coords?.lon
                 },
             });
         }
-    }, [isActive, userName]);
+    }, [isActive, userName, coords]);
 
     useEffect(() => {
         if (!isActive) return;

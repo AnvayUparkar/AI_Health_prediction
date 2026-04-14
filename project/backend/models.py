@@ -87,6 +87,8 @@ class Appointment(db.Model):
     suggested_times = db.Column(db.Text, nullable=True) # JSON Array
     isChecked = db.Column(db.Boolean, default=False)
     isAdmitted = db.Column(db.Boolean, default=False)
+    ward_number = db.Column(db.String(50), nullable=True)
+    ward_assigned_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -167,6 +169,15 @@ class Alert(db.Model):
     alert = db.Column(db.Boolean, default=False)
     acknowledged = db.Column(db.Boolean, default=False)
     resolved = db.Column(db.Boolean, default=False)
+    
+    # New Geolocation/SOS fields
+    latitude = db.Column(db.Float, nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
+    location_type = db.Column(db.String(20), default='WARD') # WARD | REMOTE
+    nearest_hospital = db.Column(db.String(120), nullable=True)
+    distance_km = db.Column(db.Float, nullable=True)
+    notified_doctor_ids = db.Column(db.Text, nullable=True) # JSON list
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
@@ -187,7 +198,37 @@ class Alert(db.Model):
             "alert": self.alert,
             "acknowledged": self.acknowledged,
             "resolved": self.resolved,
+            "latitude": self.latitude,
+            "longitude": self.longitude,
+            "location_type": self.location_type,
+            "nearest_hospital": self.nearest_hospital,
+            "distance_km": self.distance_km,
+            "notified_doctors": json.loads(self.notified_doctor_ids) if self.notified_doctor_ids else [],
             "created_at": self.created_at.isoformat()
+        }
+
+class AuditLog(db.Model):
+    """Audit log for system actions"""
+    __tablename__ = 'audit_logs'
+    id = db.Column(db.Integer, primary_key=True)
+    action = db.Column(db.String(50), nullable=False) # WARD_ASSIGNED, SOS_TRIGGERED, etc.
+    appointment_id = db.Column(db.Integer, db.ForeignKey('appointments.id'), nullable=True)
+    patient_id = db.Column(db.String(50), nullable=True)
+    doctor_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    ward_number = db.Column(db.String(50), nullable=True)
+    details = db.Column(db.Text, nullable=True) # JSON details
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "action": self.action,
+            "appointment_id": self.appointment_id,
+            "patient_id": self.patient_id,
+            "doctor_id": self.doctor_id,
+            "ward_number": self.ward_number,
+            "details": json.loads(self.details) if self.details else {},
+            "timestamp": self.timestamp.isoformat()
         }
 
 def init_db(app):

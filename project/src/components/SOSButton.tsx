@@ -33,11 +33,40 @@ const SOSButton: React.FC = () => {
 
     const handleSOS = async () => {
         setIsTriggering(true);
+        setStatus('idle');
+
         try {
+            // 1. Capture Coordinates
+            let latitude: number | undefined;
+            let longitude: number | undefined;
+
+            try {
+                const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 5000,
+                        maximumAge: 0
+                    });
+                });
+                latitude = position.coords.latitude;
+                longitude = position.coords.longitude;
+                console.log('[SOS] Captured Location:', latitude, longitude);
+            } catch (geoError) {
+                console.warn('[SOS] Geolocation failed or denied:', geoError);
+                // Fallback: Proceed without coordinates (backend handles the branch)
+            }
+
+            // 2. Trigger Alert
+            const userStr = localStorage.getItem('user');
+            const currentUser = userStr ? JSON.parse(userStr) : null;
+
             await triggerSOS({
-                patient_id: userName || 'EMERGENCY_USER',
-                room_number: 'GENERAL_WARD'
+                patient_id: currentUser?.id || userName || 'EMERGENCY_USER',
+                room_number: 'REMOTE_TRACE',
+                latitude,
+                longitude
             });
+
             setStatus('success');
             setTimeout(() => {
                 setStatus('idle');

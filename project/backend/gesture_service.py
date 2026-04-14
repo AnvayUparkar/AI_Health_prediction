@@ -10,7 +10,9 @@ import os
 import urllib.request
 from datetime import datetime, timezone
 from backend.db_service import DBService
+from backend.services.appointment_service import AppointmentService
 from backend.extensions import socketio
+import json
 
 # ── Download the hand landmark model if not present ──────────────────────────
 _MODEL_PATH = os.path.join(os.path.dirname(__file__), 'hand_landmarker.task')
@@ -132,20 +134,63 @@ class GestureService:
     def _trigger_sos(self, info: dict | None):
         info = info or {}
         patient_id = info.get('patient_id', 'GUEST_GESTURE')
-        room = info.get('room_number', 'ZONE_ALPHA')
+        lat = info.get('latitude')
+        lon = info.get('longitude')
+
+        # 1. Try to find Ward Info (In-Hospital)
+        ward_info = AppointmentService.get_patient_ward_info(patient_id)
+        
+        location_type = 'REMOTE'
+        room_desc = info.get('room_number', 'ZONE_ALPHA')
+        nearest_hosp = None
+        dist_km = None
+        notified_docs = []
+        
+        if ward_info and ward_info.get('ward_number'):
+            location_type = 'WARD'
+            room_desc = f"Ward {ward_info['ward_number']}"
+            if ward_info.get('doctor_id'):
+                notified_docs = [ward_info['doctor_id']]
+        elif lat and lon:
+            hosp_data = AppointmentService.calculate_nearest_hospital(lat, lon)
+            if hosp_data:
+                nearest_hosp = hosp_data['name']
+                dist_km = hosp_data['distance']
+                room_desc = f"Near {nearest_hosp} ({dist_km} km)"
+                hosp_docs = DBService.get_doctors_by_hospital(nearest_hosp)
+                notified_docs = [d['id'] if isinstance(d, dict) else d.id for d in hosp_docs]
 
         alert_data = {
             'patient_id': patient_id,
-            'room_number': room,
+            'room_number': room_desc,
             'status': 'CRITICAL',
             'confidence': '95%',
             'reason': 'SOS TARGET GESTURE DETECTED (FIST CLENCH)',
             'detected_issues': ['Visual Distress Signal', 'Emergency Hand Gesture'],
-            'recommended_action': 'Immediate Nurse Dispatch',
+            'recommended_action': 'Immediate Medical Response Required',
             'alert': True,
+            'latitude': lat,
+            'longitude': lon,
+            'location_type': location_type,
+            'nearest_hospital': nearest_hosp,
+            'distance_km': dist_km,
+            'notified_doctor_ids': json.dumps(notified_docs)
         }
 
         new_alert = DBService.create_alert(alert_data)
+        
+        # Log to Audit
+        AppointmentService.log_audit_action(
+            action="SOS_TRIGGERED_GESTURE",
+            patient_id=patient_id,
+            ward_number=ward_info.get('ward_number') if ward_info else None,
+            details={
+                "location_type": location_type,
+                "hospital": nearest_hosp,
+                "distance": dist_km
+            }
+        )
+
         response_data = new_alert.to_dict() if hasattr(new_alert, 'to_dict') else alert_data
         socketio.emit('new_alert', response_data)
 

@@ -57,3 +57,42 @@ def update_clinical_status(appointment_id):
     except Exception as e:
         print(f"Error updating clinical status: {e}")
         return jsonify({"error": "Failed to update status"}), 500
+
+@doctor_appointments_bp.route('/doctor_appointments/<string:appointment_id>/assign-ward', methods=['POST'])
+def assign_ward(appointment_id):
+    """Assign a ward number to an admitted patient"""
+    try:
+        data = request.get_json() or {}
+        ward_number = data.get('ward_number')
+        if not ward_number:
+            return jsonify({"error": "Ward number is required"}), 400
+            
+        result = AppointmentService.assign_ward(appointment_id, ward_number)
+        return jsonify({"message": "Ward assigned successfully", "appointment": result}), 200
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
+    except Exception as e:
+        print(f"Error assigning ward: {e}")
+        return jsonify({"error": "Failed to assign ward"}), 500
+
+@doctor_appointments_bp.route('/patients/<string:patient_id>/ward-info', methods=['GET'])
+def get_patient_ward_info(patient_id):
+    """Fetch ward info specifically for SOS tracing"""
+    try:
+        info = AppointmentService.get_patient_ward_info(patient_id)
+        if not info:
+            return jsonify({"status": "NOT_ADMITTED"}), 200
+        return jsonify(info), 200
+    except Exception as e:
+        print(f"Error fetching ward info: {e}")
+        return jsonify({"error": "Failed to fetch ward info"}), 500
+
+@doctor_appointments_bp.route('/doctor_appointments/<string:appointment_id>/delete', methods=['DELETE'])
+def delete_appointment(appointment_id):
+    """Hard delete an appointment"""
+    try:
+        result = AppointmentService.delete_appointment(appointment_id)
+        return jsonify({"message": "Appointment deleted", "result": result}), 200
+    except Exception as e:
+        print(f"Error deleting appointment: {e}")
+        return jsonify({"error": "Failed to delete appointment"}), 500

@@ -106,7 +106,7 @@ export const analyzeReport = async (file: File | null, onUploadProgress?: (progr
     return res.data;
 };
 
-export const triggerSOS = async (data: { patient_id?: string; room_number?: string } = {}) => {
+export const triggerSOS = async (data: { patient_id?: string; room_number?: string; latitude?: number; longitude?: number } = {}) => {
     const res = await api.post('/api/alert/sos', data);
     return res.data;
 };
@@ -164,5 +164,15 @@ export const updateAppointmentClinicalStatus = async (id: string | number, isChe
         isChecked,
         isAdmitted
     });
+    return res.data;
+};
+
+export const deleteAppointment = async (id: string | number) => {
+    const res = await api.delete(`/api/doctor_appointments/${id}/delete`);
+    return res.data;
+};
+
+export const assignWard = async (appointmentId: string | number, wardNumber: string) => {
+    const res = await api.post(`/api/doctor_appointments/${appointmentId}/assign-ward`, { ward_number: wardNumber });
     return res.data;
 };

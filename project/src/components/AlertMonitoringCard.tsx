@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, AlertCircle, CheckCircle2, Loader2,
-  RefreshCcw, Bell, User, Home as RoomIcon, Hand, Volume2
+  RefreshCcw, Bell, User, Home as RoomIcon, Hand, Volume2, Map as MapIcon, LocateFixed, XCircle
 } from 'lucide-react';
 import GlassCard from './GlassCard';
 import { getAlerts, updateAlertStatus } from '../services/api';
@@ -21,6 +21,11 @@ interface Alert {
   acknowledged: boolean;
   resolved: boolean;
   created_at: string;
+  latitude?: number;
+  longitude?: number;
+  location_type?: 'WARD' | 'REMOTE';
+  nearest_hospital?: string;
+  distance_km?: number;
 }
 
 // ── Normalise incoming alert so missing fields never crash the UI ─────────────
@@ -36,8 +41,12 @@ const normaliseAlert = (a: Partial<Alert>): Alert => ({
   alert: a.alert ?? true,
   acknowledged: a.acknowledged ?? false,
   resolved: a.resolved ?? false,
-  // FIX: gesture alerts from backend don't include created_at — fall back to now
   created_at: a.created_at ?? new Date().toISOString(),
+  latitude: a.latitude,
+  longitude: a.longitude,
+  location_type: a.location_type ?? 'WARD',
+  nearest_hospital: a.nearest_hospital,
+  distance_km: a.distance_km,
 });
 
 // ── Simple beep using Web Audio API (no external assets needed) ───────────────
@@ -90,6 +99,9 @@ const AlertMonitoringCard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [toast, setToast] = useState<{ message: string; sub: string; isGesture: boolean } | null>(null);
+  
+  // Map Modal State
+  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lon: number; name: string } | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -208,6 +220,74 @@ const AlertMonitoringCard: React.FC = () => {
             isGesture={toast.isGesture}
             onDismiss={() => setToast(null)}
           />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {selectedLocation && (
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-white rounded-[2rem] p-8 max-w-4xl w-full shadow-2xl relative overflow-hidden"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h2 className="text-3xl font-black text-gray-800 flex items-center gap-3">
+                    <LocateFixed className="text-red-500 h-8 w-8" /> LIVE TRACE: {selectedLocation.name}
+                  </h2>
+                  <p className="text-xs font-black text-gray-400 uppercase tracking-widest mt-1">
+                    SOS Geolocation Tracing Active
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setSelectedLocation(null)}
+                  className="p-3 hover:bg-gray-100 rounded-2xl transition-all"
+                >
+                  <XCircle className="w-8 h-8 text-gray-400" />
+                </button>
+              </div>
+
+              {/* Map Container - We will use the standalone MapModal logic here */}
+              <div className="aspect-video bg-gray-50 rounded-3xl overflow-hidden border-2 border-gray-100 shadow-inner relative">
+                 <iframe 
+                    width="100%" 
+                    height="100%" 
+                    frameBorder="0" 
+                    scrolling="no" 
+                    marginHeight={0} 
+                    marginWidth={0} 
+                    title="SOS Location"
+                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${selectedLocation.lon-0.01}%2C${selectedLocation.lat-0.01}%2C${selectedLocation.lon+0.01}%2C${selectedLocation.lat+0.01}&layer=mapnik&marker=${selectedLocation.lat}%2C${selectedLocation.lon}`}
+                 />
+              </div>
+
+              <div className="mt-8 flex flex-col md:flex-row gap-6 items-center">
+                <div className="flex-1">
+                   <div className="bg-red-50 p-4 rounded-2xl border-2 border-red-100 italic text-sm text-red-700 font-bold mb-4">
+                     "Visualizing real-time coordinate feed. Nearest medical facility notified."
+                   </div>
+                   <div className="flex gap-4">
+                      <div className="flex-1 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                         <p className="text-[10px] font-black text-gray-400 uppercase mb-1">LATITUDE</p>
+                         <p className="font-mono font-bold text-gray-700">{selectedLocation.lat.toFixed(6)}</p>
+                      </div>
+                      <div className="flex-1 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                         <p className="text-[10px] font-black text-gray-400 uppercase mb-1">LONGITUDE</p>
+                         <p className="font-mono font-bold text-gray-700">{selectedLocation.lon.toFixed(6)}</p>
+                      </div>
+                   </div>
+                </div>
+                <button 
+                  onClick={() => setSelectedLocation(null)}
+                  className="w-full md:w-auto px-12 py-5 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl hover:shadow-2xl border-b-4 border-black"
+                >
+                  Terminate Trace
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
@@ -358,14 +438,33 @@ const AlertMonitoringCard: React.FC = () => {
 
                       <h5 className="text-sm font-bold text-gray-800 mb-1">{alert.reason}</h5>
 
-                      {/* Patient + room */}
-                      <div className="flex items-center space-x-4 text-[10px] text-gray-500 mb-2 font-semibold">
-                        <span className="flex items-center">
-                          <User className="h-3 w-3 mr-1 opacity-50" /> {alert.patient_id}
-                        </span>
-                        <span className="flex items-center">
-                          <RoomIcon className="h-3 w-3 mr-1 opacity-50" /> Room {alert.room_number}
-                        </span>
+                      {/* Patient + room info */}
+                      <div className="flex flex-col gap-2 mb-3">
+                        <div className="flex items-center space-x-4 text-[10px] text-gray-500 font-semibold">
+                          <span className="flex items-center">
+                            <User className="h-3 w-3 mr-1 opacity-50" /> {alert.patient_id}
+                          </span>
+                          <span className="flex items-center">
+                            <RoomIcon className="h-3 w-3 mr-1 opacity-50" /> {alert.location_type === 'WARD' ? 'Ward' : 'Patient'} {alert.room_number}
+                          </span>
+                        </div>
+                        
+                        {alert.location_type === 'REMOTE' && alert.nearest_hospital && (
+                          <div className="bg-amber-50 p-2 rounded-lg border border-amber-100">
+                             <p className="text-[10px] font-black text-amber-800 uppercase flex items-center gap-1">
+                               <MapIcon className="w-3 h-3" /> NEAREST HOSPITAL: {alert.nearest_hospital}
+                             </p>
+                             <p className="text-[9px] font-bold text-amber-600">
+                               Distance: {alert.distance_km} km (Precise Haversine Trace)
+                             </p>
+                             <button 
+                               onClick={() => setSelectedLocation({ lat: alert.latitude!, lon: alert.longitude!, name: alert.patient_id })}
+                               className="mt-2 w-full py-1 bg-amber-600 text-white rounded-md text-[9px] font-black uppercase tracking-widest hover:bg-amber-700 transition"
+                             >
+                               Detect Exact Coordinates
+                             </button>
+                          </div>
+                        )}
                       </div>
 
                       {/* Recommended action */}
