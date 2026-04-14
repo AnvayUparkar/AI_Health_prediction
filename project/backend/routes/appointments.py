@@ -35,7 +35,9 @@ def create_appointment():
             'appointment_date': appointment_date,
             'appointment_time': data['time'],
             'reason': data['reason'],
-            'status': 'pending'
+            'status': 'PENDING',
+            'patient_id': data.get('patient_id'),
+            'doctor_id': data.get('doctor_id')
         }
         
         appointment = DBService.create_appointment(appointment_data)

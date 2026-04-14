@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Video, MapPin, User, Mail, Phone, Clock, CheckCircle, Navigation, Stethoscope, Info } from 'lucide-react';
 import AnimatedBackground from '../components/AnimatedBackground';
@@ -7,6 +7,7 @@ import { getUserLocation, UserLocation } from '../services/geoService';
 import { fetchNearbyHealthcare } from '../services/overpassService';
 import { processFacilities, HealthcareFacility } from '../services/healthcareProcessor';
 import HealthcareMap from '../components/HealthcareMap';
+import { getDoctorsByHospital } from '../services/api';
 
 const BookAppointment = () => {
   const [formData, setFormData] = useState({
@@ -17,7 +18,8 @@ const BookAppointment = () => {
     date: '',
     time: '',
     reason: '',
-    facilityId: ''
+    facilityId: '',
+    doctorId: ''
   });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -28,15 +30,54 @@ const BookAppointment = () => {
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
 
+  // Doctors
+  const [hospitalDoctors, setHospitalDoctors] = useState<any[]>([]);
+  const [fetchingDoctors, setFetchingDoctors] = useState(false);
+
+  useEffect(() => {
+    if (!formData.facilityId) {
+      setHospitalDoctors([]);
+      setFormData(prev => ({ ...prev, doctorId: '' }));
+      return;
+    }
+
+    const facility = facilities.find(f => String(f.id) === String(formData.facilityId));
+    if (facility && facility.name) {
+      fetchDoctors(facility.name);
+    }
+  }, [formData.facilityId]);
+
+  const fetchDoctors = async (hospitalName: string) => {
+    setFetchingDoctors(true);
+    try {
+      const docs = await getDoctorsByHospital(hospitalName);
+      setHospitalDoctors(docs || []);
+      setFormData(prev => ({ ...prev, doctorId: docs && docs.length > 0 ? docs[0].id : '' }));
+    } catch (err) {
+      console.error('Failed to fetch doctors', err);
+      setHospitalDoctors([]);
+      setFormData(prev => ({ ...prev, doctorId: '' }));
+    } finally {
+      setFetchingDoctors(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     // Prepare final dropdown string if a facility is selected
     const selectedFacility = facilities.find(f => String(f.id) === String(formData.facilityId));
+    
+    // Get patient_id from local storage
+    const userString = localStorage.getItem('user');
+    const currentUser = userString ? JSON.parse(userString) : null;
+    
     const bookingData = {
       ...formData,
-      selected_doctor: selectedFacility ? `${selectedFacility.name} (${selectedFacility.type})` : ''
+      selected_doctor: selectedFacility ? `${selectedFacility.name} (${selectedFacility.type})` : '',
+      doctor_id: formData.doctorId || null,
+      patient_id: currentUser ? currentUser.id : null
     };
 
     try {
@@ -60,7 +101,8 @@ const BookAppointment = () => {
             date: '',
             time: '',
             reason: '',
-            facilityId: ''
+            facilityId: '',
+            doctorId: ''
           });
         }, 5000);
       }
@@ -250,6 +292,51 @@ const BookAppointment = () => {
                 )}
               </div>
             </div>
+
+            {/* Doctor Selection (Conditional) */}
+            <AnimatePresence>
+              {formData.facilityId && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mb-6 overflow-hidden"
+                >
+                  <label className="flex items-center text-gray-700 font-semibold mb-2">
+                    <User className="h-5 w-5 mr-2 text-blue-500" />
+                    Select Associated Doctor
+                  </label>
+                  
+                  {fetchingDoctors ? (
+                    <div className="flex items-center space-x-2 text-sm text-blue-600 bg-blue-50 p-3 rounded-xl border border-blue-100">
+                      <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                      <span>Fetching registered doctors for this facility...</span>
+                    </div>
+                  ) : hospitalDoctors.length > 0 ? (
+                    <select
+                      name="doctorId"
+                      value={formData.doctorId}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 rounded-xl border border-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all bg-blue-50/50 shadow-sm"
+                    >
+                      {hospitalDoctors.map(doc => (
+                        <option key={doc.id} value={doc.id}>
+                          Dr. {doc.name} {doc.profile?.specialty ? `- ${doc.profile.specialty}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="flex items-start space-x-2 text-sm text-gray-500 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                      <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                      <span>
+                        No registered doctors on this platform are associated with this facility yet. 
+                        Your booking will be sent to the facility's general queue.
+                      </span>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {searchError && (
               <motion.div 

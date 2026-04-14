@@ -132,3 +132,37 @@ export const updatePatientProfile = async (userId: string | number, data: { hosp
     const res = await api.put(`/auth/users/${userId}/profile`, data);
     return res.data;
 };
+
+export const getDoctorsByHospital = async (hospitalName: string) => {
+    const res = await api.get('/auth/doctors/by-hospital', { params: { hospital: hospitalName } });
+    return res.data;
+};
+
+// --- Doctor Appointment Management ---
+
+export const getDoctorAppointments = async (doctorId: string | number, status?: string) => {
+    const params = status ? { status } : {};
+    const res = await api.get(`/api/doctor_appointments/doctor/${doctorId}`, { params });
+    return res.data;
+};
+
+export const approveAppointment = async (id: string | number) => {
+    const res = await api.post(`/api/doctor_appointments/${id}/approve`);
+    return res.data;
+};
+
+export const rejectAppointment = async (id: string | number, suggestedDates: string[], suggestedTimes: string[]) => {
+    const res = await api.post(`/api/doctor_appointments/${id}/reject`, {
+        suggested_dates: suggestedDates,
+        suggested_times: suggestedTimes
+    });
+    return res.data;
+};
+
+export const updateAppointmentClinicalStatus = async (id: string | number, isChecked?: boolean, isAdmitted?: boolean) => {
+    const res = await api.patch(`/api/doctor_appointments/${id}/update-status`, {
+        isChecked,
+        isAdmitted
+    });
+    return res.data;
+};

@@ -70,13 +70,25 @@ class Doctor(db.Model):
     speciality = db.Column(db.String(120), nullable=True)
 
 class Appointment(db.Model):
-    """Optional minimal Appointment model"""
+    """Optional minimal Appointment model (Extended for Doctor Management)"""
     __tablename__ = 'appointments'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     doctor_id = db.Column(db.Integer, db.ForeignKey('doctors.id'), nullable=True)
     date = db.Column(db.String(60), nullable=True)
     notes = db.Column(db.Text, nullable=True)
+    
+    # New Extended Fields
+    patient_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    status = db.Column(db.String(20), default="PENDING")
+    requested_date = db.Column(db.String(20), nullable=True)
+    requested_time = db.Column(db.String(20), nullable=True)
+    suggested_dates = db.Column(db.Text, nullable=True) # JSON Array
+    suggested_times = db.Column(db.Text, nullable=True) # JSON Array
+    isChecked = db.Column(db.Boolean, default=False)
+    isAdmitted = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class ShopItem(db.Model):
     """Items available for purchase with points"""

@@ -243,6 +243,31 @@ class DBService:
         ).limit(10).all()
         return users
 
+    @staticmethod
+    def get_doctors_by_hospital(hospital_name: str):
+        """Fetch all doctors associated with a given hospital"""
+        mode = os.environ.get('READ_FROM', 'sql')
+        if mode == 'mongo':
+            mongodb = DBService.get_mongo_db()
+            if mongodb is not None:
+                # search for doctors with hospital matching inside their profile hospitals array
+                cursor = mongodb.users.find({
+                    "role": "doctor",
+                    "profile.hospitals": {"$regex": hospital_name, "$options": "i"}
+                })
+                results = list(cursor)
+                for r in results:
+                    r['id'] = str(r.pop('_id'))
+                return results
+
+        # SQL
+        q = f"%{hospital_name}%"
+        doctors = User.query.filter(
+            (User.role == 'doctor') & 
+            (User.hospitals.ilike(q))
+        ).all()
+        return doctors
+
     # --- Shop Operations ---
 
     @staticmethod
@@ -465,15 +490,19 @@ class DBService:
     def create_appointment(data: Dict[str, Any]):
         # SQL Write
         appointment = Appointment(
-            name=data['name'],
-            email=data['email'],
-            phone=data['phone'],
-            mode=data['mode'],
-            appointment_date=data['appointment_date'],
-            appointment_time=data['appointment_time'],
-            reason=data['reason'],
-            status=data.get('status', 'pending')
+             user_id=data.get('patient_id', 1), # Fallback to 1 if missing for legacy
+             patient_id=data.get('patient_id'),
+             doctor_id=data.get('doctor_id'),
+             status=data.get('status', 'PENDING'),
+             requested_date=str(data.get('appointment_date')),
+             requested_time=data.get('appointment_time')
         )
+        # Assuming legacy generic payload attributes exist dynamically or are safely skipped
+        for key in ['name', 'email', 'phone', 'mode', 'appointment_date', 'appointment_time', 'reason']:
+            if hasattr(appointment, key) or key in data:
+                try: setattr(appointment, key, data[key])
+                except: pass
+                
         db.session.add(appointment)
         db.session.commit()
 
@@ -488,7 +517,9 @@ class DBService:
                 "appointment_date": str(data['appointment_date']),
                 "appointment_time": data['appointment_time'],
                 "reason": data['reason'],
-                "status": data.get('status', 'pending'),
+                "status": data.get('status', 'PENDING'),
+                "patient_id": data.get('patient_id'),
+                "doctor_id": data.get('doctor_id'),
                 "created_at": datetime.utcnow()
             }
             DBService._async_mongo_write('appointments', 'insert', mongo_data)

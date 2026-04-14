@@ -140,3 +140,13 @@ def update_patient_profile(user_id):
         return jsonify({'error': 'Failed to update user profile'}), 500
         
     return jsonify({'success': True, 'user': user.to_dict() if hasattr(user, 'to_dict') else user})
+
+@auth_bp.route('/doctors/by-hospital', methods=['GET'])
+def get_doctors_by_hospital():
+    query = request.args.get('hospital', '')
+    if not query:
+        return jsonify([])
+        
+    doctors = DBService.get_doctors_by_hospital(query)
+    results_list = [r.to_dict() if hasattr(r, 'to_dict') else r for r in doctors]
+    return jsonify(results_list)

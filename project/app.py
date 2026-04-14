@@ -37,6 +37,7 @@ from backend.routes.gamification import gamification_bp
 from backend.routes.google_auth import google_auth_bp
 from backend.routes.chat import chat_bp
 from backend.routes.alert import alert_bp
+from backend.routes.doctor_appointments import doctor_appointments_bp
 from backend.db_service import DBService
 from backend.extensions import socketio
 
@@ -84,6 +85,7 @@ def create_app(config_overrides: Optional[dict] = None):
     app.register_blueprint(google_auth_bp, url_prefix='/api')
     app.register_blueprint(chat_bp, url_prefix='/api')
     app.register_blueprint(alert_bp, url_prefix='/api')
+    app.register_blueprint(doctor_appointments_bp, url_prefix='/api')
 
     @app.route('/health', methods=['GET'])
     def health():

@@ -7,6 +7,7 @@ import GlassCard from '../components/GlassCard';
 import FeatureCard from '../components/FeatureCard';
 import HealthAnalysisCard from '../components/HealthAnalysisCard';
 import AlertMonitoringCard from '../components/AlertMonitoringCard';
+import AppointmentManagementCard from '../components/AppointmentManagementCard';
 
 const Home = () => {
   const [user, setUser] = useState<any>(null);
@@ -214,7 +215,12 @@ const Home = () => {
               );
             })}
             <HealthAnalysisCard />
-            {(user?.role?.toLowerCase() === 'doctor' || user?.role?.toLowerCase() === 'nurse') && <AlertMonitoringCard />}
+            {(user?.role?.toLowerCase() === 'doctor' || user?.role?.toLowerCase() === 'nurse') && (
+              <>
+                <AppointmentManagementCard />
+                <AlertMonitoringCard />
+              </>
+            )}
           </div>
         </div>
       </section>
