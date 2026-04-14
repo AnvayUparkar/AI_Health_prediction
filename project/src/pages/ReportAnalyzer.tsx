@@ -1,6 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+  Download,
+  Loader2 as Loader2Icon,
   Upload,
   FileText,
   Loader,
@@ -114,6 +116,7 @@ const ReportAnalyzer = () => {
   const [error, setError] = useState('');
   const [showExtractedText, setShowExtractedText] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   const [healthData, setHealthData] = useState({
     age: '',
     weight: '',
@@ -212,6 +215,37 @@ const ReportAnalyzer = () => {
       dietaryPreference: 'none',
       healthConditions: ''
     });
+  };
+
+  // ── Export report analysis to PDF ───────────────────────────────────
+  const handleExportAnalysis = async () => {
+    if (!result) return;
+    setExportLoading(true);
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch('http://localhost:5000/api/export-report-analysis', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(result),
+      });
+      if (!response.ok) throw new Error('Export failed');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `report_analysis_${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Failed to export report analysis', err);
+    } finally {
+      setExportLoading(false);
+    }
   };
 
   // ---- RESULTS VIEW ----
@@ -642,16 +676,33 @@ const ReportAnalyzer = () => {
               </AnimatePresence>
             </GlassCard>
 
-            {/* Action */}
-            <div className="text-center">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={resetForm}
-                className="px-8 py-4 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-xl font-semibold shadow-xl hover:shadow-2xl transition-all duration-300"
-              >
-                Analyze Another Report
-              </motion.button>
+            {/* Sticky Floating Action Bar */}
+            <div className="sticky bottom-6 mt-12 mb-6 px-1 flex items-center justify-center gap-4 flex-wrap z-20">
+              <div className="bg-white/40 backdrop-blur-md border border-white/50 p-3 rounded-2xl shadow-2xl flex items-center justify-center gap-4 flex-wrap">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleExportAnalysis}
+                  disabled={exportLoading}
+                  className="flex items-center space-x-2 px-6 py-4 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-xl font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group"
+                >
+                  {exportLoading ? (
+                    <Loader2Icon className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Download className="h-5 w-5 group-hover:translate-y-0.5 transition-transform" />
+                  )}
+                  <span>{exportLoading ? 'Generating PDF...' : 'Export to PDF'}</span>
+                </motion.button>
+                
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={resetForm}
+                  className="px-8 py-4 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-xl font-semibold shadow-xl hover:shadow-2xl transition-all duration-300"
+                >
+                  Analyze Another Report
+                </motion.button>
+              </div>
             </div>
           </motion.div>
         </div>

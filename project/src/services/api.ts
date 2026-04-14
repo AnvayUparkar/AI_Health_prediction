@@ -176,3 +176,20 @@ export const assignWard = async (appointmentId: string | number, wardNumber: str
     const res = await api.post(`/api/doctor_appointments/${appointmentId}/assign-ward`, { ward_number: wardNumber });
     return res.data;
 };
+
+// --- Meal Plan & Export ---
+
+export const getMealPlan = async () => {
+    const res = await api.get('/api/meal-plan');
+    return res.data;
+};
+
+export const exportHealthReport = async () => {
+    const res = await api.post('/api/export-report', {}, { responseType: 'blob' });
+    return res.data;
+};
+
+export const exportReportAnalysis = async (analysisData: any) => {
+    const res = await api.post('/api/export-report-analysis', analysisData, { responseType: 'blob' });
+    return res.data;
+};

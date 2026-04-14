@@ -38,6 +38,7 @@ from backend.routes.google_auth import google_auth_bp
 from backend.routes.chat import chat_bp
 from backend.routes.alert import alert_bp
 from backend.routes.doctor_appointments import doctor_appointments_bp
+from backend.routes.meal_plan import meal_plan_bp
 from backend.db_service import DBService
 from backend.extensions import socketio
 
@@ -86,6 +87,7 @@ def create_app(config_overrides: Optional[dict] = None):
     app.register_blueprint(chat_bp, url_prefix='/api')
     app.register_blueprint(alert_bp, url_prefix='/api')
     app.register_blueprint(doctor_appointments_bp, url_prefix='/api')
+    app.register_blueprint(meal_plan_bp, url_prefix='/api')
 
     @app.route('/health', methods=['GET'])
     def health():
@@ -208,5 +210,9 @@ if __name__ == '__main__':
     print("Auth endpoints:")
     print("   - POST /auth/register")
     print("   - POST /auth/login")
+    print("")
+    print("Meal Plan & Export endpoints:")
+    print("   - GET /api/meal-plan")
+    print("   - POST /api/export-report")
     print("=" * 70)
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)

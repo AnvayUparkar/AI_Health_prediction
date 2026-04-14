@@ -1,268 +1,105 @@
-# AI Health Predictor - Flask Backend
+# 🩺 AI Health Predictor: The Clinical Intelligence Ecosystem
 
-A Flask-based REST API server for healthcare prediction using machine learning models. This backend provides endpoints for lung cancer and diabetes risk prediction.
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![React 18](https://img.shields.io/badge/frontend-React_18-cyan.svg)](https://react.dev/)
+[![Gemini 1.5 Pro](https://img.shields.io/badge/AI-Gemini_Pro_1.5-violet.svg)](https://deepmind.google/technologies/gemini/)
+[![TensorFlow/Scikit-Learn](https://img.shields.io/badge/ML-Predictive_Analytics-orange.svg)](https://scikit-learn.org/)
+[![OAuth 2.0](https://img.shields.io/badge/Auth-Google_OAuth-4285F4.svg)](https://developers.google.com/identity/protocols/oauth2)
 
-## Features
+An enterprise-grade, multi-modal healthcare platform integrating Predictive Analytics, Generative AI Clinical Guidance, and Real-time Emergency Monitoring.
 
-- **Lung Cancer Prediction**: Analyzes 12 user inputs and fills missing features with mean values for accurate prediction
-- **Diabetes Prediction**: Processes 16 health indicators to predict diabetes risk
-- **Model Loading**: Automatically loads pre-trained models on server startup
-- **Error Handling**: Comprehensive error handling with meaningful error messages
-- **CORS Support**: Cross-origin resource sharing enabled for frontend integration
+---
 
-## Prerequisites
+## 🚀 1. AI Clinical Intelligence (Powered by Gemini)
 
-- Python 3.8 or higher
-- Pre-trained machine learning models (see Model Files section)
+### 🧬 Automated Medical Report Analyzer
+- **OCR Multi-Format Parsing**: Extracts clinical markers from PDF, JPG, PNG, and BMP reports using an intelligent OCR pipeline.
+- **Biochemical Parameter Mapping**: Automatically maps raw text to clinical parameters (HbA1c, Cholesterol, Glucose, etc.).
+- **Perfection Protocol™ Engine**: Generates data-anchored nutrient pairing (e.g., Vitamin C + Iron) to optimize recovery.
+- **Biochemical Synergy Tracking**: Identifies "Synergy Pairings" to maximize therapeutic outcomes.
 
-## Installation
+### 🍱 Activity-Driven Meal Planner
+- **Dynamic Caloric Optimization**: Automatically generates localized (South-Asian/Indian) diet plans based on the previous day's step count.
+- **Step-Tiered Logic**:
+    - **Tier 1 (Low <3k)**: Focus on insulin sensitivity and inflammation control.
+    - **Tier 2 (Moderate 3k-8k)**: Balanced maintenance and metabolic support.
+    - **Tier 3 (High >8k)**: Protein-sparing energy replenishment and muscle recovery.
+- **Fixed Clinical Reasoning**: Every meal includes a permanent "Clinical Justification" for transparency.
 
-1. **Clone or download the project files**
+### 💬 Clinical AI Chatbox
+- **Cross-Module Persistence**: The AI remembers your latest lab results and activity levels during the session.
+- **Safety Fallback Registry**: Hardcoded rule-based advisory system for when API quotas are reached.
 
-2. **Install Python dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+---
 
-3. **Prepare model files**:
-   Create a `models` directory in the project root and place your pre-trained models:
-   ```
-   models/
-   ├── lung_cancer_model.pkl
-   ├── lung_cancer_label_encoder.pkl
-   └── diabetes_model.pkl
-   ```
+## 🔮 2. Predictive Analytics (Machine Learning)
 
-## Running the Server
+- **Lung Cancer Evaluator**: 23-feature model predicting risk based on dietary, occupational, and lifestyle markers.
+- **Diabetes Risk Engine**: 16-parameter clinical model assessing polyuria, polydipsia, and obesity flags.
+- **Heart Disease Evaluator**: Comprehensive cardiovascular risk assessment using patient bio-markers.
+- **Model Persistance**: Automated model loading and warm-up on server initialization.
 
-Start the Flask development server:
-```bash
-python app.py
+---
+
+## 🚨 3. Emergency & Safety Infrastructure
+
+### ✋ Gesture-Based SOS Trigger
+- **Vision-Aware SOS**: Integrated hand-gesture recognition system to trigger emergency alerts without physical contact.
+- **Zero-Touch Panic Activation**: Designed for situations where physical interaction with the device is impossible.
+
+### 🏥 Ward & Proximity Monitoring
+- **Ward Assignment Logic**: Intelligently routes SOS alerts based on whether the patient is in a assigned hospital ward or at home.
+- **Real-time Alerting**: WebSocket-based (SocketIO) emergency broadcasting to medical dashboards.
+- **Remote GPS Location**: Full GPS tracking for SOS alerts occurring outside medical facilities.
+
+---
+
+## 📊 4. Data Synchronization Hub
+
+- **Google Cloud Sync**: Full OAuth 2.0 integration with Google Fit for seamless cloud activity ingestion.
+- **Health Connect API**: Android-layer integration for multi-source data aggregation (Steps, Sleep, Heart Rate).
+- **Graceful Fallback**: Automated manual entry failover when device sync or cloud APIs are unavailable.
+
+---
+
+## 📄 5. Professional Reporting & Exports
+
+- **Weekly Health Dossier**: Professionally designed PDF summaries including activity charts, weight trends, and wellness scores.
+- **Lab Analysis Protocol**: High-fidelity PDF exports of the AI Clinical Analysis, including parameter tables and protocols.
+- **ReportLab Integration**: Custom-engineered PDF layouts with biochemical parameter tables.
+
+---
+
+## 🎮 6. Patient Engagement & UI/UX
+
+- **Glassmorphic UI**: High-end design system with backdrop blurs, animated gradients, and 3D motion containers.
+- **Gamification Suite**: Health scores, experience points (XP), and a rewards shop to encourage clinical compliance.
+- **Animated Dashboards**: Real-time visualization of step activity and hydration levels.
+
+---
+
+## 🛠 Project Architecture
+
+```
+├── backend/
+│   ├── routes/              # Modular API Hub (Alerts, Auth, Diet, Prediction)
+│   ├── step_meal_planner.py  # Gemini Activity-Aware Logic
+│   ├── report_parser.py     # OCR & Parameter Mapping
+│   └── health_analyzer.py   # Decision Support Engine
+├── src/                     # React 18 Frontend
+│   ├── components/          # Glassmorphic Component Library
+│   ├── pages/               # Functional Modules (Report Analyzer, Predictions)
+│   └── services/            # API Communication Layer
+└── app.py                   # Flask Core Infrastructure
 ```
 
-The server will start on `http://localhost:5000` with the following endpoints:
+---
 
-- `POST /predict_lung_cancer` - Lung cancer risk prediction
-- `POST /predict_diabetes` - Diabetes risk prediction  
-- `GET /health` - Health check endpoint
+## ⚖️ Safety & Compliance
 
-## API Endpoints
+> [!CAUTION]
+> **DEVELOPER DISCLAIMER**: This application is a clinical software prototype. All medical interpretations are generated by AI/ML models based on provided heuristics. It is **NOT** a substitute for professional medical diagnosis. Users must consult a licensed physician before following any "Perfection Protocol" or diet plan generated by this system.
 
-### 1. Lung Cancer Prediction
-
-**Endpoint**: `POST /predict_lung_cancer`
-
-**Request Body** (JSON):
-```json
-{
-  "Age": 55,
-  "Gender": "1",
-  "Alcohol use": "4",
-  "Dust Allergy": "3",
-  "OccuPational Hazards": "5",
-  "Genetic Risk": "2",
-  "chronic Lung Disease": "1",
-  "Balanced Diet": "6",
-  "Obesity": "3",
-  "Smoking": "7",
-  "Passive Smoker": "2",
-  "Coughing of Blood": "1"
-}
-```
-
-**Response**:
-```json
-{
-  "prediction": "High",
-  "confidence": "94.23"
-}
-```
-
-### 2. Diabetes Prediction
-
-**Endpoint**: `POST /predict_diabetes`
-
-**Request Body** (JSON):
-```json
-{
-  "Age": 45,
-  "Gender": "Male",
-  "Polyuria": "Yes",
-  "Polydipsia": "Yes",
-  "sudden weight loss": "No",
-  "weakness": "Yes",
-  "Polyphagia": "No",
-  "Genital thrush": "No",
-  "visual blurring": "Yes",
-  "Itching": "No",
-  "Irritability": "No",
-  "delayed healing": "Yes",
-  "partial paresis": "No",
-  "muscle stiffness": "No",
-  "Alopecia": "No",
-  "Obesity": "Yes"
-}
-```
-
-**Response**:
-```json
-{
-  "prediction": "Positive",
-  "confidence": "87.45"
-}
-```
-
-### 3. Health Check
-
-**Endpoint**: `GET /health`
-
-**Response**:
-```json
-{
-  "status": "healthy",
-  "models_loaded": true,
-  "endpoints": {
-    "lung_cancer": "/predict_lung_cancer (POST)",
-    "diabetes": "/predict_diabetes (POST)",
-    "health": "/health (GET)"
-  }
-}
-```
-
-## Model Files
-
-The backend expects the following model files in the `models/` directory:
-
-1. **lung_cancer_model.pkl** - Pre-trained lung cancer prediction model
-2. **lung_cancer_label_encoder.pkl** - Label encoder for lung cancer predictions
-3. **diabetes_model.pkl** - Pre-trained diabetes prediction model
-
-### Model Requirements
-
-- **Lung Cancer Model**: Should be trained on 23 features in the specified order
-- **Label Encoder**: Should encode risk levels (e.g., "Low", "Medium", "High")
-- **Diabetes Model**: Should predict binary outcomes (0 for Negative, 1 for Positive)
-
-## Data Preprocessing
-
-### Lung Cancer Features
-The backend automatically handles missing features by filling them with mean values calculated from the training dataset. The complete feature list includes:
-
-1. Age
-2. Gender
-3. Air Pollution
-4. Alcohol use
-5. Dust Allergy
-6. OccuPational Hazards
-7. Genetic Risk
-8. chronic Lung Disease
-9. Balanced Diet
-10. Obesity
-11. Smoking
-12. Passive Smoker
-13. Chest Pain
-14. Coughing of Blood
-15. Fatigue
-16. Weight Loss
-17. Shortness of Breath
-18. Wheezing
-19. Swallowing Difficulty
-20. Clubbing of Finger Nails
-21. Frequent Cold
-22. Dry Cough
-23. Snoring
-
-### Diabetes Features
-All 16 features are required for diabetes prediction:
-
-1. Age
-2. Gender
-3. Polyuria
-4. Polydipsia
-5. sudden weight loss
-6. weakness
-7. Polyphagia
-8. Genital thrush
-9. visual blurring
-10. Itching
-11. Irritability
-12. delayed healing
-13. partial paresis
-14. muscle stiffness
-15. Alopecia
-16. Obesity
-
-## Error Handling
-
-The API returns appropriate HTTP status codes and error messages:
-
-- **400 Bad Request**: Invalid or missing data
-- **500 Internal Server Error**: Model loading or prediction errors
-
-Error response format:
-```json
-{
-  "error": "Description of the error"
-}
-```
-
-## Frontend Integration
-
-To connect your React frontend to this backend:
-
-1. **Update API calls** in your frontend components to use the actual endpoints
-2. **Replace mock data** with real API calls
-3. **Handle loading states** and error responses
-
-Example frontend API call:
-```javascript
-const response = await fetch('http://localhost:5000/predict_lung_cancer', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(formData)
-});
-
-const result = await response.json();
-```
-
-## Development
-
-### Project Structure
-```
-├── app.py                 # Main Flask application
-├── requirements.txt       # Python dependencies
-├── README.md             # This file
-├── models/               # Model files directory
-│   ├── lung_cancer_model.pkl
-│   ├── lung_cancer_label_encoder.pkl
-│   └── diabetes_model.pkl
-└── frontend/             # Your React frontend
-```
-
-### Environment Variables
-For production deployment, consider setting:
-- `FLASK_ENV=production`
-- `FLASK_DEBUG=False`
-- Custom port via `PORT` environment variable
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Models not found**: Ensure all model files are in the `models/` directory
-2. **Import errors**: Install all dependencies with `pip install -r requirements.txt`
-3. **CORS errors**: The backend includes CORS support, but check frontend URL configuration
-4. **Port conflicts**: Change the port in `app.py` if 5000 is already in use
-
-### Debug Mode
-The server runs in debug mode by default. For production, set `debug=False` in `app.run()`.
-
-## License
-
-This project is for educational purposes. Please ensure compliance with healthcare data regulations in your jurisdiction.
-
-## Disclaimer
-
-This tool is for educational purposes only and is not a substitute for professional medical advice. Always consult healthcare professionals for medical decisions.
+---
+*Architected for Medical Intelligence. Built for Human Care.*
+*Developed by Anvay Mahesh Uparkar*
