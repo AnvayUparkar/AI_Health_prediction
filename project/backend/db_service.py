@@ -83,6 +83,28 @@ class DBService:
         return User.query.filter_by(email=email.lower()).first()
 
     @staticmethod
+    def get_user_by_id(user_id: Any):
+        mode = os.environ.get('READ_FROM', 'sql')
+        if mode == 'mongo':
+            mongodb = DBService.get_mongo_db()
+            if mongodb is not None:
+                try:
+                    oid = ObjectId(user_id) if isinstance(user_id, str) and len(user_id) == 24 else None
+                    user_data = None
+                    if oid:
+                        user_data = mongodb.users.find_one({"_id": oid})
+                    if not user_data:
+                        user_data = mongodb.users.find_one({"sql_id": int(user_id)})
+                    
+                    if user_data:
+                        user_data['id'] = str(user_data.pop('_id'))
+                        return user_data
+                except:
+                    pass
+        
+        return User.query.get(user_id)
+
+    @staticmethod
     def create_user(name: str, email: str, password_hash: str, role: str = 'user'):
         # 1. Primary Write (SQL)
         user = User(name=name, email=email, password_hash=password_hash, role=role)
@@ -98,7 +120,14 @@ class DBService:
                     "email": email.lower(),
                     "password_hash": password_hash,
                     "role": role,
-                    "created_at": datetime.utcnow()
+                    "created_at": datetime.utcnow(),
+                    "profile": {
+                        "age": None,
+                        "sex": None,
+                        "weight": None,
+                        "height": None,
+                        "hospitals": []
+                    }
                 }
                 DBService._async_mongo_write('users', 'insert', mongo_data)
                 
@@ -127,6 +156,92 @@ class DBService:
                 filter_query = {"sql_id": int(user_id)}
                 DBService._async_mongo_write('users', 'update', mongo_data, filter_query)
         return user
+
+    @staticmethod
+    def update_user_profile(user_id: Any, profile_data: Dict[str, Any]):
+        # Handle ID conversion safely
+        sql_id = None
+        mongo_id = None
+        
+        try:
+            if isinstance(user_id, str):
+                if user_id.isdigit():
+                    sql_id = int(user_id)
+                elif len(user_id) == 24:
+                    mongo_id = user_id
+            elif isinstance(user_id, int):
+                sql_id = user_id
+        except:
+            pass
+
+        # 1. SQL Write
+        user = None
+        if sql_id:
+            user = User.query.get(sql_id)
+            if user:
+                if 'age' in profile_data: user.age = profile_data['age']
+                if 'sex' in profile_data: user.sex = profile_data['sex']
+                if 'weight' in profile_data: user.weight = profile_data['weight']
+                if 'height' in profile_data: user.height = profile_data['height']
+                if 'hospitals' in profile_data: 
+                    user.hospitals = json.dumps(profile_data['hospitals'])
+                db.session.commit()
+        
+        # 2. Mongo Write (Async)
+        if os.environ.get('DB_MODE') in ['hybrid', 'mongo']:
+            mongo_update = {}
+            if 'age' in profile_data: mongo_update["profile.age"] = profile_data['age']
+            if 'sex' in profile_data: mongo_update["profile.sex"] = profile_data['sex']
+            if 'weight' in profile_data: mongo_update["profile.weight"] = profile_data['weight']
+            if 'height' in profile_data: mongo_update["profile.height"] = profile_data['height']
+            if 'hospitals' in profile_data: mongo_update["profile.hospitals"] = profile_data['hospitals']
+            
+            if mongo_update:
+                if mongo_id:
+                    filter_query = {"_id": ObjectId(mongo_id)}
+                elif sql_id:
+                    filter_query = {"sql_id": sql_id}
+                else:
+                    filter_query = None
+                
+                if filter_query:
+                    DBService._async_mongo_write('users', 'update', mongo_update, filter_query)
+        
+        # If we don't have a SQL user but we are in Mongo mode, we should fetch the user from Mongo for the return
+        if not user and mongo_id:
+            # We can't easily return a Mongo dict that mimics the to_dict() easily here without more logic
+            # but let's at least ensure we don't crash
+            return DBService.get_user_by_id(user_id)
+            
+        return user
+
+    @staticmethod
+    def search_users(query: str):
+        """Search users by name or email (for doctors/nurses)"""
+        mode = os.environ.get('READ_FROM', 'sql')
+        if mode == 'mongo':
+            mongodb = DBService.get_mongo_db()
+            if mongodb is not None:
+                mongo_query = {
+                    "$or": [
+                        {"name": {"$regex": query, "$options": "i"}},
+                        {"email": {"$regex": query, "$options": "i"}}
+                    ],
+                    "role": "user" # Usually searching for patients
+                }
+                cursor = mongodb.users.find(mongo_query).limit(10)
+                results = list(cursor)
+                for r in results:
+                    r['id'] = str(r.pop('_id'))
+                return results
+
+        # SQL
+        q = f"%{query}%"
+        users = User.query.filter(
+            (User.role == 'user') & 
+            ((User.name.ilike(q)) | (User.email.ilike(q)))
+        ).limit(10).all()
+        return users
 
     # --- Shop Operations ---
 

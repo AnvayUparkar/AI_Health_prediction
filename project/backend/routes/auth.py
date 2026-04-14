@@ -77,3 +77,66 @@ def login():
         expires_delta=timedelta(days=7)
     )
     return jsonify({'access_token': access_token, 'user': user_dict})
+
+@auth_bp.route('/profile', methods=['GET'])
+@jwt_required()
+def get_profile():
+    user_id = get_jwt_identity()
+    user = DBService.get_user_by_id(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    return jsonify(user.to_dict() if hasattr(user, 'to_dict') else user)
+
+@auth_bp.route('/profile', methods=['PUT'])
+@jwt_required()
+def update_profile():
+    user_id = get_jwt_identity()
+    data = request.get_json() or {}
+    
+    # Restrict users to only update certain fields
+    allowed_fields = ['age', 'sex', 'weight', 'height']
+    profile_data = {k: v for k, v in data.items() if k in allowed_fields}
+    
+    user = DBService.update_user_profile(user_id, profile_data)
+    if not user:
+        return jsonify({'error': 'Failed to update profile'}), 500
+        
+    return jsonify({'success': True, 'user': user.to_dict() if hasattr(user, 'to_dict') else user})
+
+@auth_bp.route('/users/search', methods=['GET'])
+@jwt_required()
+def search_users():
+    # Role check
+    from flask_jwt_extended import get_jwt
+    claims = get_jwt()
+    if claims.get('role') not in ['doctor', 'nurse']:
+        return jsonify({'error': 'Unauthorized'}), 403
+        
+    query = request.args.get('q', '')
+    if not query:
+        return jsonify([])
+        
+    results = DBService.search_users(query)
+    # Convert to dict if they are objects
+    results_list = [r.to_dict() if hasattr(r, 'to_dict') else r for r in results]
+    return jsonify(results_list)
+
+@auth_bp.route('/users/<user_id>/profile', methods=['PUT'])
+@jwt_required()
+def update_patient_profile(user_id):
+    # Role check
+    from flask_jwt_extended import get_jwt
+    claims = get_jwt()
+    if claims.get('role') not in ['doctor', 'nurse']:
+        return jsonify({'error': 'Unauthorized'}), 403
+        
+    data = request.get_json() or {}
+    # Doctors/Nurses can update hospitals
+    allowed_fields = ['hospitals']
+    profile_data = {k: v for k, v in data.items() if k in allowed_fields}
+    
+    user = DBService.update_user_profile(user_id, profile_data)
+    if not user:
+        return jsonify({'error': 'Failed to update user profile'}), 500
+        
+    return jsonify({'success': True, 'user': user.to_dict() if hasattr(user, 'to_dict') else user})

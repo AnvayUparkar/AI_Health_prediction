@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LogIn, Mail, Lock, Loader, Chrome } from 'lucide-react';
+import { LogIn, Mail, Lock, Loader, Globe } from 'lucide-react';
 import api from '../services/api';
 import { login } from '../services/api';
 
@@ -163,7 +163,7 @@ const Login: React.FC = () => {
               whileTap={{ scale: 0.98 }}
               className="w-full bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-xl font-semibold shadow-sm hover:bg-gray-50 transition-all duration-200 flex items-center justify-center space-x-2"
             >
-              <Chrome className="h-5 w-5 text-blue-500" />
+              <Globe className="h-5 w-5 text-blue-500" />
               <span>Connect Google Account</span>
             </motion.button>
           </form>

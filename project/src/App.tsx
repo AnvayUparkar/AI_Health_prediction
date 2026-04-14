@@ -13,11 +13,13 @@ import Predictions from './pages/Predictions';
 import DietPlanner from './pages/DietPlanner';
 import ReportAnalyzer from './pages/ReportAnalyzer';
 import Shop from './pages/Shop';
+import Profile from './pages/Profile';
 import GoogleCallback from './pages/GoogleCallback';
 import GamificationWidget from './components/GamificationWidget';
 import { AIChatBot } from './components/AIChatBot';
 import SOSButton from './components/SOSButton';
 import GestureMonitor from './components/GestureMonitor';
+import { Toaster } from 'react-hot-toast';
 
 
 // ProtectedRoute Component
@@ -33,6 +35,7 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+        <Toaster position="top-right" />
         <FloatingNavbar />
         <GamificationWidget />
         <AIChatBot />
@@ -109,6 +112,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Shop />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <Profile />
               </ProtectedRoute>
             } 
           />

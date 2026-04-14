@@ -23,6 +23,13 @@ class User(db.Model):
     streak = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
+    # Profile fields
+    age = db.Column(db.Integer, nullable=True)
+    sex = db.Column(db.String(20), nullable=True)
+    weight = db.Column(db.Float, nullable=True)
+    height = db.Column(db.Float, nullable=True)
+    hospitals = db.Column(db.Text, nullable=True) # JSON list of hospital names
+    
     # Google OAuth fields
     google_token_json = db.Column(db.Text, nullable=True) # Stores the full creds JSON
     google_last_auth_at = db.Column(db.DateTime, nullable=True)
@@ -34,13 +41,25 @@ class User(db.Model):
         return check_password_hash(self.password_hash, password)
 
     def to_dict(self):
+        try:
+            hospitals_list = json.loads(self.hospitals) if self.hospitals else []
+        except:
+            hospitals_list = []
+            
         return {
             "id": self.id, 
             "name": self.name, 
             "email": self.email,
             "role": self.role or "user",
             "points": self.points or 0,
-            "streak": self.streak or 0
+            "streak": self.streak or 0,
+            "profile": {
+                "age": self.age,
+                "sex": self.sex,
+                "weight": self.weight,
+                "height": self.height,
+                "hospitals": hospitals_list
+            }
         }
 
 class Doctor(db.Model):

@@ -62,7 +62,7 @@ const Home = () => {
       features: ["Multiple prediction models", "Instant results", "Comprehensive analysis"],
       link: "/predictions",
       ctaText: "Start Prediction",
-      roles: ["doctor"], // Restricted
+      roles: ["doctor", "nurse"], // Restricted to medical staff
       glow: "hover:shadow-[0_0_20px_rgba(245,158,11,0.2)]"
     },
     {
@@ -214,7 +214,7 @@ const Home = () => {
               );
             })}
             <HealthAnalysisCard />
-            {(user?.role === 'doctor' || user?.role === 'nurse') && <AlertMonitoringCard />}
+            {(user?.role?.toLowerCase() === 'doctor' || user?.role?.toLowerCase() === 'nurse') && <AlertMonitoringCard />}
           </div>
         </div>
       </section>
@@ -251,8 +251,8 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Assessment Cards Section - Restricted to Doctors */}
-      {user?.role === 'doctor' && (
+      {/* Assessment Cards Section - Restricted to Professionals */}
+      {(user?.role?.toLowerCase() === 'doctor' || user?.role?.toLowerCase() === 'nurse') && (
         <section className="relative py-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <motion.div

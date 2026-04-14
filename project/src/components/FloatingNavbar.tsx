@@ -154,9 +154,17 @@ const FloatingNavbar = () => {
                       exit={{ opacity: 0, y: -10 }}
                       className="absolute right-0 mt-2 w-48 backdrop-blur-lg bg-white/90 border border-white/20 rounded-xl shadow-xl overflow-hidden"
                     >
+                      <Link
+                        to="/profile"
+                        onClick={() => setShowUserMenu(false)}
+                        className="w-full px-4 py-3 text-left text-gray-700 hover:bg-blue-50 transition-colors duration-200 flex items-center space-x-2"
+                      >
+                        <User className="h-4 w-4" />
+                        <span>Profile</span>
+                      </Link>
                       <button
                         onClick={handleLogout}
-                        className="w-full px-4 py-3 text-left text-gray-700 hover:bg-red-50 transition-colors duration-200 flex items-center space-x-2"
+                        className="w-full px-4 py-3 text-left text-gray-700 hover:bg-red-50 transition-colors duration-200 border-t border-gray-100 flex items-center space-x-2"
                       >
                         <LogOut className="h-4 w-4" />
                         <span>Logout</span>
@@ -235,6 +243,14 @@ const FloatingNavbar = () => {
                       <div className="px-4 py-2 text-sm font-medium text-gray-700">
                         Hello, {userName}
                       </div>
+                      <Link
+                        to="/profile"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="w-full px-4 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-white/20 transition-all duration-200 flex items-center space-x-2"
+                      >
+                        <User className="h-4 w-4" />
+                        <span>Profile</span>
+                      </Link>
                       <button
                         onClick={() => {
                           handleLogout();

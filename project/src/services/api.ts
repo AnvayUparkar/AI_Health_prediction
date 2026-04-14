@@ -110,3 +110,25 @@ export const triggerSOS = async (data: { patient_id?: string; room_number?: stri
     const res = await api.post('/api/alert/sos', data);
     return res.data;
 };
+
+// --- Profile & User Management ---
+
+export const getProfile = async () => {
+    const res = await api.get('/auth/profile');
+    return res.data;
+};
+
+export const updateProfile = async (data: { age?: number; sex?: string; weight?: number; height?: number }) => {
+    const res = await api.put('/auth/profile', data);
+    return res.data;
+};
+
+export const searchUsers = async (query: string) => {
+    const res = await api.get('/auth/users/search', { params: { q: query } });
+    return res.data;
+};
+
+export const updatePatientProfile = async (userId: string | number, data: { hospitals: string[] }) => {
+    const res = await api.put(`/auth/users/${userId}/profile`, data);
+    return res.data;
+};
