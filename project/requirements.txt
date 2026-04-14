@@ -19,3 +19,5 @@ google-auth>=2.23.0
 google-api-python-client>=2.100.0
 pymongo[srv]>=4.6.0
 dnspython>=2.4.0
+flask-socketio==5.3.6
+eventlet==0.33.3

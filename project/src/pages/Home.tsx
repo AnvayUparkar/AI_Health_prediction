@@ -6,6 +6,7 @@ import AnimatedBackground from '../components/AnimatedBackground';
 import GlassCard from '../components/GlassCard';
 import FeatureCard from '../components/FeatureCard';
 import HealthAnalysisCard from '../components/HealthAnalysisCard';
+import AlertMonitoringCard from '../components/AlertMonitoringCard';
 
 const Home = () => {
   const [user, setUser] = useState<any>(null);
@@ -213,6 +214,7 @@ const Home = () => {
               );
             })}
             <HealthAnalysisCard />
+            {(user?.role === 'doctor' || user?.role === 'nurse') && <AlertMonitoringCard />}
           </div>
         </div>
       </section>

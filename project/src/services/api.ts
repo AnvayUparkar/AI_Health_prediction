@@ -49,6 +49,26 @@ export const uploadReport = async (file: File, onUploadProgress?: (progressEvent
     return res.data;
 };
 
+// --- Alert System Endpoints ---
+
+export const getAlerts = async (filters: { patient_id?: string; status?: string; alert?: boolean } = {}) => {
+    const res = await api.get('/api/alerts', { params: filters });
+    return res.data;
+};
+
+export const updateAlertStatus = async (alertId: number | string, acknowledged?: boolean, resolved?: boolean) => {
+    const updates: any = {};
+    if (acknowledged !== undefined) updates.acknowledged = acknowledged;
+    if (resolved !== undefined) updates.resolved = resolved;
+    const res = await api.patch(`/api/alerts/${alertId}`, updates);
+    return res.data;
+};
+
+export const postMonitoringData = async (data: any) => {
+    const res = await api.post('/api/alert/data', data);
+    return res.data;
+};
+
 // --- Gamification Endpoints ---
 
 export const updateSteps = async (steps: number) => {
@@ -83,5 +103,10 @@ export const analyzeReport = async (file: File | null, onUploadProgress?: (progr
         onUploadProgress,
         timeout: 120000,  // 2 min timeout for OCR processing
     });
+    return res.data;
+};
+
+export const triggerSOS = async (data: { patient_id?: string; room_number?: string } = {}) => {
+    const res = await api.post('/api/alert/sos', data);
     return res.data;
 };

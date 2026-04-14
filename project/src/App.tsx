@@ -16,6 +16,9 @@ import Shop from './pages/Shop';
 import GoogleCallback from './pages/GoogleCallback';
 import GamificationWidget from './components/GamificationWidget';
 import { AIChatBot } from './components/AIChatBot';
+import SOSButton from './components/SOSButton';
+import GestureMonitor from './components/GestureMonitor';
+
 
 // ProtectedRoute Component
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
@@ -33,6 +36,9 @@ function App() {
         <FloatingNavbar />
         <GamificationWidget />
         <AIChatBot />
+        <SOSButton />
+        <GestureMonitor />
+
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />

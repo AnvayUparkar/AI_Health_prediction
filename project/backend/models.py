@@ -122,6 +122,43 @@ class HealthAnalysis(db.Model):
             "created_at": self.created_at.isoformat()
         }
 
+class Alert(db.Model):
+    """Alert model for patient monitoring system"""
+    __tablename__ = 'alerts'
+    id = db.Column(db.Integer, primary_key=True)
+    patient_id = db.Column(db.String(50), nullable=False, index=True)
+    room_number = db.Column(db.String(20), nullable=True)
+    status = db.Column(db.String(20), nullable=False) # SAFE | WARNING | CRITICAL
+    confidence = db.Column(db.String(20), nullable=False) # LOW | MEDIUM | HIGH
+    reason = db.Column(db.Text, nullable=True)
+    detected_issues = db.Column(db.Text, nullable=True) # JSON string
+    recommended_action = db.Column(db.Text, nullable=True)
+    alert = db.Column(db.Boolean, default=False)
+    acknowledged = db.Column(db.Boolean, default=False)
+    resolved = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        try:
+            issues = json.loads(self.detected_issues) if self.detected_issues else []
+        except:
+            issues = []
+            
+        return {
+            "id": self.id,
+            "patient_id": self.patient_id,
+            "room_number": self.room_number,
+            "status": self.status,
+            "confidence": self.confidence,
+            "reason": self.reason,
+            "detected_issues": issues,
+            "recommended_action": self.recommended_action,
+            "alert": self.alert,
+            "acknowledged": self.acknowledged,
+            "resolved": self.resolved,
+            "created_at": self.created_at.isoformat()
+        }
+
 def init_db(app):
     """
     Initialize the database and create tables if they don't exist.

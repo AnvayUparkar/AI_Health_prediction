@@ -36,7 +36,9 @@ from backend.routes.health_connect_sync import health_connect_sync_bp
 from backend.routes.gamification import gamification_bp
 from backend.routes.google_auth import google_auth_bp
 from backend.routes.chat import chat_bp
+from backend.routes.alert import alert_bp
 from backend.db_service import DBService
+from backend.extensions import socketio
 
 def create_app(config_overrides: Optional[dict] = None):
     app = Flask(__name__, static_folder=None)
@@ -63,6 +65,7 @@ def create_app(config_overrides: Optional[dict] = None):
         app.config.update(config_overrides)
 
     db.init_app(app)
+    socketio.init_app(app)
     JWTManager(app)
 
     # Register blueprints
@@ -80,6 +83,7 @@ def create_app(config_overrides: Optional[dict] = None):
     app.register_blueprint(gamification_bp, url_prefix='/api')
     app.register_blueprint(google_auth_bp, url_prefix='/api')
     app.register_blueprint(chat_bp, url_prefix='/api')
+    app.register_blueprint(alert_bp, url_prefix='/api')
 
     @app.route('/health', methods=['GET'])
     def health():
@@ -141,7 +145,27 @@ def create_app(config_overrides: Optional[dict] = None):
             print(f"[WARN] Model loading encountered errors: {e}")
             print("  Server will continue - some predictions may not be available")
 
+    @socketio.on('gesture_frame')
+    def handle_gesture(data):
+        """
+        Receives frame from frontend and processes it via GestureService.
+        """
+        try:
+            from backend.gesture_service import gesture_detector
+            frame_data = data.get('frame')
+            patient_info = data.get('info', {})
+            
+            if not frame_data:
+                return
+                
+            result = gesture_detector.process_frame(frame_data, patient_info)
+            socketio.emit('gesture_result', result)
+            
+        except Exception as e:
+            print(f"[SOCKET ERROR] Gesture processing failed: {e}")
+
     return app
+
 
 if __name__ == '__main__':
     app = create_app()
@@ -183,4 +207,4 @@ if __name__ == '__main__':
     print("   - POST /auth/register")
     print("   - POST /auth/login")
     print("=" * 70)
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)

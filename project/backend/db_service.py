@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 from pymongo import MongoClient
 from bson import ObjectId
-from backend.models import db, User, HealthAnalysis, Appointment, Doctor, ShopItem
+from backend.models import db, User, HealthAnalysis, Appointment, Doctor, ShopItem, Alert
 from sqlalchemy.exc import IntegrityError
 
 logger = logging.getLogger(__name__)
@@ -428,7 +428,19 @@ class DBService:
     @staticmethod
     def update_appointment_status(appointment_id: Any, status: str):
         # 1. SQL
-        appointment = Appointment.query.get(appointment_id)
+        appointment = None
+        try:
+            sql_id = int(appointment_id)
+            appointment = Appointment.query.get(sql_id)
+        except (ValueError, TypeError):
+            # Might be a Mongo ID
+            if isinstance(appointment_id, str) and len(appointment_id) == 24:
+                mongodb = DBService.get_mongo_db()
+                if mongodb is not None:
+                    data = mongodb.appointments.find_one({"_id": ObjectId(appointment_id)})
+                    if data and 'sql_id' in data:
+                        appointment = Appointment.query.get(data['sql_id'])
+
         if appointment:
             appointment.status = status
             db.session.commit()
@@ -462,3 +474,98 @@ class DBService:
                 pass
         
         return True
+
+    # --- Alert Operations ---
+
+    @staticmethod
+    def create_alert(alert_data: Dict[str, Any]):
+        # 1. SQL Write
+        new_alert = Alert(
+            patient_id=alert_data.get('patient_id'),
+            room_number=alert_data.get('room_number'),
+            status=alert_data.get('status'),
+            confidence=alert_data.get('confidence'),
+            reason=alert_data.get('reason'),
+            detected_issues=json.dumps(alert_data.get('detected_issues', [])),
+            recommended_action=alert_data.get('recommended_action'),
+            alert=alert_data.get('alert', False)
+        )
+        db.session.add(new_alert)
+        db.session.commit()
+
+        # 2. Mongo Write (Async)
+        if os.environ.get('DB_MODE') in ['hybrid', 'mongo']:
+            mongo_data = {
+                "sql_id": new_alert.id,
+                "patient_id": alert_data.get('patient_id'),
+                "room_number": alert_data.get('room_number'),
+                "status": alert_data.get('status'),
+                "confidence": alert_data.get('confidence'),
+                "reason": alert_data.get('reason'),
+                "detected_issues": alert_data.get('detected_issues', []),
+                "recommended_action": alert_data.get('recommended_action'),
+                "alert": alert_data.get('alert', False),
+                "acknowledged": False,
+                "resolved": False,
+                "created_at": datetime.utcnow()
+            }
+            DBService._async_mongo_write('alerts', 'insert', mongo_data)
+            
+        return new_alert
+
+    @staticmethod
+    def list_alerts(filters: Dict[str, Any]):
+        mode = os.environ.get('READ_FROM', 'sql')
+        if mode == 'mongo':
+            mongodb = DBService.get_mongo_db()
+            if mongodb is not None:
+                mongo_query = {}
+                if filters.get('patient_id'): mongo_query['patient_id'] = filters['patient_id']
+                if filters.get('status'): mongo_query['status'] = filters['status']
+                if filters.get('alert') is not None: mongo_query['alert'] = filters['alert']
+                
+                cursor = mongodb.alerts.find(mongo_query).sort("created_at", -1)
+                results = list(cursor)
+                for r in results:
+                    r['id'] = str(r.pop('_id'))
+                return results
+
+        # SQL
+        query = Alert.query
+        if filters.get('patient_id'): query = query.filter_by(patient_id=filters['patient_id'])
+        if filters.get('status'): query = query.filter_by(status=filters['status'])
+        if filters.get('alert') is not None: query = query.filter_by(alert=filters['alert'])
+        
+        return query.order_by(Alert.created_at.desc()).all()
+
+    @staticmethod
+    def update_alert_status(alert_id: Any, updates: Dict[str, Any]):
+        # 1. SQL
+        alert = None
+        try:
+            sql_id = int(alert_id)
+            alert = Alert.query.get(sql_id)
+        except (ValueError, TypeError):
+            # Might be a Mongo ID
+            if isinstance(alert_id, str) and len(alert_id) == 24:
+                mongodb = DBService.get_mongo_db()
+                if mongodb is not None:
+                    data = mongodb.alerts.find_one({"_id": ObjectId(alert_id)})
+                    if data and 'sql_id' in data:
+                        alert = Alert.query.get(data['sql_id'])
+
+        if alert:
+            if 'acknowledged' in updates: alert.acknowledged = updates['acknowledged']
+            if 'resolved' in updates: alert.resolved = updates['resolved']
+            db.session.commit()
+        
+        # 2. Mongo (Async)
+        if os.environ.get('DB_MODE') in ['hybrid', 'mongo']:
+            try:
+                oid = ObjectId(alert_id) if isinstance(alert_id, str) and len(alert_id) == 24 else None
+                filter_query = {"_id": oid} if oid else {"sql_id": int(alert_id)}
+                DBService._async_mongo_write('alerts', 'update', updates, filter_query)
+            except:
+                pass
+        
+        return alert

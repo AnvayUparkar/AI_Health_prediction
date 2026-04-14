@@ -1,0 +1,157 @@
+from flask import Blueprint, request, jsonify
+from backend.alert_engine import generate_alert
+from backend.db_service import DBService
+from flask_jwt_extended import jwt_required, get_jwt_identity
+import traceback
+from backend.extensions import socketio
+
+alert_bp = Blueprint('alert', __name__)
+
+@alert_bp.route('/alert/data', methods=['POST', 'OPTIONS'])
+def process_alert_data():
+    """
+    Endpoint for receiving monitoring data and generating alerts.
+    Ready for OpenCV input.
+    """
+    if request.method == 'OPTIONS':
+        return '', 204
+        
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Missing JSON data"}), 400
+            
+        # 1. Generate alert via engine
+        alert_result = generate_alert(data)
+        
+        # 2. Add patient/room info to the result for storage
+        alert_result['patient_id'] = data.get('patient_id', 'UNKNOWN')
+        alert_result['room_number'] = data.get('room_number', 'N/A')
+        
+        # 3. Store in database
+        # We only store if there's an active alert or warning, or we can store everything
+        # Requirement says "Store alert", so we definitely store when alert=True
+        # For a live system, we might store everything for historical trends, 
+        # but let's stick to storing alerts specifically as requested.
+        new_alert = DBService.create_alert(alert_result)
+        
+        # 4. Return the alert result
+        response_data = new_alert.to_dict() if hasattr(new_alert, 'to_dict') else alert_result
+        
+        # 5. Emit real-time socket event if it's an alert
+        if response_data.get('alert'):
+            socketio.emit('new_alert', response_data)
+            
+        return jsonify(response_data), 201
+        
+    except Exception as e:
+        print(f"[ERROR] Alert processing failed: {e}")
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@alert_bp.route('/alerts', methods=['GET', 'OPTIONS'])
+def get_alerts():
+    """Fetch alerts with optional filters."""
+    if request.method == 'OPTIONS':
+        return '', 204
+        
+    try:
+        filters = {
+            "patient_id": request.args.get('patient_id'),
+            "status": request.args.get('status'),
+            "alert": request.args.get('alert', type=lambda v: v.lower() == 'true' if v else None)
+        }
+        
+        # Remove None values
+        filters = {k: v for k, v in filters.items() if v is not None}
+        
+        alerts = DBService.list_alerts(filters)
+        
+        # Convert to dict
+        if isinstance(alerts, list):
+            results = [a.to_dict() if hasattr(a, 'to_dict') else a for a in alerts]
+        else:
+            results = []
+            
+        return jsonify(results), 200
+        
+    except Exception as e:
+        print(f"[ERROR] Fetching alerts failed: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@alert_bp.route('/alerts/<alert_id>', methods=['PATCH', 'OPTIONS'])
+def update_alert(alert_id):
+    """Update alert acknowledged or resolved status."""
+    if request.method == 'OPTIONS':
+        return '', 204
+        
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Missing JSON data"}), 400
+            
+        updates = {}
+        if 'acknowledged' in data: updates['acknowledged'] = bool(data['acknowledged'])
+        if 'resolved' in data: updates['resolved'] = bool(data['resolved'])
+        
+        if not updates:
+            return jsonify({"error": "No valid fields to update"}), 400
+            
+        alert = DBService.update_alert_status(alert_id, updates)
+        
+        if not alert:
+            return jsonify({"error": "Alert not found"}), 404
+            
+        return jsonify(alert.to_dict() if hasattr(alert, 'to_dict') else alert), 200
+        
+    except Exception as e:
+        print(f"[ERROR] Updating alert failed: {e}")
+        return jsonify({"error": str(e)}), 500
+@alert_bp.route('/alert/sos', methods=['POST', 'OPTIONS'])
+@jwt_required(optional=True)
+def trigger_sos():
+    """
+    Endpoint for triggering a manual SOS emergency alert.
+    """
+    if request.method == 'OPTIONS':
+        return '', 204
+        
+    try:
+        user_identity = get_jwt_identity()
+        data = request.get_json() or {}
+        
+        # Determine patient name/ID
+        patient_id = data.get('patient_id')
+        if not patient_id and user_identity:
+            patient_id = user_identity
+        if not patient_id:
+            patient_id = "EMERGENCY_USER"
+            
+        alert_data = {
+            "patient_id": patient_id,
+            "room_number": data.get('room_number', 'FRONT_DESK'),
+            "status": "CRITICAL",
+            "confidence": "100%",
+            "reason": "S.O.S EMERGENCY SIGNAL",
+            "detected_issues": ["Manual Intervention Required", "User Triggered SOS"],
+            "recommended_action": "Immediate Medical Response Required",
+            "alert": True
+        }
+        
+        # Store and notify
+        new_alert = DBService.create_alert(alert_data)
+        response_data = new_alert.to_dict() if hasattr(new_alert, 'to_dict') else alert_data
+        
+        # Real-time notification
+        socketio.emit('new_alert', response_data)
+        
+        return jsonify({
+            "success": True, 
+            "message": "SOS alert sent successfully",
+            "alert": response_data
+        }), 201
+        
+    except Exception as e:
+        print(f"[ERROR] SOS trigger failed: {e}")
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
