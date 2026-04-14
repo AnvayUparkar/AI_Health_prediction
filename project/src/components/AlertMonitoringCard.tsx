@@ -317,7 +317,7 @@ const AlertMonitoringCard: React.FC = () => {
               }
             </motion.div>
             <div>
-              <h3 className="text-2xl font-bold text-gray-800">Ward Monitoring</h3>
+              <h3 className="text-2xl font-bold text-gray-800 group-hover:text-red-500 group-hover:[text-shadow:0_0_12px_rgba(239,68,68,0.8)] transition-all duration-300">Ward Monitoring</h3>
               <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
                 Real-time Patient Safety
               </p>

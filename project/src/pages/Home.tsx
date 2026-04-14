@@ -215,11 +215,11 @@ const Home = () => {
               );
             })}
             <HealthAnalysisCard />
+            {user?.role?.toLowerCase() === 'doctor' && (
+              <AppointmentManagementCard />
+            )}
             {(user?.role?.toLowerCase() === 'doctor' || user?.role?.toLowerCase() === 'nurse') && (
-              <>
-                <AppointmentManagementCard />
-                <AlertMonitoringCard />
-              </>
+              <AlertMonitoringCard />
             )}
           </div>
         </div>

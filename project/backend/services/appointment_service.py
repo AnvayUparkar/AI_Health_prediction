@@ -25,6 +25,24 @@ class AppointmentService:
                 # Fetch patient info manually or trust Mongo has it
                 for r in results:
                     r['id'] = str(r.pop('_id'))
+                    
+                    # Fetch patient info from users collection manually
+                    patient_id = r.get('patient_id')
+                    if patient_id:
+                        try:
+                            # Might be stored as ObjectId string or regular string
+                            user_doc = mongodb.users.find_one({"_id": ObjectId(patient_id)})
+                        except Exception:
+                            user_doc = mongodb.users.find_one({"_id": patient_id})
+                            
+                        if user_doc:
+                            r['patient_name'] = user_doc.get('name', 'Unknown')
+                            r['patient_email'] = user_doc.get('email')
+                            
+                    # Map legacy fields to current fields
+                    r['requested_date'] = r.get('requested_date') or r.get('appointment_date')
+                    r['requested_time'] = r.get('requested_time') or r.get('appointment_time')
+
                     if 'suggested_dates' in r and isinstance(r['suggested_dates'], str):
                         try: r['suggested_dates'] = json.loads(r['suggested_dates'])
                         except: pass

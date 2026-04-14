@@ -42,6 +42,9 @@ const AppointmentManagementCard = () => {
   const [wardInputs, setWardInputs] = useState<{[key: string]: string}>({});
   const [isAssigningWard, setIsAssigningWard] = useState<string | null>(null);
 
+  // Accordion State
+  const [expandedApptId, setExpandedApptId] = useState<string | null>(null);
+
   const userString = localStorage.getItem('user');
   const currentUser = userString ? JSON.parse(userString) : null;
 
@@ -167,7 +170,7 @@ const AppointmentManagementCard = () => {
 
   return (
     <>
-      <GlassCard className="p-8 flex flex-col h-full overflow-hidden relative">
+      <GlassCard className="p-8 group flex flex-col h-full overflow-hidden relative hover:shadow-[0_0_30px_rgba(59,130,246,0.2)]">
         <div className="flex items-center space-x-4 mb-8">
           <motion.div 
             className="p-4 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl shadow-lg"
@@ -176,7 +179,7 @@ const AppointmentManagementCard = () => {
             <CalendarClock className="h-8 w-8 text-white" />
           </motion.div>
           <div>
-            <h3 className="text-2xl font-bold text-gray-800">Appointment Management</h3>
+            <h3 className="text-2xl font-bold text-gray-800 group-hover:text-blue-500 group-hover:[text-shadow:0_0_12px_rgba(59,130,246,0.8)] transition-all duration-300">Appointment Management</h3>
             <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
               Clinical Dashboard
             </p>
@@ -254,11 +257,16 @@ const AppointmentManagementCard = () => {
                     className="p-5 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 border border-blue-100 rounded-xl shadow-sm"
                   >
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 border-b border-blue-200/50 pb-4">
-                      <div className="cursor-pointer group" onClick={() => setSelectedAppt(appt)}>
-                        <p className="font-bold text-gray-800 text-lg group-hover:text-blue-600 transition-colors flex items-center">
+                      <div className="cursor-pointer group flex-1" onClick={() => setExpandedApptId(expandedApptId === appt.id ? null : appt.id)}>
+                        <div className="font-bold text-gray-800 text-lg group-hover:text-blue-600 transition-colors flex items-center">
                           {appt.patient_name || 'Patient'}
-                          <Info className="w-5 h-5 ml-2 opacity-0 group-hover:opacity-100 text-blue-500 transition-opacity" />
-                        </p>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setSelectedAppt(appt); }}
+                            className="ml-2 opacity-0 group-hover:opacity-100 p-1 hover:bg-blue-100 rounded-full transition-all"
+                          >
+                            <Info className="w-5 h-5 text-blue-500" />
+                          </button>
+                        </div>
                         <p className="text-sm text-blue-600 font-medium">
                           {appt.requested_date || appt.date} @ {appt.requested_time || appt.time}
                         </p>
@@ -275,6 +283,15 @@ const AppointmentManagementCard = () => {
                         </button>
                       </div>
                     </div>
+
+                    <AnimatePresence>
+                      {expandedApptId === appt.id && (
+                        <motion.div 
+                          initial={{ height: 0, opacity: 0 }} 
+                          animate={{ height: 'auto', opacity: 1 }} 
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden"
+                        >
 
                     {/* Toggles */}
                     <div className="flex flex-col sm:flex-row gap-6">
@@ -351,6 +368,10 @@ const AppointmentManagementCard = () => {
                               CURRENTLY IN: {appt.ward_number}
                             </p>
                           )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
                         </motion.div>
                       )}
                     </AnimatePresence>
