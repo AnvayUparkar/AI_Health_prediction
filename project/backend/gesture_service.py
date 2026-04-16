@@ -156,8 +156,8 @@ class GestureService:
                 nearest_hosp = hosp_data['name']
                 dist_km = hosp_data['distance']
                 room_desc = f"Near {nearest_hosp} ({dist_km} km)"
-                hosp_docs = DBService.get_doctors_by_hospital(nearest_hosp)
-                notified_docs = [d['id'] if isinstance(d, dict) else d.id for d in hosp_docs]
+                hosp_staff = DBService.get_medical_staff_by_hospital(nearest_hosp)
+                notified_docs = [d['id'] if isinstance(d, dict) else d.id for d in hosp_staff]
 
         alert_data = {
             'patient_id': patient_id,

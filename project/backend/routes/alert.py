@@ -105,8 +105,17 @@ def update_alert(alert_id):
         
         if not alert:
             return jsonify({"error": "Alert not found"}), 404
+        
+        response_data = alert.to_dict() if hasattr(alert, 'to_dict') else alert
+        
+        # Broadcast update to all connected clients for real-time sync
+        socketio.emit('alert_updated', {
+            'id': alert_id,
+            **updates,
+            'alert': response_data
+        })
             
-        return jsonify(alert.to_dict() if hasattr(alert, 'to_dict') else alert), 200
+        return jsonify(response_data), 200
         
     except Exception as e:
         print(f"[ERROR] Updating alert failed: {e}")

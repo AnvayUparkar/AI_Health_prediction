@@ -213,11 +213,30 @@ const AlertMonitoringCard: React.FC = () => {
       showToast(toastMessage, toastSub, isGesture);
     });
 
-    // Polling fallback every 60s
-    const interval = setInterval(() => fetchAlerts(true), 60_000);
+    // Real-time sync: when any staff resolves/acknowledges an alert
+    socket.on('alert_updated', (data: { id: string | number; acknowledged?: boolean; resolved?: boolean }) => {
+      console.log('[AlertMonitoringCard] alert_updated received:', data);
+      setAlerts(prev => {
+        if (data.resolved) {
+          // Remove resolved alerts immediately
+          return prev.filter(a => String(a.id) !== String(data.id));
+        }
+        if (data.acknowledged) {
+          // Mark as acknowledged
+          return prev.map(a =>
+            String(a.id) === String(data.id) ? { ...a, acknowledged: true } : a
+          );
+        }
+        return prev;
+      });
+    });
+
+    // Polling fallback every 15s for edge cases
+    const interval = setInterval(() => fetchAlerts(true), 15_000);
 
     return () => {
       socket.off('new_alert');
+      socket.off('alert_updated');
       socket.disconnect();
       clearInterval(interval);
       if (toastTimer.current) clearTimeout(toastTimer.current);
