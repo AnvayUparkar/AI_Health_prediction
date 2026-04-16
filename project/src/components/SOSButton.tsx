@@ -64,7 +64,7 @@ const SOSButton: React.FC = () => {
             const currentUser = userStr ? JSON.parse(userStr) : null;
 
             await triggerSOS({
-                patient_id: currentUser?.id || userName || 'EMERGENCY_USER',
+                patient_id: currentUser?.name || userName || 'EMERGENCY_USER',
                 room_number: 'REMOTE_TRACE',
                 latitude,
                 longitude

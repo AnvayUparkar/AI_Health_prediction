@@ -36,7 +36,7 @@ class GestureService:
         base_options = mp_python.BaseOptions(model_asset_path=_MODEL_PATH)
         options = HandLandmarkerOptions(
             base_options=base_options,
-            running_mode=mp_vision.RunningMode.IMAGE,   # per-frame, not video stream
+            running_mode=mp_vision.RunningMode.IMAGE,
             num_hands=1,
             min_hand_detection_confidence=0.7,
             min_hand_presence_confidence=0.5,
@@ -44,11 +44,11 @@ class GestureService:
         )
         self.detector = HandLandmarker.create_from_options(options)
 
-        # State tracking for clench sequence: OPEN → CLOSED → OPEN
-        self.last_state = 'OPEN'
-        self.state_sequence: list[str] = []
-        self.last_change_time = time.time()
-        self.cooldown = 2.0  # seconds between SOS triggers
+        # How many consecutive CLOSED frames before SOS fires
+        self.FIST_FRAMES_REQUIRED = 3
+        self._fist_frame_count = 0
+
+        self.cooldown = 5.0          # seconds between SOS triggers
         self.last_sos_time = 0.0
 
     # ── Public API ────────────────────────────────────────────────────────────
@@ -66,7 +66,6 @@ class GestureService:
             frame = cv2.flip(frame, 1)
             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-            # Wrap in MediaPipe Image
             mp_image = mp.Image(
                 image_format=mp.ImageFormat.SRGB,
                 data=rgb_frame,
@@ -79,73 +78,73 @@ class GestureService:
 
             if detection_result.hand_landmarks:
                 hand_detected = True
-                lm = detection_result.hand_landmarks[0]  # first hand
+                lm = detection_result.hand_landmarks[0]
 
-                # Finger tip indices:  thumb=4, index=8, middle=12, ring=16, pinky=20
-                # PIP/MCP joints:              3        6        10       14       18
-                # A finger is "open" when its tip y-coord < its pip y-coord
-                # (smaller y = higher on screen after flip)
                 tips = [8, 12, 16, 20]   # index, middle, ring, pinky tips
-                pips = [6, 10, 14, 18]   # their proximal joints
+                pips = [6, 10, 14, 18]   # proximal joints
 
                 is_closed = all(lm[t].y > lm[p].y for t, p in zip(tips, pips))
                 current_gesture = 'CLOSED' if is_closed else 'OPEN'
 
-            self._update_sequence(current_gesture, patient_info)
+            sos_fired = self._update_fist_state(current_gesture, patient_info)
 
             return {
                 'status': 'ok',
                 'hand_detected': hand_detected,
                 'gesture': current_gesture,
-                'sequence': self.state_sequence,
+                'fist_frames': self._fist_frame_count,
+                'sos_fired': sos_fired,
             }
 
         except Exception as e:
             print(f'[ERROR] Gesture processing failed: {e}')
             return {'status': 'error', 'message': str(e)}
 
-    # ── Sequence logic ────────────────────────────────────────────────────────
-    def _update_sequence(self, current_state: str, patient_info: dict | None):
-        if current_state == 'NONE':
-            return
+    # ── Fist-hold logic ───────────────────────────────────────────────────────
+    def _update_fist_state(self, current_gesture: str, patient_info: dict | None) -> bool:
+        """
+        Increments a consecutive-frame counter while the fist is held.
+        Fires SOS once the counter reaches FIST_FRAMES_REQUIRED,
+        then resets so it won't re-fire until the hand opens and closes again.
+        Returns True if SOS was fired this frame.
+        """
+        if current_gesture == 'CLOSED':
+            self._fist_frame_count += 1
+        else:
+            # Hand opened or disappeared — reset counter
+            self._fist_frame_count = 0
+            return False
 
         now = time.time()
 
-        # Reset if stale
-        if now - self.last_change_time > 3.0:
-            self.state_sequence = []
+        if (
+            self._fist_frame_count == self.FIST_FRAMES_REQUIRED   # exactly on threshold
+            and now - self.last_sos_time >= self.cooldown
+        ):
+            print(f'[!!!] FIST HELD FOR {self.FIST_FRAMES_REQUIRED} FRAMES — SOS TRIGGERED')
+            self._trigger_sos(patient_info)
+            self.last_sos_time = now
+            # Reset so a continuous hold doesn't keep re-firing
+            self._fist_frame_count = 0
+            return True
 
-        if current_state != self.last_state:
-            print(f'[DEBUG] Gesture: {self.last_state} → {current_state}')
-            self.state_sequence.append(current_state)
-            self.last_state = current_state
-            self.last_change_time = now
+        return False
 
-            # Check OPEN → CLOSED → OPEN
-            if len(self.state_sequence) >= 3:
-                last_three = self.state_sequence[-3:]
-                if last_three == ['OPEN', 'CLOSED', 'OPEN']:
-                    if now - self.last_sos_time >= self.cooldown:
-                        print('[!!!] GESTURE SOS TRIGGERED')
-                        self._trigger_sos(patient_info)
-                        self.last_sos_time = now
-                    self.state_sequence = []  # reset after match
-
+    # ── SOS dispatch (unchanged) ──────────────────────────────────────────────
     def _trigger_sos(self, info: dict | None):
         info = info or {}
         patient_id = info.get('patient_id', 'GUEST_GESTURE')
         lat = info.get('latitude')
         lon = info.get('longitude')
 
-        # 1. Try to find Ward Info (In-Hospital)
         ward_info = AppointmentService.get_patient_ward_info(patient_id)
-        
+
         location_type = 'REMOTE'
         room_desc = info.get('room_number', 'ZONE_ALPHA')
         nearest_hosp = None
         dist_km = None
         notified_docs = []
-        
+
         if ward_info and ward_info.get('ward_number'):
             location_type = 'WARD'
             room_desc = f"Ward {ward_info['ward_number']}"
@@ -165,7 +164,7 @@ class GestureService:
             'room_number': room_desc,
             'status': 'CRITICAL',
             'confidence': '95%',
-            'reason': 'SOS TARGET GESTURE DETECTED (FIST CLENCH)',
+            'reason': 'SOS GESTURE DETECTED (FIST CLENCH HELD)',
             'detected_issues': ['Visual Distress Signal', 'Emergency Hand Gesture'],
             'recommended_action': 'Immediate Medical Response Required',
             'alert': True,
@@ -174,12 +173,11 @@ class GestureService:
             'location_type': location_type,
             'nearest_hospital': nearest_hosp,
             'distance_km': dist_km,
-            'notified_doctor_ids': json.dumps(notified_docs)
+            'notified_doctor_ids': json.dumps(notified_docs),
         }
 
         new_alert = DBService.create_alert(alert_data)
-        
-        # Log to Audit
+
         AppointmentService.log_audit_action(
             action="SOS_TRIGGERED_GESTURE",
             patient_id=patient_id,
@@ -187,7 +185,7 @@ class GestureService:
             details={
                 "location_type": location_type,
                 "hospital": nearest_hosp,
-                "distance": dist_km
+                "distance": dist_km,
             }
         )
 
