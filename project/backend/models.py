@@ -204,7 +204,7 @@ class Alert(db.Model):
             "nearest_hospital": self.nearest_hospital,
             "distance_km": self.distance_km,
             "notified_doctors": json.loads(self.notified_doctor_ids) if self.notified_doctor_ids else [],
-            "created_at": self.created_at.isoformat()
+            "created_at": self.created_at.isoformat() + "Z"
         }
 
 class AuditLog(db.Model):
@@ -231,6 +231,26 @@ class AuditLog(db.Model):
             "timestamp": self.timestamp.isoformat()
         }
 
+class Hospital(db.Model):
+    """Hospital Registry for SOS tracking"""
+    __tablename__ = 'hospitals'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    latitude = db.Column(db.Float, nullable=False)
+    longitude = db.Column(db.Float, nullable=False)
+    capacity = db.Column(db.Integer, default=100)
+    emergency_available = db.Column(db.Boolean, default=True)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "latitude": self.latitude,
+            "longitude": self.longitude,
+            "capacity": self.capacity,
+            "emergency_available": self.emergency_available
+        }
+
 def init_db(app):
     """
     Initialize the database and create tables if they don't exist.
@@ -238,3 +258,15 @@ def init_db(app):
     """
     with app.app_context():
         db.create_all()
+        
+        # Seed hospitals if table is empty
+        if Hospital.query.count() == 0:
+            hospitals = [
+                Hospital(name="Avdhoot Hospital", latitude=19.1605, longitude=72.9935, capacity=200),
+                Hospital(name="Shatabdi Hospital", latitude=19.0496, longitude=72.9150, capacity=500),
+                Hospital(name="City Medical Center", latitude=18.5300, longitude=73.8600, capacity=150),
+                Hospital(name="General Wellness Clinic", latitude=18.5100, longitude=73.8400, capacity=50)
+            ]
+            db.session.bulk_save_objects(hospitals)
+            db.session.commit()
+            print("[INFO] Seeded hospitals into SQL database.")

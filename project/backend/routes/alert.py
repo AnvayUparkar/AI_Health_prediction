@@ -134,31 +134,46 @@ def trigger_sos():
         lat = data.get('latitude')
         lon = data.get('longitude')
         
-        # 1. Try to find Ward Info (In-Hospital)
-        ward_info = AppointmentService.get_patient_ward_info(patient_id)
+        if lat is None or lon is None:
+            return jsonify({"error": "Location access required for SOS"}), 400
+        
+        try:
+            lat = float(lat)
+            lon = float(lon)
+        except ValueError:
+            return jsonify({"error": "Invalid location coordinates"}), 400
         
         location_type = 'REMOTE'
-        room_desc = data.get('room_number', 'REMOTE_LOCATION')
+        room_desc = 'REMOTE_LOCATION'
         nearest_hosp = None
         dist_km = None
         notified_docs = []
         
-        if ward_info and ward_info.get('ward_number'):
-            location_type = 'WARD'
-            room_desc = f"Ward {ward_info['ward_number']}"
-            if ward_info.get('doctor_id'):
-                notified_docs = [ward_info['doctor_id']]
-        elif lat and lon:
-            # 2. Remote Trace - Calculate nearest hospital
-            hosp_data = AppointmentService.calculate_nearest_hospital(lat, lon)
-            if hosp_data:
-                nearest_hosp = hosp_data['name']
-                dist_km = hosp_data['distance']
-                room_desc = f"Near {nearest_hosp} ({dist_km} km)"
-                
-                # Notify all doctors at this hospital
-                hosp_docs = DBService.get_doctors_by_hospital(nearest_hosp)
-                notified_docs = [d['id'] if isinstance(d, dict) else d.id for d in hosp_docs]
+        # 1. Remote Trace - Calculate nearest hospital dynamically via DB and Haversine
+        hosp_data = AppointmentService.calculate_nearest_hospital(lat, lon)
+        if hosp_data:
+            nearest_hosp = hosp_data['name']
+            dist_km = hosp_data['distance']
+            room_desc = f"Near {nearest_hosp} ({dist_km} km)"
+            
+            # Notify all doctors and nurses at this dynamically selected hospital
+            hosp_staff = DBService.get_medical_staff_by_hospital(nearest_hosp)
+            notified_docs = [d['id'] if isinstance(d, dict) else d.id for d in hosp_staff]
+            
+            # ── Debug Logging ──
+            print(f"\n{'='*60}")
+            print(f"[SOS ROUTING] Patient Location: Lat={lat}, Lon={lon}")
+            print(f"[SOS ROUTING] Nearest Hospital: {nearest_hosp} ({dist_km} km)")
+            print(f"[SOS DISPATCH] Found {len(hosp_staff)} staff at '{nearest_hosp}'")
+            for s in hosp_staff:
+                s_name = s.get('name') if isinstance(s, dict) else s.name
+                s_role = s.get('role') if isinstance(s, dict) else s.role
+                s_id = s.get('id') if isinstance(s, dict) else s.id
+                print(f"  -> Will notify: {s_name} (role={s_role}, id={s_id})")
+            print(f"[SOS DISPATCH] Notified IDs: {notified_docs}")
+            print(f"{'='*60}\n")
+        else:
+            print(f"\n[SOS ROUTING] WARNING: No hospital found for Lat={lat}, Lon={lon}\n")
 
         alert_data = {
             "patient_id": patient_id,
@@ -184,7 +199,7 @@ def trigger_sos():
         AppointmentService.log_audit_action(
             action="SOS_TRIGGERED",
             patient_id=patient_id,
-            ward_number=ward_info.get('ward_number') if ward_info else None,
+            ward_number=None,
             details={
                 "location_type": location_type,
                 "hospital": nearest_hosp,
@@ -194,6 +209,15 @@ def trigger_sos():
         )
         
         response_data = new_alert.to_dict() if hasattr(new_alert, 'to_dict') else alert_data
+        
+        # Ensure notified_doctors is always a parsed list (not a JSON string) in socket payload
+        if isinstance(response_data, dict):
+            raw = response_data.get('notified_doctors') or response_data.get('notified_doctor_ids', '[]')
+            if isinstance(raw, str):
+                try:
+                    response_data = {**response_data, 'notified_doctors': json.loads(raw)}
+                except Exception:
+                    response_data = {**response_data, 'notified_doctors': []}
         
         # Real-time notification
         socketio.emit('new_alert', response_data)

@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 import os
 import math
-from backend.models import db, Appointment, User, AuditLog
+from backend.models import db, Appointment, User, AuditLog, Hospital
 from backend.db_service import DBService
 from bson import ObjectId
 
@@ -226,14 +226,6 @@ class AppointmentService:
 
     @staticmethod
     def calculate_nearest_hospital(lat, lon):
-        # Known Hospital Registry
-        # Adjusted coordinates to be physically near your current browser GPS
-        HOSPITALS = [
-            {"name": "Avdhoot Hospital", "lat": 19.1605, "lon": 72.9935},
-            {"name": "City Medical Center", "lat": 18.5300, "lon": 73.8600},
-            {"name": "General Wellness Clinic", "lat": 18.5100, "lon": 73.8400}
-        ]
-        
         def haversine(lat1, lon1, lat2, lon2):
             R = 6371 # Earth radius in km
             dLat = math.radians(lat2 - lat1)
@@ -244,21 +236,53 @@ class AppointmentService:
             c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
             return R * c
 
-        nearest = None
-        min_dist = float('inf')
+        # Query all hospitals
+        mode = os.environ.get('READ_FROM', 'sql')
+        hospitals = []
+        if mode == 'mongo':
+            mongodb = DBService.get_mongo_db()
+            if mongodb is not None:
+                hospitals = list(mongodb.hospitals.find())
+                if not hospitals:
+                    # Fallback to SQL if mongo collection doesn't exist yet/not synced
+                    hospitals = [h.to_dict() for h in Hospital.query.all()]
+        else:
+            hospitals = [h.to_dict() for h in Hospital.query.all()]
+            
+        if not hospitals:
+            return None
+
+        print(f"\n[SOS ROUTING] Calculating nearest hospital to [Lat: {lat}, Lon: {lon}]...")
         
-        for h in HOSPITALS:
-            dist = haversine(lat, lon, h['lat'], h['lon'])
-            if dist < min_dist:
-                min_dist = dist
-                nearest = h
+        # Calculate distances
+        evaluated_hospitals = []
+        for h in hospitals:
+            h_lat = h.get('latitude', h.get('lat'))
+            h_lon = h.get('longitude', h.get('lon'))
+            if h_lat is None or h_lon is None: continue
+                
+            dist = haversine(lat, lon, h_lat, h_lon)
+            h['distance'] = dist
+            evaluated_hospitals.append(h)
+            
+        # Sort by distance
+        evaluated_hospitals.sort(key=lambda x: x['distance'])
         
-        if nearest:
+        # Print top 4
+        print("[SOS ROUTING] Top 4 Nearest Results:")
+        for h in evaluated_hospitals[:4]:
+            print(f"  -> Evaluated '{h.get('name')}': {h['distance']:.2f} km away")
+        
+        if evaluated_hospitals:
+            nearest = evaluated_hospitals[0]
+            print(f"[SOS ROUTING] Selected NEAREST: {nearest.get('name')} at {nearest['distance']:.2f} km\n")
             return {
-                "name": nearest['name'],
-                "distance": round(min_dist, 2),
-                "lat": nearest['lat'],
-                "lon": nearest['lon']
+                "_id": nearest.get('id') or str(nearest.get('_id', '')),
+                "name": nearest.get('name'),
+                "distance": round(nearest['distance'], 2),
+                "lat": nearest.get('latitude', nearest.get('lat')),
+                "lon": nearest.get('longitude', nearest.get('lon')),
+                "capacity": nearest.get('capacity', 0)
             }
         return None
 

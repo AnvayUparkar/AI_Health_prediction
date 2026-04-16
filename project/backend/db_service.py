@@ -268,6 +268,30 @@ class DBService:
         ).all()
         return doctors
 
+    @staticmethod
+    def get_medical_staff_by_hospital(hospital_name: str):
+        """Fetch all doctors and nurses associated with a given hospital"""
+        mode = os.environ.get('READ_FROM', 'sql')
+        if mode == 'mongo':
+            mongodb = DBService.get_mongo_db()
+            if mongodb is not None:
+                cursor = mongodb.users.find({
+                    "role": {"$in": ["doctor", "nurse"]},
+                    "profile.hospitals": {"$regex": hospital_name, "$options": "i"}
+                })
+                results = list(cursor)
+                for r in results:
+                    r['id'] = str(r.pop('_id'))
+                return results
+
+        # SQL
+        q = f"%{hospital_name}%"
+        staff = User.query.filter(
+            (User.role.in_(['doctor', 'nurse'])) & 
+            (User.hospitals.ilike(q))
+        ).all()
+        return staff
+
     # --- Shop Operations ---
 
     @staticmethod
@@ -634,7 +658,14 @@ class DBService:
             reason=alert_data.get('reason'),
             detected_issues=json.dumps(alert_data.get('detected_issues', [])),
             recommended_action=alert_data.get('recommended_action'),
-            alert=alert_data.get('alert', False)
+            alert=alert_data.get('alert', False),
+            # SOS geolocation fields
+            latitude=alert_data.get('latitude'),
+            longitude=alert_data.get('longitude'),
+            location_type=alert_data.get('location_type', 'WARD'),
+            nearest_hospital=alert_data.get('nearest_hospital'),
+            distance_km=alert_data.get('distance_km'),
+            notified_doctor_ids=alert_data.get('notified_doctor_ids')
         )
         db.session.add(new_alert)
         db.session.commit()
@@ -653,6 +684,13 @@ class DBService:
                 "alert": alert_data.get('alert', False),
                 "acknowledged": False,
                 "resolved": False,
+                # SOS geolocation fields
+                "latitude": alert_data.get('latitude'),
+                "longitude": alert_data.get('longitude'),
+                "location_type": alert_data.get('location_type', 'WARD'),
+                "nearest_hospital": alert_data.get('nearest_hospital'),
+                "distance_km": alert_data.get('distance_km'),
+                "notified_doctor_ids": alert_data.get('notified_doctor_ids'),
                 "created_at": datetime.utcnow()
             }
             DBService._async_mongo_write('alerts', 'insert', mongo_data)
@@ -674,6 +712,8 @@ class DBService:
                 results = list(cursor)
                 for r in results:
                     r['id'] = str(r.pop('_id'))
+                    if 'created_at' in r and isinstance(r['created_at'], datetime):
+                        r['created_at'] = r['created_at'].isoformat() + "Z"
                 return results
 
         # SQL

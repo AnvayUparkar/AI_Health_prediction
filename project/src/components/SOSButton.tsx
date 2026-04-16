@@ -6,7 +6,7 @@ import { triggerSOS } from '../services/api';
 const SOSButton: React.FC = () => {
     const [isTriggering, setIsTriggering] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
-    const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
+    const [status, setStatus] = useState<'idle' | 'success' | 'error' | 'location_error'>('idle');
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [userName, setUserName] = useState('');
 
@@ -53,7 +53,10 @@ const SOSButton: React.FC = () => {
                 console.log('[SOS] Captured Location:', latitude, longitude);
             } catch (geoError) {
                 console.warn('[SOS] Geolocation failed or denied:', geoError);
-                // Fallback: Proceed without coordinates (backend handles the branch)
+                setStatus('location_error');
+                setIsTriggering(false);
+                setTimeout(() => setStatus('idle'), 4000);
+                return;
             }
 
             // 2. Trigger Alert
@@ -176,7 +179,9 @@ const SOSButton: React.FC = () => {
                             status === 'success' ? 'bg-green-500' : 'bg-red-500'
                         }`}
                     >
-                        {status === 'success' ? 'Staff Notified!' : 'Connection Failed'}
+                        {status === 'success' ? 'Staff Notified!' : 
+                         status === 'location_error' ? 'Location access required for SOS' : 
+                         'Connection Failed'}
                     </motion.div>
                 )}
             </AnimatePresence>

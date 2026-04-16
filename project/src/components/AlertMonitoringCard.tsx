@@ -26,28 +26,46 @@ interface Alert {
   location_type?: 'WARD' | 'REMOTE';
   nearest_hospital?: string;
   distance_km?: number;
+  notified_doctors?: (string | number)[]; // IDs of staff to notify
 }
 
 // ── Normalise incoming alert so missing fields never crash the UI ─────────────
-const normaliseAlert = (a: Partial<Alert>): Alert => ({
-  id: a.id ?? `tmp-${Date.now()}-${Math.random()}`,
-  patient_id: a.patient_id ?? 'UNKNOWN',
-  room_number: a.room_number ?? 'N/A',
-  status: a.status ?? 'CRITICAL',
-  confidence: a.confidence ?? 'HIGH',
-  reason: a.reason ?? 'Emergency alert',
-  detected_issues: Array.isArray(a.detected_issues) ? a.detected_issues : [],
-  recommended_action: a.recommended_action ?? 'Respond immediately',
-  alert: a.alert ?? true,
-  acknowledged: a.acknowledged ?? false,
-  resolved: a.resolved ?? false,
-  created_at: a.created_at ?? new Date().toISOString(),
-  latitude: a.latitude,
-  longitude: a.longitude,
-  location_type: a.location_type ?? 'WARD',
-  nearest_hospital: a.nearest_hospital,
-  distance_km: a.distance_km,
-});
+const normaliseAlert = (a: Partial<Alert> & { notified_doctor_ids?: string | (string|number)[] }): Alert => {
+  // Parse notified_doctors - backend may send it as 'notified_doctors' (parsed array from SQL to_dict)
+  // OR as 'notified_doctor_ids' (raw JSON string from Mongo dict)
+  let notifiedDoctors: (string | number)[] = [];
+  if (Array.isArray(a.notified_doctors) && a.notified_doctors.length > 0) {
+    notifiedDoctors = a.notified_doctors;
+  } else if (a.notified_doctor_ids) {
+    try {
+      const parsed = typeof a.notified_doctor_ids === 'string'
+        ? JSON.parse(a.notified_doctor_ids)
+        : a.notified_doctor_ids;
+      if (Array.isArray(parsed)) notifiedDoctors = parsed;
+    } catch { /* ignore parse errors */ }
+  }
+
+  return {
+    id: a.id ?? `tmp-${Date.now()}-${Math.random()}`,
+    patient_id: a.patient_id ?? 'UNKNOWN',
+    room_number: a.room_number ?? 'N/A',
+    status: a.status ?? 'CRITICAL',
+    confidence: a.confidence ?? 'HIGH',
+    reason: a.reason ?? 'Emergency alert',
+    detected_issues: Array.isArray(a.detected_issues) ? a.detected_issues : [],
+    recommended_action: a.recommended_action ?? 'Respond immediately',
+    alert: a.alert ?? true,
+    acknowledged: a.acknowledged ?? false,
+    resolved: a.resolved ?? false,
+    created_at: a.created_at ?? new Date().toISOString(),
+    latitude: a.latitude,
+    longitude: a.longitude,
+    location_type: a.location_type ?? 'WARD',
+    nearest_hospital: a.nearest_hospital,
+    distance_km: a.distance_km,
+    notified_doctors: notifiedDoctors,
+  };
+};
 
 // ── Simple beep using Web Audio API (no external assets needed) ───────────────
 const playAlertBeep = () => {
@@ -116,10 +134,22 @@ const AlertMonitoringCard: React.FC = () => {
     if (!silent) setLoading(true);
     else setRefreshing(true);
     try {
+      // Get current logged-in user's ID for filtering
+      const userStr = localStorage.getItem('user');
+      const currentUser = userStr ? JSON.parse(userStr) : null;
+      const myId = currentUser?.id ? String(currentUser.id) : null;
+
       const data = await getAlerts({ alert: true });
       const active: Alert[] = data
         .map(normaliseAlert)
-        .filter((a: Alert) => !a.resolved)
+        .filter((a: Alert) => {
+          if (a.resolved) return false;
+          // If no notified_doctors list, show to all staff (backward compat)
+          if (!a.notified_doctors || a.notified_doctors.length === 0) return true;
+          // Only show if this doctor/nurse is in the notified list
+          if (!myId) return false;
+          return a.notified_doctors.some((id) => String(id) === myId);
+        })
         .sort((a: Alert, b: Alert) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
@@ -148,6 +178,16 @@ const AlertMonitoringCard: React.FC = () => {
 
       // Only show active alerts
       if (!incoming.alert || incoming.resolved) return;
+
+      // Filter: only show if this doctor/nurse is in notified_doctors
+      const userStr = localStorage.getItem('user');
+      const currentUser = userStr ? JSON.parse(userStr) : null;
+      const myId = currentUser?.id ? String(currentUser.id) : null;
+      const notified = incoming.notified_doctors ?? [];
+      if (notified.length > 0 && myId && !notified.some((id) => String(id) === myId)) {
+        console.log('[AlertMonitoringCard] Skipping alert — not in notified list for this doctor.');
+        return;
+      }
 
       setAlerts(prev => {
         // Deduplicate by id

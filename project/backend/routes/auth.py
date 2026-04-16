@@ -93,8 +93,17 @@ def update_profile():
     user_id = get_jwt_identity()
     data = request.get_json() or {}
     
+    from flask_jwt_extended import get_jwt
+    claims = get_jwt()
+    role = claims.get('role', 'user')
+    
     # Restrict users to only update certain fields
     allowed_fields = ['age', 'sex', 'weight', 'height']
+    
+    # Allow medical staff to edit their assigned hospitals list
+    if role in ['doctor', 'nurse']:
+        allowed_fields.append('hospitals')
+        
     profile_data = {k: v for k, v in data.items() if k in allowed_fields}
     
     user = DBService.update_user_profile(user_id, profile_data)

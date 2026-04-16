@@ -9,7 +9,6 @@ const GamificationWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [points, setPoints] = useState(0);
   const [streak, setStreak] = useState(0);
-  const [progress, setProgress] = useState(0);
   const [steps, setSteps] = useState(0);
   const [isPulsing, setIsPulsing] = useState(false);
   const [showPointEarned, setShowPointEarned] = useState<number | null>(null);
@@ -56,10 +55,30 @@ const GamificationWidget: React.FC = () => {
         // We use a default value of 2100 for demonstration if no data exists
         const res = await updateSteps(0); // Trigger backend to fetch cloud sync data
         if (res.success) {
-          setProgress(res.progressPercent);
           setSteps(res.currentSteps || 0); // Store real steps
           if (res.earnedPoints > 0) {
             triggerPointAnimation(res.earnedPoints);
+          }
+          
+          // Sync local state and localStorage with backend truth source
+          if (res.totalPoints !== undefined) {
+            setPoints(res.totalPoints);
+            if (res.streak !== undefined) setStreak(res.streak);
+            
+            const userDataStr = localStorage.getItem('user');
+            if (userDataStr) {
+              try {
+                const user = JSON.parse(userDataStr);
+                if (user.points !== res.totalPoints || user.streak !== res.streak) {
+                  user.points = res.totalPoints;
+                  if (res.streak !== undefined) user.streak = res.streak;
+                  localStorage.setItem('user', JSON.stringify(user));
+                  window.dispatchEvent(new Event('userUpdated'));
+                }
+              } catch (e) {
+                console.error("Failed to parse user data", e);
+              }
+            }
           }
         }
       } catch (err) {
@@ -192,14 +211,16 @@ const GamificationWidget: React.FC = () => {
                 <div className="mb-6">
                   <div className="flex justify-between items-end mb-2">
                     <p className="text-[10px] text-purple-600 font-black uppercase tracking-widest">Daily Step Goal</p>
-                    <p className="text-xs font-bold text-gray-900">{steps.toLocaleString()} / 3,000</p>
+                    <p className="text-xs font-bold text-gray-900">
+                      {steps.toLocaleString()} / {((Math.floor(steps / 3000) + 1) * 3000).toLocaleString()}
+                    </p>
                   </div>
                   <div className="h-3 bg-purple-100/50 rounded-full overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
-                      animate={{ width: `${progress}%` }}
+                      animate={{ width: `${(steps / ((Math.floor(steps / 3000) + 1) * 3000)) * 100}%` }}
                       transition={{ duration: 1, ease: "easeOut" }}
-                      className={`h-full bg-gradient-to-r ${progress > 70 ? 'from-green-500 to-purple-400' : 'from-purple-600 to-orange-500'}`}
+                      className={`h-full bg-gradient-to-r ${(steps / ((Math.floor(steps / 3000) + 1) * 3000)) * 100 > 70 ? 'from-green-500 to-purple-400' : 'from-purple-600 to-orange-500'}`}
                     />
                   </div>
                   <p className="mt-2 text-[10px] text-gray-600 italic font-bold">
