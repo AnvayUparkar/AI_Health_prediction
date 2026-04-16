@@ -71,6 +71,16 @@ const SOSButton: React.FC = () => {
             });
 
             setStatus('success');
+
+            // After 2-second delay, trigger the navigation map modal
+            if (latitude !== undefined && longitude !== undefined) {
+                setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('sos-navigate', {
+                        detail: { lat: latitude, lng: longitude }
+                    }));
+                }, 2000);
+            }
+
             setTimeout(() => {
                 setStatus('idle');
                 setShowConfirm(false);

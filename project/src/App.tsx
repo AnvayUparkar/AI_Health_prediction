@@ -18,6 +18,7 @@ import GoogleCallback from './pages/GoogleCallback';
 import GamificationWidget from './components/GamificationWidget';
 import { AIChatBot } from './components/AIChatBot';
 import SOSButton from './components/SOSButton';
+import SOSNavigationModal from './components/SOSNavigationModal';
 import GestureMonitor from './components/GestureMonitor';
 import { Toaster } from 'react-hot-toast';
 
@@ -40,6 +41,7 @@ function App() {
         <GamificationWidget />
         <AIChatBot />
         <SOSButton />
+        <SOSNavigationModal />
         <GestureMonitor />
 
         <Routes>

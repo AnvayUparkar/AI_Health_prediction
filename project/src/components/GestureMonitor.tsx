@@ -70,6 +70,15 @@ const GestureMonitor: React.FC = () => {
                 setSosCount(prev => prev + 1);
                 // Auto-reset SOS banner after 6 seconds
                 setTimeout(() => setSosFired(false), 6000);
+
+                // Trigger navigation modal after 2s delay (same as manual SOS)
+                if (coords) {
+                    setTimeout(() => {
+                        window.dispatchEvent(new CustomEvent('sos-navigate', {
+                            detail: { lat: coords.lat, lng: coords.lon }
+                        }));
+                    }, 2000);
+                }
             }
         });
 

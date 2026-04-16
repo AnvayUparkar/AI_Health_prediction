@@ -241,3 +241,52 @@ def trigger_sos():
         print(f"[ERROR] SOS trigger failed: {e}")
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+# ── Nearest Hospital API (for SOS Navigation Map) ────────────────────────────
+
+@alert_bp.route('/nearest-hospital', methods=['GET', 'OPTIONS'])
+def get_nearest_hospital():
+    """
+    GET /api/nearest-hospital?lat=...&lng=...
+    Returns the nearest hospital to the given coordinates.
+    Used by the SOS Navigation Modal to display route to hospital.
+    """
+    if request.method == 'OPTIONS':
+        return '', 204
+
+    try:
+        lat = request.args.get('lat')
+        lng = request.args.get('lng')
+
+        if lat is None or lng is None:
+            return jsonify({"error": "lat and lng query parameters are required"}), 400
+
+        try:
+            lat = float(lat)
+            lng = float(lng)
+        except ValueError:
+            return jsonify({"error": "Invalid coordinate values"}), 400
+
+        # Validate coordinate ranges
+        if not (-90 <= lat <= 90) or not (-180 <= lng <= 180):
+            return jsonify({"error": "Coordinates out of valid range"}), 400
+
+        # Reuse existing Haversine-based hospital finder
+        hosp_data = AppointmentService.calculate_nearest_hospital(lat, lng)
+
+        if not hosp_data:
+            return jsonify({"error": "No hospitals found in database"}), 404
+
+        return jsonify({
+            "hospital_id": hosp_data.get('_id', ''),
+            "name": hosp_data.get('name', 'Unknown Hospital'),
+            "latitude": hosp_data.get('lat'),
+            "longitude": hosp_data.get('lon'),
+            "distance": hosp_data.get('distance'),
+            "capacity": hosp_data.get('capacity', 0)
+        }), 200
+
+    except Exception as e:
+        print(f"[ERROR] Nearest hospital lookup failed: {e}")
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500

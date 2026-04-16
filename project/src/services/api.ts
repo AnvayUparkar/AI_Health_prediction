@@ -111,6 +111,11 @@ export const triggerSOS = async (data: { patient_id?: string; room_number?: stri
     return res.data;
 };
 
+export const getNearestHospital = async (lat: number, lng: number) => {
+    const res = await api.get('/api/nearest-hospital', { params: { lat, lng } });
+    return res.data;
+};
+
 // --- Profile & User Management ---
 
 export const getProfile = async () => {
