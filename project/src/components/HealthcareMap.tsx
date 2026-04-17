@@ -3,6 +3,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { HealthcareFacility } from '../services/healthcareProcessor';
 import { UserLocation } from '../services/geoService';
+import { drawRoute } from '../utils/mapRouting.ts';
 
 // Fix for default Leaflet marker icon issues in Vite/Webpack
 import iconUrl from 'leaflet/dist/images/marker-icon.png';
@@ -53,8 +54,8 @@ interface HealthcareMapProps {
   onLocationChange?: (location: UserLocation) => void;
 }
 
-const HealthcareMap: React.FC<HealthcareMapProps> = ({ 
-  facilities, 
+const HealthcareMap: React.FC<HealthcareMapProps> = ({
+  facilities,
   userLocation,
   selectedFacilityId,
   onLocationChange
@@ -68,7 +69,7 @@ const HealthcareMap: React.FC<HealthcareMapProps> = ({
 
     // Initialize map
     mapInstance.current = L.map(mapContainer.current).setView([19.0760, 72.8777], 13);
-    
+
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(mapInstance.current);
@@ -91,14 +92,14 @@ const HealthcareMap: React.FC<HealthcareMapProps> = ({
 
     // Add User Location
     if (userLocation) {
-      const userMarker = L.marker([userLocation.latitude, userLocation.longitude], { 
+      const userMarker = L.marker([userLocation.latitude, userLocation.longitude], {
         icon: UserIcon,
         zIndexOffset: 1000,
         draggable: true
       })
         .bindPopup('<b>Your Location</b><br/><span style="font-size: 0.7rem; color: #6b7280;">Drag to correct position</span>')
         .addTo(layer);
-      
+
       userMarker.on('dragend', (event) => {
         const marker = event.target;
         const position = marker.getLatLng();
@@ -125,12 +126,23 @@ const HealthcareMap: React.FC<HealthcareMapProps> = ({
           </div>
         `)
         .addTo(layer);
-      
+
       markers.push(marker);
 
-      if (selectedFacilityId && facility.id === selectedFacilityId) {
+      if (selectedFacilityId && String(facility.id) === String(selectedFacilityId)) {
         marker.openPopup();
         mapInstance.current?.setView([facility.lat, facility.lon], 15);
+
+        // Draw Route if user location is available
+        if (userLocation) {
+          drawRoute(
+            mapInstance.current!,
+            userLocation.latitude,
+            userLocation.longitude,
+            facility.lat,
+            facility.lon
+          );
+        }
       }
     });
 
@@ -153,3 +165,4 @@ const HealthcareMap: React.FC<HealthcareMapProps> = ({
 };
 
 export default HealthcareMap;
+

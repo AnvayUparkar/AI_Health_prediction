@@ -186,3 +186,59 @@ def delete_appointment(appointment_id):
     except Exception as e:
         print(f"Error deleting appointment: {str(e)}")
         return jsonify({'error': 'Failed to delete appointment'}), 500
+
+
+@appointments_bp.route('/hospitals/search', methods=['GET'])
+def search_hospitals():
+    """Global search for hospitals using Nominatim"""
+    import urllib.request
+    import urllib.parse
+    import json
+    
+    query = request.args.get('q', '')
+    if not query:
+        return jsonify([])
+        
+    try:
+        # Search for hospitals/clinics matching the query
+        params = {
+            "q": f"{query} hospital",
+            "format": "json",
+            "limit": 10
+        }
+        
+        url = "https://nominatim.openstreetmap.org/search?" + urllib.parse.urlencode(params)
+        req = urllib.request.Request(url, headers={"User-Agent": "HealthApp/2.0"})
+        res = urllib.request.urlopen(req, timeout=5)
+        data = json.loads(res.read())
+        
+        results = []
+        for item in data:
+            results.append({
+                "id": str(item.get("osm_id") or item.get("place_id")),
+                "name": item.get("display_name").split(',')[0],
+                "lat": float(item["lat"]),
+                "lon": float(item["lon"]),
+                "address": item.get("display_name"),
+                "type": "hospital"
+            })
+            
+        return jsonify(results), 200
+        
+    except Exception as e:
+        print(f"Error searching hospitals: {str(e)}")
+        return jsonify({'error': 'Failed to search hospitals'}), 500
+
+@appointments_bp.route('/hospitals/<string:hospital_id>/doctors', methods=['GET'])
+def get_doctors_for_hospital(hospital_id):
+    """Get strictly filtered doctors for a specific hospital ID"""
+    try:
+        from backend.models import Doctor
+        # STRICT ENFORCEMENT: SELECT * FROM doctors WHERE hospital_id = <hospital_id>
+        docs = Doctor.query.filter_by(hospital_id=str(hospital_id)).all()
+        results = [{"id": d.id, "name": d.name, "hospital_id": d.hospital_id} for d in docs]
+        return jsonify(results), 200
+    except Exception as e:
+        print(f"Error strict fetching doctors: {str(e)}")
+        return jsonify({'error': 'Failed to fetch doctors based on hospital ID'}), 500
+

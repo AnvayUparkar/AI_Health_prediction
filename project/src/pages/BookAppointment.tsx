@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Video, MapPin, User, Mail, Phone, Clock, CheckCircle, Navigation, Stethoscope, Info } from 'lucide-react';
+import { Calendar, Video, MapPin, User, Mail, Phone, Clock, CheckCircle, Navigation, Stethoscope, Info, Search, Globe, ChevronRight } from 'lucide-react';
 import AnimatedBackground from '../components/AnimatedBackground';
 import GlassCard from '../components/GlassCard';
 import { getUserLocation, UserLocation } from '../services/geoService';
 import { fetchNearbyHealthcare } from '../services/overpassService';
 import { processFacilities, HealthcareFacility } from '../services/healthcareProcessor';
 import HealthcareMap from '../components/HealthcareMap';
-import { getDoctorsByHospital } from '../services/api';
+import { getDoctorsByHospital, searchHospitals } from '../services/api';
 
 const BookAppointment = () => {
   const [formData, setFormData] = useState({
@@ -30,6 +30,12 @@ const BookAppointment = () => {
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
 
+  // Search States
+  const [localSearch, setLocalSearch] = useState('');
+  const [globalSearch, setGlobalSearch] = useState('');
+  const [globalSuggestions, setGlobalSuggestions] = useState<any[]>([]);
+  const [isGlobalSearching, setIsGlobalSearching] = useState(false);
+
   // Doctors
   const [hospitalDoctors, setHospitalDoctors] = useState<any[]>([]);
   const [fetchingDoctors, setFetchingDoctors] = useState(false);
@@ -47,9 +53,71 @@ const BookAppointment = () => {
     if (facility && facility.name) {
       fetchDoctors(facility.name);
     }
+
   }, [formData.facilityId]);
 
-  // Re-fetch nearby facilities when location changes (manually or via search)
+  // Global Search Debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (globalSearch.length >= 3) {
+        performGlobalSearch(globalSearch);
+      } else {
+        setGlobalSuggestions([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [globalSearch]);
+
+  const performGlobalSearch = async (query: string) => {
+    setIsGlobalSearching(true);
+    try {
+      const results = await searchHospitals(query);
+      setGlobalSuggestions(results || []);
+    } catch (err) {
+      console.error('Global search failed', err);
+    } finally {
+      setIsGlobalSearching(false);
+    }
+  };
+
+  const handleGlobalSelection = (hospital: any) => {
+    // Convert global hospital to HealthcareFacility format
+    const newFacility: HealthcareFacility = {
+      id: `global-${hospital.id}`,
+      name: hospital.name,
+      type: 'hospital',
+      lat: hospital.lat,
+      lon: hospital.lon,
+      distance: 0, // We could calculate this if userLocation exists
+      address: hospital.address,
+      isGlobal: true // Flag to identify as global (no SOS)
+    };
+
+    if (userLocation) {
+        // Calculate distance for UI consistency
+        const R = 6371;
+        const dLat = (hospital.lat - userLocation.latitude) * Math.PI / 180;
+        const dLon = (hospital.lon - userLocation.longitude) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(userLocation.latitude * Math.PI / 180) * Math.cos(hospital.lat * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        newFacility.distance = R * c;
+    }
+
+    // Add to facilities if not already there
+    setFacilities(prev => {
+        const exists = prev.find(f => f.id === newFacility.id);
+        return exists ? prev : [newFacility, ...prev];
+    });
+
+    setFormData(prev => ({ ...prev, facilityId: String(newFacility.id) }));
+    setGlobalSearch('');
+    setGlobalSuggestions([]);
+  };
+
+  // Re-fetch nearby facilities when location changes
   useEffect(() => {
     if (userLocation) {
       fetchNearbyFacilities(userLocation.latitude, userLocation.longitude);
@@ -66,6 +134,8 @@ const BookAppointment = () => {
         setSearchError('No nearby healthcare facilities found within 5km.');
       } else {
         setFacilities(processed);
+        // Expose to window for legacy support if needed
+        (window as any).nearbyHospitals = processed;
       }
     } catch (err: any) {
       setSearchError(err.message || 'Failed to fetch medical facilities.');
@@ -73,6 +143,11 @@ const BookAppointment = () => {
       setSearching(false);
     }
   };
+
+  // Local filtering
+  const filteredFacilities = facilities.filter(f => 
+    f.name.toLowerCase().includes(localSearch.toLowerCase())
+  );
 
   const handleAddressSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,14 +172,27 @@ const BookAppointment = () => {
 
   const fetchDoctors = async (hospitalName: string) => {
     setFetchingDoctors(true);
+    setSearchError(null);
+    
+    // CLEAR OLD DOCTORS before fetching new ones
+    setHospitalDoctors([]);
+    setFormData(prev => ({ ...prev, doctorId: '' }));
+
     try {
+      // Fetch doctors ONLY for the selected hospital by name
+      // Backend matches against User.hospitals JSON field (role='doctor')
       const docs = await getDoctorsByHospital(hospitalName);
       setHospitalDoctors(docs || []);
-      setFormData(prev => ({ ...prev, doctorId: docs && docs.length > 0 ? docs[0].id : '' }));
+      
+      // SAFETY CHECK
+      if (!docs || docs.length === 0) {
+        setSearchError("No doctors available for this hospital");
+      } else {
+        setSearchError(null);
+        setFormData(prev => ({ ...prev, doctorId: docs[0].id }));
+      }
     } catch (err) {
       console.error('Failed to fetch doctors', err);
-      setHospitalDoctors([]);
-      setFormData(prev => ({ ...prev, doctorId: '' }));
     } finally {
       setFetchingDoctors(false);
     }
@@ -114,10 +202,8 @@ const BookAppointment = () => {
     e.preventDefault();
     setLoading(true);
 
-    // Prepare final dropdown string if a facility is selected
     const selectedFacility = facilities.find(f => String(f.id) === String(formData.facilityId));
     
-    // Get patient_id from local storage
     const userString = localStorage.getItem('user');
     const currentUser = userString ? JSON.parse(userString) : null;
     
@@ -125,7 +211,8 @@ const BookAppointment = () => {
       ...formData,
       selected_doctor: selectedFacility ? `${selectedFacility.name} (${selectedFacility.type})` : '',
       doctor_id: formData.doctorId || null,
-      patient_id: currentUser ? currentUser.id : null
+      patient_id: currentUser ? currentUser.id : null,
+      is_global: selectedFacility?.isGlobal || false
     };
 
     try {
@@ -272,6 +359,73 @@ const BookAppointment = () => {
               </p>
             </div>
 
+            {/* Premium Search Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+              <div className="relative group">
+                <label className="flex items-center text-[11px] font-bold text-blue-600 uppercase tracking-widest mb-1.5 ml-1">
+                   <Search className="h-3 w-3 mr-1" /> Local Search (5km)
+                </label>
+                <input
+                  type="text"
+                  id="localSearch"
+                  placeholder="Filter nearby hospitals..."
+                  value={localSearch}
+                  onChange={(e) => setLocalSearch(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-blue-100 bg-blue-50/30 focus:bg-white focus:ring-2 focus:ring-blue-200 transition-all text-sm shadow-sm placeholder:text-blue-300"
+                />
+              </div>
+
+              <div className="relative group">
+                <label className="flex items-center text-[11px] font-bold text-cyan-600 uppercase tracking-widest mb-1.5 ml-1">
+                   <Globe className="h-3 w-3 mr-1" /> Global Search
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    id="globalSearch"
+                    placeholder="Search any hospital worldwide..."
+                    value={globalSearch}
+                    onChange={(e) => setGlobalSearch(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-cyan-100 bg-cyan-50/30 focus:bg-white focus:ring-2 focus:ring-cyan-200 transition-all text-sm shadow-sm placeholder:text-cyan-300"
+                  />
+                  {isGlobalSearching && (
+                    <div className="absolute right-3 top-3.5 h-4 w-4 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+                  )}
+                </div>
+
+                {/* Suggestions Dropdown */}
+                <AnimatePresence>
+                  {globalSuggestions.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute z-20 mt-2 w-full bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden backdrop-blur-xl"
+                    >
+                      <div className="p-2 max-h-[250px] overflow-y-auto">
+                        {globalSuggestions.map((h, idx) => (
+                          <div
+                            key={h.id || idx}
+                            onClick={() => handleGlobalSelection(h)}
+                            className="p-3 hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50 cursor-pointer rounded-xl transition-all group flex items-start space-x-3 border border-transparent hover:border-cyan-100 mb-1"
+                          >
+                            <div className="bg-cyan-100 p-2 rounded-lg text-cyan-600 group-hover:bg-cyan-600 group-hover:text-white transition-colors mt-0.5">
+                              <MapPin className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-bold text-gray-800 text-sm truncate">{h.name}</div>
+                              <div className="text-[10px] text-gray-500 truncate">{h.address}</div>
+                            </div>
+                            <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-cyan-500 self-center" />
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+
             {/* Personal Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -327,7 +481,7 @@ const BookAppointment = () => {
               <div>
                 <label className="flex items-center text-gray-700 font-semibold mb-2">
                   <Stethoscope className="h-5 w-5 mr-2 text-blue-500" />
-                  Select Healthcare Professional / Facility
+                  Select Healthcare Facility
                 </label>
                 <select
                   name="facilityId"
@@ -336,10 +490,10 @@ const BookAppointment = () => {
                   required
                   className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all bg-white/50 shadow-sm"
                 >
-                  <option value="">{facilities.length > 0 ? '-- Choose Nearby Specialist --' : 'Locate nearby doctors first'}</option>
-                  {facilities.map(f => (
+                  <option value="">{filteredFacilities.length > 0 ? '-- Choose Selection --' : 'No matches found'}</option>
+                  {filteredFacilities.map(f => (
                     <option key={f.id} value={f.id}>
-                      {f.name} ({f.type.charAt(0).toUpperCase() + f.type.slice(1)}) - {f.distance.toFixed(1)} km
+                      {f.isGlobal ? '🌍 ' : ''}{f.name} ({f.type.charAt(0).toUpperCase() + f.type.slice(1)}) - {f.distance >= 1 ? `${f.distance.toFixed(1)} km` : `${(f.distance*1000).toFixed(0)} m`}
                     </option>
                   ))}
                 </select>
@@ -534,4 +688,4 @@ const BookAppointment = () => {
   );
 };
 
-export default BookAppointment;
+export default BookAppointment;

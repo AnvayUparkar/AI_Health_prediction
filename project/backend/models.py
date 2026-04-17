@@ -68,6 +68,14 @@ class Doctor(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
     speciality = db.Column(db.String(120), nullable=True)
+    hospital_id = db.Column(db.String(120), nullable=True)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "hospital_id": self.hospital_id
+        }
 
 class Appointment(db.Model):
     """Optional minimal Appointment model (Extended for Doctor Management)"""
@@ -284,3 +292,18 @@ def init_db(app):
             db.session.bulk_save_objects(hospitals)
             db.session.commit()
             print("[INFO] Seeded hospitals into SQL database.")
+
+        # Seed doctors strictly assigned to hospitals
+        if Doctor.query.count() == 0:
+            # Note: We use OSM/mock IDs if the frontend passes them, or internal SQL hospital IDs.
+            # To ensure it always works regardless of what ID the frontend passes, we will 
+            # dynamically create doctors on the fly in the API if needed, 
+            # but we seed some defaults here just in case.
+            seed_doctors = [
+                Doctor(name="Dr. Mahesh Bhaskar Uparkar", speciality="Cardiology", hospital_id="1"),
+                Doctor(name="Dr. Rajesh Patil", speciality="Neurology", hospital_id="2"),
+                Doctor(name="Dr. Sunita Sharma", speciality="Pediatrics", hospital_id="3")
+            ]
+            db.session.bulk_save_objects(seed_doctors)
+            db.session.commit()
+            print("[INFO] Seeded doctors into SQL database.")

@@ -12,7 +12,9 @@ export interface HealthcareFacility {
   lon: number;
   distance: number;
   address?: string;
+  isGlobal?: boolean;
 }
+
 
 export const processFacilities = (
   rawJson: any,

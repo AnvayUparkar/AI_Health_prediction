@@ -143,6 +143,11 @@ export const getDoctorsByHospital = async (hospitalName: string) => {
     return res.data;
 };
 
+export const getDoctorsByHospitalId = async (hospitalId: string | number) => {
+    const res = await api.get(`/api/hospitals/${hospitalId}/doctors`);
+    return res.data;
+};
+
 // --- Doctor Appointment Management ---
 
 export const getDoctorAppointments = async (doctorId: string | number, status?: string) => {
@@ -196,5 +201,10 @@ export const exportHealthReport = async () => {
 
 export const exportReportAnalysis = async (analysisData: any) => {
     const res = await api.post('/api/export-report-analysis', analysisData, { responseType: 'blob' });
+    return res.data;
+};
+
+export const searchHospitals = async (query: string) => {
+    const res = await api.get('/api/hospitals/search', { params: { q: query } });
     return res.data;
 };

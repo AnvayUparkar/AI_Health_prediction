@@ -245,36 +245,116 @@ class DBService:
 
     @staticmethod
     def get_doctors_by_hospital(hospital_name: str):
-        """Fetch all doctors associated with a given hospital"""
+        """Fetch all doctors associated with a given hospital.
+        
+        Uses multi-pass matching to handle name variations between
+        OSM facility names and what doctors typed in their profiles.
+        E.g. 'Avdhoot Hospital' (internal) vs 'Avadhoot Hospital' (doctor profile)
+        """
         from backend.utils.geocode import resolve_canonical_hospital
+        import difflib
         
         # Resolve to our internal canonical name if possible
         canonical_name, _ = resolve_canonical_hospital(hospital_name)
         if canonical_name != hospital_name:
             print(f"  [DB_SERVICE] hospital_name resolved: '{hospital_name}' -> '{canonical_name}'")
-            hospital_name = canonical_name
 
+        # Build a list of name variants to search for
+        search_names = list(set([hospital_name, canonical_name]))
+        
         mode = os.environ.get('READ_FROM', 'sql')
         if mode == 'mongo':
             mongodb = DBService.get_mongo_db()
             if mongodb is not None:
-                # search for doctors with hospital matching inside their profile hospitals array
+                # Build regex that matches ANY variant
+                regex_pattern = "|".join(n.replace("(", r"\(").replace(")", r"\)") for n in search_names)
                 cursor = mongodb.users.find({
                     "role": "doctor",
-                    "profile.hospitals": {"$regex": hospital_name, "$options": "i"}
+                    "profile.hospitals": {"$regex": regex_pattern, "$options": "i"}
                 })
                 results = list(cursor)
                 for r in results:
                     r['id'] = str(r.pop('_id'))
-                return results
+                    
+                if results:
+                    return results
 
-        # SQL
-        q = f"%{hospital_name}%"
-        doctors = User.query.filter(
-            (User.role == 'doctor') & 
-            (User.hospitals.ilike(q))
-        ).all()
-        return doctors
+                # Fallback: search all doctors then fuzzy match their hospital list
+                all_doctors = list(mongodb.users.find({"role": "doctor"}))
+                matched = []
+                for doc in all_doctors:
+                    doc_hospitals = doc.get('profile', {}).get('hospitals', [])
+                    if isinstance(doc_hospitals, str):
+                        try:
+                            doc_hospitals = json.loads(doc_hospitals)
+                        except:
+                            doc_hospitals = [doc_hospitals]
+                    
+                    for doc_h in doc_hospitals:
+                        # Bidirectional substring check
+                        if (doc_h.lower() in hospital_name.lower() or
+                            hospital_name.lower() in doc_h.lower() or
+                            doc_h.lower() in canonical_name.lower() or
+                            canonical_name.lower() in doc_h.lower()):
+                            doc['id'] = str(doc.pop('_id'))
+                            matched.append(doc)
+                            break
+                        # Fuzzy match (handles Avdhoot vs Avadhoot)
+                        ratio = difflib.SequenceMatcher(None, doc_h.lower(), canonical_name.lower()).ratio()
+                        if ratio >= 0.7:
+                            doc['id'] = str(doc.pop('_id'))
+                            matched.append(doc)
+                            break
+                return matched
+
+        # SQL — Multi-pass search
+        all_results = []
+        seen_ids = set()
+        
+        # Pass 1: Try each name variant with ILIKE
+        for name in search_names:
+            q = f"%{name}%"
+            doctors = User.query.filter(
+                (User.role == 'doctor') & 
+                (User.hospitals.ilike(q))
+            ).all()
+            for d in doctors:
+                if d.id not in seen_ids:
+                    all_results.append(d)
+                    seen_ids.add(d.id)
+
+        if all_results:
+            return all_results
+
+        # Pass 2: Bidirectional substring + fuzzy match against each doctor's hospitals list
+        all_doctors = User.query.filter(User.role == 'doctor').all()
+        for doc in all_doctors:
+            if doc.id in seen_ids:
+                continue
+            try:
+                doc_hospitals = json.loads(doc.hospitals) if doc.hospitals else []
+            except:
+                doc_hospitals = []
+            
+            for doc_h in doc_hospitals:
+                doc_h_lower = doc_h.lower()
+                # Bidirectional substring (catches "Avadhoot Hospital" in "Avdhoot Hospital" and vice versa)
+                if (doc_h_lower in hospital_name.lower() or
+                    hospital_name.lower() in doc_h_lower or
+                    doc_h_lower in canonical_name.lower() or
+                    canonical_name.lower() in doc_h_lower):
+                    all_results.append(doc)
+                    seen_ids.add(doc.id)
+                    break
+                # Fuzzy match (handles typos like Avdhoot vs Avadhoot)
+                ratio = difflib.SequenceMatcher(None, doc_h_lower, canonical_name.lower()).ratio()
+                if ratio >= 0.7:
+                    print(f"  [DB_SERVICE] Fuzzy doctor match: '{doc_h}' ~ '{canonical_name}' ({ratio:.0%})")
+                    all_results.append(doc)
+                    seen_ids.add(doc.id)
+                    break
+
+        return all_results
 
     @staticmethod
     def get_medical_staff_by_hospital(hospital_name: str):
