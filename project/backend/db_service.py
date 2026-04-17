@@ -301,7 +301,7 @@ class DBService:
                             break
                         # Fuzzy match (handles Avdhoot vs Avadhoot)
                         ratio = difflib.SequenceMatcher(None, doc_h.lower(), canonical_name.lower()).ratio()
-                        if ratio >= 0.7:
+                        if ratio >= 0.85:
                             doc['id'] = str(doc.pop('_id'))
                             matched.append(doc)
                             break
@@ -348,7 +348,7 @@ class DBService:
                     break
                 # Fuzzy match (handles typos like Avdhoot vs Avadhoot)
                 ratio = difflib.SequenceMatcher(None, doc_h_lower, canonical_name.lower()).ratio()
-                if ratio >= 0.7:
+                if ratio >= 0.85:
                     print(f"  [DB_SERVICE] Fuzzy doctor match: '{doc_h}' ~ '{canonical_name}' ({ratio:.0%})")
                     all_results.append(doc)
                     seen_ids.add(doc.id)

@@ -220,9 +220,9 @@ def resolve_canonical_hospital(name: str, lat: float = None, lon: float = None):
         if name_clean in h_name or h_name in name_clean:
             return h.name, h.to_dict()
 
-    # Fuzzy string match (high threshold)
+    # Fuzzy string match (very high threshold to avoid false positives from shared words like "Hospital")
     all_names = [h.name for h in hospitals]
-    matches = difflib.get_close_matches(name, all_names, n=1, cutoff=0.6)
+    matches = difflib.get_close_matches(name, all_names, n=1, cutoff=0.85)
     if matches:
         target_name = matches[0]
         for h in hospitals:
