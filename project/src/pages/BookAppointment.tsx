@@ -33,6 +33,8 @@ const BookAppointment = () => {
   // Doctors
   const [hospitalDoctors, setHospitalDoctors] = useState<any[]>([]);
   const [fetchingDoctors, setFetchingDoctors] = useState(false);
+  const [addressSearch, setAddressSearch] = useState('');
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
 
   useEffect(() => {
     if (!formData.facilityId) {
@@ -46,6 +48,52 @@ const BookAppointment = () => {
       fetchDoctors(facility.name);
     }
   }, [formData.facilityId]);
+
+  // Re-fetch nearby facilities when location changes (manually or via search)
+  useEffect(() => {
+    if (userLocation) {
+      fetchNearbyFacilities(userLocation.latitude, userLocation.longitude);
+    }
+  }, [userLocation?.latitude, userLocation?.longitude]);
+
+  const fetchNearbyFacilities = async (lat: number, lon: number) => {
+    setSearching(true);
+    setSearchError(null);
+    try {
+      const rawData = await fetchNearbyHealthcare(lat, lon);
+      const processed = processFacilities(rawData, lat, lon);
+      if (processed.length === 0) {
+        setSearchError('No nearby healthcare facilities found within 5km.');
+      } else {
+        setFacilities(processed);
+      }
+    } catch (err: any) {
+      setSearchError(err.message || 'Failed to fetch medical facilities.');
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleAddressSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addressSearch.trim()) return;
+    
+    setIsSearchingAddress(true);
+    try {
+      const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressSearch)}&limit=1`);
+      const data = await resp.json();
+      if (data && data.length > 0) {
+        const { lat, lon } = data[0];
+        setUserLocation({ latitude: parseFloat(lat), longitude: parseFloat(lon) });
+      } else {
+        setSearchError('Address not found. Please try a different location.');
+      }
+    } catch (err) {
+      console.error('Address search failed', err);
+    } finally {
+      setIsSearchingAddress(false);
+    }
+  };
 
   const fetchDoctors = async (hospitalName: string) => {
     setFetchingDoctors(true);
@@ -118,33 +166,10 @@ const BookAppointment = () => {
     setSearching(true);
     setSearchError(null);
     try {
-      // 1. Get current position
-      const location = await getUserLocation();
+      const location = await getUserLocation(15000); // 15s timeout
       setUserLocation(location);
-
-      // 2. Check Cache (LocalStorage)
-      const cacheKey = `nearby_healthcare_${location.latitude.toFixed(3)}_${location.longitude.toFixed(3)}`;
-      const cachedData = localStorage.getItem(cacheKey);
-      
-      if (cachedData) {
-        setFacilities(JSON.parse(cachedData));
-        setSearching(false);
-        return;
-      }
-
-      // 3. Fetch from Overpass if not cached
-      const rawData = await fetchNearbyHealthcare(location.latitude, location.longitude);
-      const processed = processFacilities(rawData, location.latitude, location.longitude);
-      
-      if (processed.length === 0) {
-        setSearchError('No nearby healthcare facilities found within 5km.');
-      } else {
-        setFacilities(processed);
-        // Cache results for 1 hour approx (storing simplified list)
-        localStorage.setItem(cacheKey, JSON.stringify(processed));
-      }
     } catch (err: any) {
-      setSearchError(err.message || 'Failed to fetch nearby medical facilities.');
+      setSearchError(err.message || 'Failed to fetch location automatically.');
     } finally {
       setSearching(false);
     }
@@ -198,21 +223,55 @@ const BookAppointment = () => {
         </motion.div>
 
         <GlassCard className="p-8">
-          <div className="flex justify-end mb-6">
+          <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <form onSubmit={handleAddressSearch} className="flex-1 w-full relative">
+              <input
+                type="text"
+                placeholder="Search your area (e.g. Airoli, Navi Mumbai)"
+                value={addressSearch}
+                onChange={(e) => setAddressSearch(e.target.value)}
+                className="w-full pl-10 pr-24 py-2.5 rounded-2xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all bg-white/70"
+              />
+              <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <button
+                type="submit"
+                disabled={isSearchingAddress}
+                className="absolute right-1.5 top-1.5 bg-blue-600 text-white px-4 py-1.5 rounded-xl text-xs font-bold hover:bg-blue-700 disabled:opacity-50"
+              >
+                {isSearchingAddress ? '...' : 'Set Location'}
+              </button>
+            </form>
+
             <motion.button
               type="button"
               onClick={handleFindNearby}
               disabled={searching}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="flex items-center space-x-2 bg-blue-50 text-blue-600 px-5 py-2.5 rounded-2xl font-bold border border-blue-100 shadow-sm hover:shadow-md transition-all active:bg-blue-100 disabled:opacity-50"
+              className="flex items-center space-x-2 bg-blue-50 text-blue-600 px-5 py-2.5 rounded-2xl font-bold border border-blue-100 shadow-sm hover:shadow-md transition-all active:bg-blue-100 disabled:opacity-50 w-full md:w-auto justify-center"
             >
               <Navigation className={`h-4 w-4 ${searching ? 'animate-pulse' : ''}`} />
-              <span>{searching ? 'Locating...' : 'Find Nearby Doctors & Hospitals'}</span>
+              <span>{searching ? 'Locating...' : 'Auto Detect'}</span>
             </motion.button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="bg-blue-50/30 p-4 rounded-2xl border border-blue-100/50 mb-6">
+              <div className="flex items-center space-x-2 mb-3 text-blue-800">
+                <Info className="h-4 w-4" />
+                <span className="text-sm font-bold uppercase tracking-wider">Step 1: Locate Facilities</span>
+              </div>
+              <HealthcareMap 
+                facilities={facilities} 
+                userLocation={userLocation}
+                selectedFacilityId={formData.facilityId}
+                onLocationChange={(loc) => setUserLocation(loc)}
+              />
+              <p className="mt-3 text-[11px] text-gray-500 italic text-center">
+                Map markers update automatically. Drag the blue pin to refine your location.
+              </p>
+            </div>
+
             {/* Personal Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -275,7 +334,7 @@ const BookAppointment = () => {
                   value={formData.facilityId}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all bg-white/50"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all bg-white/50 shadow-sm"
                 >
                   <option value="">{facilities.length > 0 ? '-- Choose Nearby Specialist --' : 'Locate nearby doctors first'}</option>
                   {facilities.map(f => (
@@ -284,10 +343,10 @@ const BookAppointment = () => {
                     </option>
                   ))}
                 </select>
-                {facilities.length === 0 && (
-                  <p className="mt-1 text-[10px] text-gray-400 font-medium italic pl-1 flex items-center">
+                {facilities.length === 0 && !searching && (
+                  <p className="mt-1 text-[10px] text-amber-600 font-medium italic pl-1 flex items-center">
                     <Info className="h-3 w-3 mr-1" />
-                    Click "Find Nearby" above to populate this list automatically.
+                    Click "Auto Detect" or search above to find nearby specialists.
                   </p>
                 )}
               </div>
@@ -470,43 +529,9 @@ const BookAppointment = () => {
             </motion.button>
           </form>
         </GlassCard>
-
-        <AnimatePresence>
-          {(facilities.length > 0 || userLocation) && (
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 50 }}
-              className="mt-12"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-2xl font-bold text-gray-800">Healthcare Map</h3>
-                <div className="flex space-x-4">
-                  <div className="flex items-center text-xs text-gray-500">
-                    <div className="w-3 h-3 rounded-full bg-blue-500 mr-2 border border-white shadow-sm" />
-                    You
-                  </div>
-                  <div className="flex items-center text-xs text-gray-500">
-                    <div className="w-3 h-3 rounded-full bg-green-500 mr-2 border border-white shadow-sm" />
-                    Doctor
-                  </div>
-                  <div className="flex items-center text-xs text-gray-500">
-                    <div className="w-3 h-3 rounded-full bg-red-500 mr-2 border border-white shadow-sm" />
-                    Hospital
-                  </div>
-                </div>
-              </div>
-              <HealthcareMap 
-                facilities={facilities} 
-                userLocation={userLocation}
-                selectedFacilityId={formData.facilityId}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </div>
   );
 };
 
-export default BookAppointment;
+export default BookAppointment;

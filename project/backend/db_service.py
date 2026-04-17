@@ -246,6 +246,14 @@ class DBService:
     @staticmethod
     def get_doctors_by_hospital(hospital_name: str):
         """Fetch all doctors associated with a given hospital"""
+        from backend.utils.geocode import resolve_canonical_hospital
+        
+        # Resolve to our internal canonical name if possible
+        canonical_name, _ = resolve_canonical_hospital(hospital_name)
+        if canonical_name != hospital_name:
+            print(f"  [DB_SERVICE] hospital_name resolved: '{hospital_name}' -> '{canonical_name}'")
+            hospital_name = canonical_name
+
         mode = os.environ.get('READ_FROM', 'sql')
         if mode == 'mongo':
             mongodb = DBService.get_mongo_db()
@@ -271,6 +279,14 @@ class DBService:
     @staticmethod
     def get_medical_staff_by_hospital(hospital_name: str):
         """Fetch all doctors and nurses associated with a given hospital"""
+        from backend.utils.geocode import resolve_canonical_hospital
+        
+        # Resolve to our internal canonical name if possible
+        canonical_name, _ = resolve_canonical_hospital(hospital_name)
+        if canonical_name != hospital_name:
+            print(f"  [DB_SERVICE] hospital_name resolved: '{hospital_name}' -> '{canonical_name}'")
+            hospital_name = canonical_name
+
         mode = os.environ.get('READ_FROM', 'sql')
         if mode == 'mongo':
             mongodb = DBService.get_mongo_db()

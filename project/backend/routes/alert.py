@@ -271,22 +271,119 @@ def get_nearest_hospital():
         if not (-90 <= lat <= 90) or not (-180 <= lng <= 180):
             return jsonify({"error": "Coordinates out of valid range"}), 400
 
-        # Reuse existing Haversine-based hospital finder
+        # ── Strategy: DB first, then OSM live fallback ────────────────────
+        DB_DISTANCE_THRESHOLD_KM = 50  # If nearest DB hospital > this, query OSM
+
+        # 1) Check our registered hospitals (DB)
         hosp_data = AppointmentService.calculate_nearest_hospital(lat, lng)
 
-        if not hosp_data:
-            return jsonify({"error": "No hospitals found in database"}), 404
+        if hosp_data and hosp_data.get('distance', 999) <= DB_DISTANCE_THRESHOLD_KM:
+            # Found a close registered hospital — use it
+            return jsonify({
+                "hospital_id": hosp_data.get('_id', ''),
+                "name": hosp_data.get('name', 'Unknown Hospital'),
+                "latitude": hosp_data.get('lat'),
+                "longitude": hosp_data.get('lon'),
+                "distance": hosp_data.get('distance'),
+                "capacity": hosp_data.get('capacity', 0),
+                "source": "database"
+            }), 200
 
-        return jsonify({
-            "hospital_id": hosp_data.get('_id', ''),
-            "name": hosp_data.get('name', 'Unknown Hospital'),
-            "latitude": hosp_data.get('lat'),
-            "longitude": hosp_data.get('lon'),
-            "distance": hosp_data.get('distance'),
-            "capacity": hosp_data.get('capacity', 0)
-        }), 200
+        # 2) DB hospital is too far or missing — search live via OpenStreetMap
+        print(f"[SOS NAV] No DB hospital within {DB_DISTANCE_THRESHOLD_KM}km. Querying OSM Overpass...")
+        from backend.utils.geocode import search_nearby_hospitals_osm
+        osm_hospitals = search_nearby_hospitals_osm(lat, lng, radius_km=25)
+
+        if osm_hospitals:
+            nearest = osm_hospitals[0]
+            return jsonify({
+                "hospital_id": "",
+                "name": nearest["name"],
+                "latitude": nearest["latitude"],
+                "longitude": nearest["longitude"],
+                "distance": nearest["distance"],
+                "capacity": 0,
+                "source": "osm_live"
+            }), 200
+
+        # 3) OSM also found nothing within 25km — expand to 100km
+        osm_hospitals = search_nearby_hospitals_osm(lat, lng, radius_km=100)
+        if osm_hospitals:
+            nearest = osm_hospitals[0]
+            return jsonify({
+                "hospital_id": "",
+                "name": nearest["name"],
+                "latitude": nearest["latitude"],
+                "longitude": nearest["longitude"],
+                "distance": nearest["distance"],
+                "capacity": 0,
+                "source": "osm_live"
+            }), 200
+
+        # 4) Last resort: return the DB result even if far
+        if hosp_data:
+            return jsonify({
+                "hospital_id": hosp_data.get('_id', ''),
+                "name": hosp_data.get('name', 'Unknown Hospital'),
+                "latitude": hosp_data.get('lat'),
+                "longitude": hosp_data.get('lon'),
+                "distance": hosp_data.get('distance'),
+                "capacity": hosp_data.get('capacity', 0),
+                "source": "database_fallback"
+            }), 200
+
+        return jsonify({"error": "No hospitals found nearby"}), 404
 
     except Exception as e:
         print(f"[ERROR] Nearest hospital lookup failed: {e}")
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+# ── Add Hospital with Auto-Geocoding ─────────────────────────────────────────
+
+@alert_bp.route('/hospitals', methods=['GET', 'POST', 'OPTIONS'])
+def manage_hospitals():
+    """
+    GET  /api/hospitals           — List all hospitals
+    POST /api/hospitals           — Add a new hospital (auto-geocodes coordinates)
+    Body: { "name": "Hospital Name", "capacity": 100 }
+    Optional: { "latitude": ..., "longitude": ... } to override geocoding
+    """
+    if request.method == 'OPTIONS':
+        return '', 204
+
+    from backend.models import Hospital, db
+
+    if request.method == 'GET':
+        hospitals = Hospital.query.all()
+        return jsonify([h.to_dict() for h in hospitals]), 200
+
+    # POST — Add new hospital
+    data = request.get_json()
+    if not data or not data.get('name'):
+        return jsonify({"error": "Hospital name is required"}), 400
+
+    name = data['name'].strip()
+    capacity = data.get('capacity', 100)
+
+    # Check for duplicates
+    existing = Hospital.query.filter(Hospital.name.ilike(f"%{name}%")).first()
+    if existing:
+        return jsonify({"error": f"Hospital '{existing.name}' already exists", "hospital": existing.to_dict()}), 409
+
+    # Auto-geocode if coordinates not provided
+    lat = data.get('latitude')
+    lon = data.get('longitude')
+
+    if lat is None or lon is None:
+        from backend.utils.geocode import geocode_hospital
+        lat, lon = geocode_hospital(name)
+        if lat is None or lon is None:
+            return jsonify({"error": f"Could not geocode '{name}'. Provide latitude and longitude manually."}), 400
+
+    hospital = Hospital(name=name, latitude=lat, longitude=lon, capacity=capacity)
+    db.session.add(hospital)
+    db.session.commit()
+
+    print(f"[INFO] Added hospital: {name} at ({lat}, {lon})")
+    return jsonify({"message": f"Hospital '{name}' added successfully", "hospital": hospital.to_dict()}), 201

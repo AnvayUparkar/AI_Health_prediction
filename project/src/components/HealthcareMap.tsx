@@ -50,12 +50,14 @@ interface HealthcareMapProps {
   facilities: HealthcareFacility[];
   userLocation: UserLocation | null;
   selectedFacilityId?: string | number;
+  onLocationChange?: (location: UserLocation) => void;
 }
 
 const HealthcareMap: React.FC<HealthcareMapProps> = ({ 
   facilities, 
   userLocation,
-  selectedFacilityId 
+  selectedFacilityId,
+  onLocationChange
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<L.Map | null>(null);
@@ -65,7 +67,7 @@ const HealthcareMap: React.FC<HealthcareMapProps> = ({
     if (!mapContainer.current || mapInstance.current) return;
 
     // Initialize map
-    mapInstance.current = L.map(mapContainer.current).setView([0, 0], 13);
+    mapInstance.current = L.map(mapContainer.current).setView([19.0760, 72.8777], 13);
     
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
@@ -91,10 +93,23 @@ const HealthcareMap: React.FC<HealthcareMapProps> = ({
     if (userLocation) {
       const userMarker = L.marker([userLocation.latitude, userLocation.longitude], { 
         icon: UserIcon,
-        zIndexOffset: 1000 
+        zIndexOffset: 1000,
+        draggable: true
       })
-        .bindPopup('<b>Your Location</b>')
+        .bindPopup('<b>Your Location</b><br/><span style="font-size: 0.7rem; color: #6b7280;">Drag to correct position</span>')
         .addTo(layer);
+      
+      userMarker.on('dragend', (event) => {
+        const marker = event.target;
+        const position = marker.getLatLng();
+        if (onLocationChange) {
+          onLocationChange({
+            latitude: position.lat,
+            longitude: position.lng
+          });
+        }
+      });
+
       markers.push(userMarker);
     }
 
@@ -119,10 +134,14 @@ const HealthcareMap: React.FC<HealthcareMapProps> = ({
       }
     });
 
-    // Auto-zoom to fit all markers
-    if (markers.length > 0) {
-      const group = L.featureGroup(markers);
-      mapInstance.current.fitBounds(group.getBounds().pad(0.1));
+    // Auto-zoom to fit all markers if no specific facility is selected
+    if (markers.length > 0 && !selectedFacilityId) {
+      try {
+        const group = L.featureGroup(markers);
+        mapInstance.current.fitBounds(group.getBounds().pad(0.1));
+      } catch (e) {
+        console.warn('Map fitBounds failed', e);
+      }
     }
   }, [facilities, userLocation, selectedFacilityId]);
 

@@ -128,7 +128,7 @@ const SOSNavigationModal: React.FC = () => {
   useEffect(() => {
     if (!isOpen || !userCoords || !hospital) return;
 
-    // Small delay to ensure the DOM container is mounted
+    // Small delay to ensure the DOM container is fully visible after animation
     const timer = setTimeout(async () => {
       if (!mapContainerRef.current) return;
 
@@ -147,6 +147,11 @@ const SOSNavigationModal: React.FC = () => {
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
       }).addTo(map);
+
+      // Force Leaflet to recalculate container size after modal animation
+      setTimeout(() => map.invalidateSize(), 100);
+      setTimeout(() => map.invalidateSize(), 300);
+      setTimeout(() => map.invalidateSize(), 600);
 
       mapRef.current = map;
       routeLayerRef.current = L.layerGroup().addTo(map);
@@ -196,7 +201,10 @@ const SOSNavigationModal: React.FC = () => {
         );
         map.fitBounds(bounds.pad(0.3));
       }
-    }, 150);
+
+      // Final invalidateSize after everything is drawn
+      setTimeout(() => map.invalidateSize(), 200);
+    }, 400);
 
     return () => clearTimeout(timer);
   }, [isOpen, userCoords, hospital, fetchRoute]);
@@ -302,7 +310,7 @@ const SOSNavigationModal: React.FC = () => {
                   <p className="text-xs text-gray-500 text-center">Call your local emergency number immediately.</p>
                 </div>
               )}
-              <div ref={mapContainerRef} className="h-full w-full" />
+              <div ref={mapContainerRef} style={{ height: '400px', width: '100%' }} />
             </div>
 
             {/* ── Action Bar ── */}

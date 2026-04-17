@@ -261,12 +261,26 @@ def init_db(app):
         
         # Seed hospitals if table is empty
         if Hospital.query.count() == 0:
-            hospitals = [
-                Hospital(name="Avdhoot Hospital", latitude=19.1605, longitude=72.9935, capacity=200),
-                Hospital(name="Shatabdi Hospital", latitude=19.0496, longitude=72.9150, capacity=500),
-                Hospital(name="City Medical Center", latitude=18.5300, longitude=73.8600, capacity=150),
-                Hospital(name="General Wellness Clinic", latitude=18.5100, longitude=73.8400, capacity=50)
+            from backend.utils.geocode import geocode_hospital
+
+            seed_data = [
+                ("Avdhoot Hospital", 19.1597689, 72.9925981, 200),
+                ("Shatabdi Hospital", 19.0496, 72.9150, 500),
+                ("City Medical Center", 18.5300, 73.8600, 150),
+                ("General Wellness Clinic", 18.5100, 73.8400, 50),
             ]
+
+            hospitals = []
+            print("[INFO] Seeding hospitals with geocoded coordinates...")
+            for name, fallback_lat, fallback_lon, capacity in seed_data:
+                lat, lon = geocode_hospital(name, fallback_lat, fallback_lon)
+                hospitals.append(Hospital(
+                    name=name,
+                    latitude=lat or fallback_lat,
+                    longitude=lon or fallback_lon,
+                    capacity=capacity,
+                ))
+
             db.session.bulk_save_objects(hospitals)
             db.session.commit()
             print("[INFO] Seeded hospitals into SQL database.")

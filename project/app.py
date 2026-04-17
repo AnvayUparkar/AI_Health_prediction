@@ -11,6 +11,12 @@ try:
 except ImportError:
     pass  # python-dotenv optional; env vars can be set on the OS directly
 
+# CRITICAL: Fix for Windows Unicode console crashes
+if sys.platform == 'win32':
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager

@@ -8,10 +8,29 @@ export interface UserLocation {
   longitude: number;
 }
 
-export const getUserLocation = (): Promise<UserLocation> => {
-  return new Promise((resolve, reject) => {
+export const getIPLocation = async (): Promise<UserLocation> => {
+  try {
+    const response = await fetch('https://ipapi.co/json/');
+    const data = await response.json();
+    if (data.latitude && data.longitude) {
+      return {
+        latitude: data.latitude,
+        longitude: data.longitude,
+      };
+    }
+    throw new Error('IP Location data incomplete');
+  } catch (error) {
+    console.warn('IP Geolocation fallback failed:', error);
+    // Generic fallback to Mumbai center if all else fails
+    return { latitude: 19.0760, longitude: 72.8777 };
+  }
+};
+
+export const getUserLocation = (timeout: number = 10000): Promise<UserLocation> => {
+  return new Promise((resolve) => {
     if (!navigator.geolocation) {
-      return reject(new Error('Geolocation is not supported by your browser'));
+      getIPLocation().then(resolve);
+      return;
     }
 
     navigator.geolocation.getCurrentPosition(
@@ -21,24 +40,14 @@ export const getUserLocation = (): Promise<UserLocation> => {
           longitude: position.coords.longitude,
         });
       },
-      (error) => {
-        let errorMsg = 'Failed to get location';
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMsg = 'Location permission denied';
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMsg = 'Location information is unavailable';
-            break;
-          case error.TIMEOUT:
-            errorMsg = 'Location request timed out';
-            break;
-        }
-        reject(new Error(errorMsg));
+      async (error) => {
+        console.warn('HTML5 Geolocation failed, using IP fallback:', error.message);
+        const loc = await getIPLocation();
+        resolve(loc);
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
+        timeout: timeout,
         maximumAge: 0,
       }
     );
