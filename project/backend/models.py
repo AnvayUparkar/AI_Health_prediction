@@ -111,6 +111,7 @@ class Appointment(db.Model):
     isAdmitted = db.Column(db.Boolean, default=False)
     ward_number = db.Column(db.String(50), nullable=True)
     ward_assigned_at = db.Column(db.DateTime, nullable=True)
+    hospital_name = db.Column(db.String(120), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

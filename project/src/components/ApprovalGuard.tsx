@@ -3,11 +3,13 @@ import { ShieldAlert, Clock, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface ApprovalGuardProps {
-  user: any;
   children: React.ReactNode;
 }
 
-const ApprovalGuard: React.FC<ApprovalGuardProps> = ({ user, children }) => {
+const ApprovalGuard: React.FC<ApprovalGuardProps> = ({ children }) => {
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : null;
+  
   const isDoctor = user?.role?.toLowerCase() === 'doctor';
   const isApproved = user?.isApproved === true;
 

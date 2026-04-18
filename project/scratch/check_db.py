@@ -1,11 +1,19 @@
-
+import sqlite3
+import os
+from backend.models import db, Appointment, Doctor
 from app import app
-from backend.models import db, HealthAnalysis, User
-import json
 
-with app.app_context():
-    print("--- Health Analysis Records ---")
-    analyses = HealthAnalysis.query.all()
-    for a in analyses:
-        print(f"ID: {a.id} | User: {a.user_id} | Date: {a.created_at} | Steps: {a.steps}")
-    print("--- End ---")
+def check_db():
+    with app.app_context():
+        print("--- Admitted Appointments ---")
+        appts = Appointment.query.filter_by(isAdmitted=True).all()
+        for a in appts:
+            print(f"ID: {a.id}, DocID: {a.doctor_id}, Hospital: '{a.hospital_name}'")
+        
+        print("\n--- Doctors ---")
+        docs = Doctor.query.all()
+        for d in docs:
+            print(f"ID: {d.id}, Name: {d.name}, HospitalID: '{d.hospital_id}'")
+
+if __name__ == "__main__":
+    check_db()

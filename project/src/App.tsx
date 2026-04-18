@@ -68,8 +68,6 @@ const AdminRoute = ({ children }: { children: JSX.Element }) => {
 };
 
 function App() {
-  const userStr = localStorage.getItem('user');
-  const user = userStr ? JSON.parse(userStr) : null;
   return (
     <Router>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
@@ -176,7 +174,7 @@ function App() {
             path="/admitted-patients" 
             element={
               <MedicalRoute>
-                <ApprovalGuard user={user}>
+                <ApprovalGuard>
                   <AdmittedPatients />
                 </ApprovalGuard>
               </MedicalRoute>
@@ -186,7 +184,7 @@ function App() {
             path="/patient/:patientId/monitor" 
             element={
               <MedicalRoute>
-                <ApprovalGuard user={user}>
+                <ApprovalGuard>
                   <PatientMonitoringPage />
                 </ApprovalGuard>
               </MedicalRoute>

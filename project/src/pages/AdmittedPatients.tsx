@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, Heart, AlertTriangle, ShieldCheck, BedDouble, Search, RefreshCw, User } from 'lucide-react';
+import { Activity, Heart, AlertTriangle, ShieldCheck, BedDouble, Search, RefreshCw, User, Hospital, Check } from 'lucide-react';
 import { getAdmittedPatients } from '../services/api';
 
 interface AdmittedPatient {
@@ -15,6 +15,7 @@ interface AdmittedPatient {
   doctor_id: string | null;
   admitted_at: string | null;
   risk_level: string;
+  hospital: string | null;
 }
 
 const riskConfig: Record<string, { color: string; bg: string; border: string; icon: any; label: string }> = {
@@ -43,10 +44,17 @@ const riskConfig: Record<string, { color: string; bg: string; border: string; ic
 
 export default function AdmittedPatients() {
   const [patients, setPatients] = useState<AdmittedPatient[]>([]);
+  const [hospitals, setHospitals] = useState<string[]>([]);
+  const [selectedHospital, setSelectedHospital] = useState<string>('ALL');
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+
+  // Get user role for default view
+  const userStr = localStorage.getItem('user');
+  const currentUser = userStr ? JSON.parse(userStr) : null;
+  const isAdmin = currentUser?.role === 'admin';
 
   const fetchPatients = async () => {
     setLoading(true);
@@ -54,6 +62,12 @@ export default function AdmittedPatients() {
     try {
       const res = await getAdmittedPatients();
       setPatients(res.patients || []);
+      setHospitals(res.hospitals || []);
+      
+      // Auto-select first hospital for non-admins if they have any
+      if (!isAdmin && res.hospitals && res.hospitals.length > 0 && selectedHospital === 'ALL') {
+        setSelectedHospital(res.hospitals[0]);
+      }
     } catch (e: any) {
       console.error('Failed to load admitted patients', e);
       setError('Failed to load admitted patients. Please try again.');
@@ -66,11 +80,15 @@ export default function AdmittedPatients() {
     fetchPatients();
   }, []);
 
-  const filtered = patients.filter(
-    (p) =>
+  const filtered = patients.filter((p) => {
+    const matchesSearch = 
       p.name.toLowerCase().includes(search.toLowerCase()) ||
-      (p.ward_number || '').toLowerCase().includes(search.toLowerCase())
-  );
+      (p.ward_number || '').toLowerCase().includes(search.toLowerCase());
+    
+    const matchesHospital = selectedHospital === 'ALL' || p.hospital === selectedHospital;
+    
+    return matchesSearch && matchesHospital;
+  });
 
   return (
     <div className="min-h-screen pt-28 pb-20 px-4 sm:px-6 lg:px-8">
@@ -112,6 +130,84 @@ export default function AdmittedPatients() {
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             </motion.button>
           </div>
+        </div>
+      </motion.div>
+
+      {/* Facility Selection */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-6xl mx-auto mb-10"
+      >
+        <div className="flex items-center gap-2 mb-4">
+          <Hospital className="h-5 w-5 text-gray-400" />
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-widest">
+            {isAdmin ? 'Global Monitoring' : 'Your Medical Facilities'}
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {isAdmin && (
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setSelectedHospital('ALL')}
+              className={`p-4 rounded-2xl border transition-all duration-300 text-left relative overflow-hidden ${
+                selectedHospital === 'ALL'
+                  ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-200'
+                  : 'bg-white/60 backdrop-blur border-white/30 hover:border-blue-200'
+              }`}
+            >
+              <div className="flex flex-col h-full relative z-10">
+                <div className={`p-2 rounded-lg w-fit mb-3 ${selectedHospital === 'ALL' ? 'bg-white/20' : 'bg-blue-50'}`}>
+                  <Activity className={`h-5 w-5 ${selectedHospital === 'ALL' ? 'text-white' : 'text-blue-600'}`} />
+                </div>
+                <h3 className={`font-bold ${selectedHospital === 'ALL' ? 'text-white' : 'text-gray-800'}`}>Global View</h3>
+                <p className={`text-xs mt-1 ${selectedHospital === 'ALL' ? 'text-blue-100' : 'text-gray-400'}`}>All Facilities</p>
+              </div>
+              {selectedHospital === 'ALL' && (
+                <div className="absolute top-3 right-3">
+                  <Check className="h-4 w-4 text-white" />
+                </div>
+              )}
+            </motion.button>
+          )}
+
+          {hospitals.map((hospital) => {
+            const isSelected = selectedHospital === hospital;
+            const patientCount = patients.filter(p => p.hospital === hospital).length;
+
+            return (
+              <motion.button
+                key={hospital}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setSelectedHospital(hospital)}
+                className={`p-4 rounded-2xl border transition-all duration-300 text-left relative overflow-hidden ${
+                  isSelected
+                    ? 'bg-purple-600 border-purple-500 shadow-lg shadow-purple-200'
+                    : 'bg-white/60 backdrop-blur border-white/30 hover:border-purple-200'
+                }`}
+              >
+                <div className="flex flex-col h-full relative z-10">
+                  <div className={`p-2 rounded-lg w-fit mb-3 ${isSelected ? 'bg-white/20' : 'bg-purple-50'}`}>
+                    <Hospital className={`h-5 w-5 ${isSelected ? 'text-white' : 'text-purple-600'}`} />
+                  </div>
+                  <h3 className={`font-bold truncate pr-6 ${isSelected ? 'text-white' : 'text-gray-800'}`} title={hospital}>
+                    {hospital}
+                  </h3>
+                  <p className={`text-xs mt-1 ${isSelected ? 'text-purple-100' : 'text-gray-400'}`}>
+                    {patientCount} Patient{patientCount !== 1 ? 's' : ''} Admitted
+                  </p>
+                </div>
+                {isSelected && (
+                  <div className="absolute top-3 right-3">
+                    <Check className="h-4 w-4 text-white" />
+                  </div>
+                )}
+              </motion.button>
+            );
+          })}
         </div>
       </motion.div>
 
@@ -228,7 +324,7 @@ export default function AdmittedPatients() {
                     <div className="flex items-center gap-4 mb-4 text-sm text-gray-500">
                       <div className="flex items-center gap-1.5">
                         <BedDouble className="h-3.5 w-3.5" />
-                        <span>Ward {patient.ward_number || '—'}</span>
+                        <span>Ward {patient.ward_number || '—'} {patient.hospital ? `(${patient.hospital})` : ''}</span>
                       </div>
                       {patient.admitted_at && (
                         <div className="flex items-center gap-1.5">

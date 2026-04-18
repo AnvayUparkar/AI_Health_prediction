@@ -9,6 +9,8 @@ from datetime import datetime, timedelta
 from backend.models import db, Appointment, User, PatientMonitoring
 from backend.trend_engine import run_full_analysis
 from backend.db_service import DBService
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+from backend.authorize_roles import require_medical_staff
 
 monitoring_bp = Blueprint('monitoring', __name__)
 
@@ -61,25 +63,60 @@ def _resolve_patient(raw_id):
 # ── GET Admitted Patients ─────────────────────────────────────────────────────
 
 @monitoring_bp.route('/patients/admitted', methods=['GET', 'OPTIONS'])
+@jwt_required()
 def get_admitted_patients():
     """
     GET /api/patients/admitted
-    Returns all patients whose appointment has isAdmitted == True,
-    along with their ward info and basic profile.
+    Returns patients whose appointment has isAdmitted == True,
+    filtered by the medical staff's assigned hospitals.
+    Admins see all patients globally.
     """
     if request.method == 'OPTIONS':
         return '', 204
 
     try:
-        # Query appointments with isAdmitted=True, join with User for profile data
-        # Use outerjoin because patient_id may be a Mongo ObjectId string that
-        # doesn't match any SQL user.id
-        admitted_appts = (
-            Appointment.query
-            .filter(Appointment.isAdmitted == True)
-            .order_by(Appointment.ward_assigned_at.desc())
-            .all()
-        )
+        user_id = get_jwt_identity()
+        claims = get_jwt()
+        role = claims.get('role', 'user')
+
+        # Identify authorized hospitals
+        auth_hospitals = []
+        is_admin = (role == 'admin')
+        
+        if not is_admin:
+            user = DBService.get_user_by_id(user_id)
+            if not user:
+                return jsonify({"error": "Unauthorized"}), 401
+            
+            # Extract hospitals from both SQL model and Mongo dict structure
+            if isinstance(user, dict):
+                # Mongo dict check
+                auth_hospitals = user.get('profile', {}).get('hospitals') or user.get('hospitals') or []
+            else:
+                # SQL model check
+                auth_hospitals = user.to_dict().get('profile', {}).get('hospitals', [])
+                
+            if not auth_hospitals:
+                # If medical staff has no assigned hospitals, they see nothing
+                return jsonify({"patients": [], "hospitals": []}), 200
+
+        # Query appointments with isAdmitted=True
+        base_query = Appointment.query.filter(Appointment.isAdmitted == True)
+        
+        if not is_admin:
+            # Use case-insensitive matching for robust filtering
+            auth_hospitals_lower = [h.strip().lower() for h in auth_hospitals]
+            admitted_appts = (
+                base_query
+                .all()
+            )
+            # Filter in Python for cleaner fuzzy/case-insensitive logic
+            admitted_appts = [
+                appt for appt in admitted_appts 
+                if appt.hospital_name and appt.hospital_name.strip().lower() in auth_hospitals_lower
+            ]
+        else:
+            admitted_appts = base_query.order_by(Appointment.ward_assigned_at.desc()).all()
 
         results = []
         seen_patient_ids = set()
@@ -121,9 +158,20 @@ def get_admitted_patients():
                 "doctor_id": appt.doctor_id,
                 "admitted_at": appt.ward_assigned_at.isoformat() if appt.ward_assigned_at else None,
                 "risk_level": risk_level,
+                "hospital": appt.hospital_name
             })
 
-        return jsonify({"patients": results}), 200
+        # Get list of hospitals for UI tabs/cards
+        if is_admin:
+            # Admins see all hospitals present in admitted data
+            unique_hospitals = sorted(list(set(appt.hospital_name for appt in admitted_appts if appt.hospital_name)))
+        else:
+            unique_hospitals = auth_hospitals
+
+        return jsonify({
+            "patients": results,
+            "hospitals": unique_hospitals
+        }), 200
 
     except Exception as e:
         print(f"[ERROR] get_admitted_patients: {e}")
@@ -134,20 +182,39 @@ def get_admitted_patients():
 # ── GET Patient Monitoring Data ───────────────────────────────────────────────
 
 @monitoring_bp.route('/patient/<path:patient_id>/monitoring', methods=['GET', 'OPTIONS'])
+@jwt_required()
 def get_patient_monitoring(patient_id):
     """
     GET /api/patient/<id>/monitoring?days=7
     Returns monitoring records, computed trends, and active alerts.
-    Accepts both integer SQL IDs and MongoDB ObjectId strings.
     """
     if request.method == 'OPTIONS':
         return '', 204
 
     try:
+        user_id = get_jwt_identity()
+        claims = get_jwt()
+        role = claims.get('role', 'user')
+
         days = request.args.get('days', 7, type=int)
         cutoff = (datetime.utcnow() - timedelta(days=days)).strftime('%Y-%m-%d')
 
         user, canonical_pid = _resolve_patient(patient_id)
+        
+        # Check permission: patient must be admitted to one of user's hospitals
+        if role != 'admin':
+            appt = Appointment.query.filter_by(patient_id=canonical_pid, isAdmitted=True).first()
+            if not appt:
+                return jsonify({"error": "Patient not admitted or not found"}), 404
+                
+            staff_user = DBService.get_user_by_id(user_id)
+            if isinstance(staff_user, dict):
+                staff_hospitals = staff_user.get('profile', {}).get('hospitals') or staff_user.get('hospitals') or []
+            else:
+                staff_hospitals = staff_user.to_dict().get('profile', {}).get('hospitals', [])
+            
+            if appt.hospital_name not in staff_hospitals:
+                return jsonify({"error": "Forbidden: Access to another hospital's patient is restricted."}), 403
 
         records = (
             PatientMonitoring.query

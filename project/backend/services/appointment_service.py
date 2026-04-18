@@ -94,6 +94,7 @@ class AppointmentService:
                 "isChecked": appt.isChecked,
                 "isAdmitted": appt.isAdmitted,
                 "ward_number": appt.ward_number,
+                "hospital_name": appt.hospital_name,
                 "created_at": appt.created_at.isoformat() if appt.created_at else None,
                 "updated_at": appt.updated_at.isoformat() if appt.updated_at else None
             })
@@ -128,10 +129,37 @@ class AppointmentService:
             update_data["isChecked"] = is_checked
         if is_admitted is not None:
             update_data["isAdmitted"] = is_admitted
+            # If admitted, record which hospital they are in
+            if is_admitted:
+                appt_record = AppointmentService.get_appointment(appointment_id)
+                if appt_record:
+                    # Handle both object and dict
+                    doc_id = appt_record.doctor_id if hasattr(appt_record, 'doctor_id') else appt_record.get('doctor_id')
+                    if doc_id:
+                        from backend.models import Doctor, User
+                        # 1. Try SQL Doctor lookup
+                        doc = Doctor.query.get(doc_id)
+                        if doc and doc.hospital_id:
+                            update_data["hospital_name"] = doc.hospital_id
+                        else:
+                            # 2. Try User profile lookup (Mahesh might be a User with role='doctor')
+                            staff = DBService.get_user_by_id(doc_id)
+                            if staff:
+                                staff_hospitals = []
+                                if isinstance(staff, dict):
+                                    staff_hospitals = staff.get('profile', {}).get('hospitals') or staff.get('hospitals') or []
+                                else:
+                                    staff_hospitals = staff.to_dict().get('profile', {}).get('hospitals', [])
+                                
+                                if staff_hospitals:
+                                    # Fallback to the first associated hospital
+                                    update_data["hospital_name"] = staff_hospitals[0]
+
             # If discharged, reset ward
             if is_admitted is False:
                 update_data["ward_number"] = None
                 update_data["ward_assigned_at"] = None
+                update_data["hospital_name"] = None
             
         return AppointmentService._update_record(appointment_id, update_data)
 
