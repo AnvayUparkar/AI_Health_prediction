@@ -200,6 +200,7 @@ class Alert(db.Model):
     nearest_hospital = db.Column(db.String(120), nullable=True)
     distance_km = db.Column(db.Float, nullable=True)
     notified_doctor_ids = db.Column(db.Text, nullable=True) # JSON list
+    ward_number = db.Column(db.String(50), nullable=True)
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -213,6 +214,7 @@ class Alert(db.Model):
             "id": self.id,
             "patient_id": self.patient_id,
             "room_number": self.room_number,
+            "ward_number": self.ward_number,
             "status": self.status,
             "confidence": self.confidence,
             "reason": self.reason,

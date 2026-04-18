@@ -855,7 +855,8 @@ class DBService:
             location_type=alert_data.get('location_type', 'WARD'),
             nearest_hospital=alert_data.get('nearest_hospital'),
             distance_km=alert_data.get('distance_km'),
-            notified_doctor_ids=alert_data.get('notified_doctor_ids')
+            notified_doctor_ids=alert_data.get('notified_doctor_ids'),
+            ward_number=alert_data.get('ward_number')
         )
         db.session.add(new_alert)
         db.session.commit()
@@ -866,6 +867,7 @@ class DBService:
                 "sql_id": new_alert.id,
                 "patient_id": alert_data.get('patient_id'),
                 "room_number": alert_data.get('room_number'),
+                "ward_number": alert_data.get('ward_number'),
                 "status": alert_data.get('status'),
                 "confidence": alert_data.get('confidence'),
                 "reason": alert_data.get('reason'),

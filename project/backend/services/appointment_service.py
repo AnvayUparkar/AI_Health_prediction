@@ -42,6 +42,7 @@ class AppointmentService:
                     # Map legacy fields to current fields
                     r['requested_date'] = r.get('requested_date') or r.get('appointment_date')
                     r['requested_time'] = r.get('requested_time') or r.get('appointment_time')
+                    r['ward_number'] = r.get('ward_number') or r.get('ward')
 
                     if 'suggested_dates' in r and isinstance(r['suggested_dates'], str):
                         try: r['suggested_dates'] = json.loads(r['suggested_dates'])

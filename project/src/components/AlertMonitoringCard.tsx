@@ -12,6 +12,7 @@ interface Alert {
   id: number | string;
   patient_id: string;
   room_number: string;
+  ward_number?: string;
   status: 'SAFE' | 'WARNING' | 'CRITICAL';
   confidence: string;
   reason: string;
@@ -30,7 +31,7 @@ interface Alert {
 }
 
 // ── Normalise incoming alert so missing fields never crash the UI ─────────────
-const normaliseAlert = (a: Partial<Alert> & { notified_doctor_ids?: string | (string|number)[] }): Alert => {
+const normaliseAlert = (a: Partial<Alert> & { notified_doctor_ids?: string | (string|number)[]; ward_number?: string }): Alert => {
   // Parse notified_doctors - backend may send it as 'notified_doctors' (parsed array from SQL to_dict)
   // OR as 'notified_doctor_ids' (raw JSON string from Mongo dict)
   let notifiedDoctors: (string | number)[] = [];
@@ -49,6 +50,7 @@ const normaliseAlert = (a: Partial<Alert> & { notified_doctor_ids?: string | (st
     id: a.id ?? `tmp-${Date.now()}-${Math.random()}`,
     patient_id: a.patient_id ?? 'UNKNOWN',
     room_number: a.room_number ?? 'N/A',
+    ward_number: a.ward_number,
     status: a.status ?? 'CRITICAL',
     confidence: a.confidence ?? 'HIGH',
     reason: a.reason ?? 'Emergency alert',
@@ -499,13 +501,18 @@ const AlertMonitoringCard: React.FC = () => {
 
                       {/* Patient + room info */}
                       <div className="flex flex-col gap-2 mb-3">
-                        <div className="flex items-center space-x-4 text-[10px] text-gray-500 font-semibold">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3 text-[10px] text-gray-500 font-semibold">
                           <span className="flex items-center">
                             <User className="h-3 w-3 mr-1 opacity-50" /> {alert.patient_id}
                           </span>
                           <span className="flex items-center">
                             <RoomIcon className="h-3 w-3 mr-1 opacity-50" /> {alert.location_type === 'WARD' ? 'Ward' : 'Patient'} {alert.room_number}
                           </span>
+                          {alert.ward_number && (
+                            <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200 flex items-center">
+                              <Shield className="w-2.5 h-2.5 mr-1" /> WARD {alert.ward_number}
+                            </span>
+                          )}
                         </div>
                         
                         {alert.location_type === 'REMOTE' && alert.nearest_hospital && (

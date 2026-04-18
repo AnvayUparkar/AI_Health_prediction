@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sun as Lung, Activity, ArrowRight, Brain, Heart, Zap, Calendar, HeartPulse, LineChart, Utensils } from 'lucide-react';
+import { Sun as Lung, Activity, ArrowRight, Brain, Heart, Zap, Calendar, HeartPulse, LineChart, Utensils, ClipboardList } from 'lucide-react';
 import AnimatedBackground from '../components/AnimatedBackground';
 import GlassCard from '../components/GlassCard';
 import FeatureCard from '../components/FeatureCard';
 import HealthAnalysisCard from '../components/HealthAnalysisCard';
 import AlertMonitoringCard from '../components/AlertMonitoringCard';
-import AppointmentManagementCard from '../components/AppointmentManagementCard';
+
 
 const Home = () => {
   const [user, setUser] = useState<any>(null);
@@ -77,6 +77,18 @@ const Home = () => {
       ctaText: "Get Diet Plan",
       roles: ["doctor", "nurse", "user"],
       glow: "hover:shadow-[0_0_20px_rgba(16,185,129,0.2)]"
+    },
+    {
+      icon: ClipboardList,
+      title: "Appointment Management",
+      description: "Review pending requests, confirm schedules, and manage active patient admissions in real-time.",
+      gradient: "from-blue-500 to-indigo-500",
+      hoverColorClass: "group-hover:text-blue-500 group-hover:[text-shadow:0_0_12px_rgba(59,130,246,0.8)]",
+      features: ["Waitlist processing", "Active appointment grid", "Ward assignment"],
+      link: "/manage-appointments",
+      ctaText: "Manage Appointments",
+      roles: ["doctor", "nurse"],
+      glow: "hover:shadow-[0_0_20px_rgba(59,130,246,0.2)]"
     }
   ];
 
@@ -215,9 +227,6 @@ const Home = () => {
               );
             })}
             <HealthAnalysisCard />
-            {user?.role?.toLowerCase() === 'doctor' && (
-              <AppointmentManagementCard />
-            )}
             {(user?.role?.toLowerCase() === 'doctor' || user?.role?.toLowerCase() === 'nurse') && (
               <AlertMonitoringCard />
             )}

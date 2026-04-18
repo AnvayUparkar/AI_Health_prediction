@@ -19,6 +19,7 @@ import AdmittedPatients from './pages/AdmittedPatients';
 import PatientMonitoringPage from './pages/PatientMonitoring';
 import AdminLogin from './pages/AdminLogin';
 import ManageDoctors from './pages/ManageDoctors';
+import ManageAppointments from './pages/ManageAppointments';
 import ApprovalGuard from './components/ApprovalGuard';
 import GamificationWidget from './components/GamificationWidget';
 import { AIChatBot } from './components/AIChatBot';
@@ -128,6 +129,14 @@ function App() {
               <ProtectedRoute>
                 <BookAppointment />
               </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/manage-appointments" 
+            element={
+              <MedicalRoute>
+                <ManageAppointments />
+              </MedicalRoute>
             } 
           />
           <Route 

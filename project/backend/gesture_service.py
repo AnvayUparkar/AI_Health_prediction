@@ -162,6 +162,7 @@ class GestureService:
         alert_data = {
             'patient_id': patient_id,
             'room_number': room_desc,
+            'ward_number': ward_info.get('ward_number') if ward_info else None,
             'status': 'CRITICAL',
             'confidence': '95%',
             'reason': 'SOS GESTURE DETECTED (FIST CLENCH HELD)',

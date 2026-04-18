@@ -157,36 +157,52 @@ def trigger_sos():
         nearest_hosp = None
         dist_km = None
         notified_docs = []
+        ward_number = None
         
-        # 1. Remote Trace - Calculate nearest hospital dynamically via DB and Haversine
-        hosp_data = AppointmentService.calculate_nearest_hospital(lat, lon)
-        if hosp_data:
-            nearest_hosp = hosp_data['name']
-            dist_km = hosp_data['distance']
-            room_desc = f"Near {nearest_hosp} ({dist_km} km)"
+        # 0. Check if patient is already admitted in a ward
+        ward_info = AppointmentService.get_patient_ward_info(patient_id)
+        if ward_info and ward_info.get('ward_number'):
+            location_type = 'WARD'
+            ward_number = ward_info['ward_number']
+            room_desc = f"Ward {ward_number}"
             
-            # Notify all doctors and nurses at this dynamically selected hospital
-            hosp_staff = DBService.get_medical_staff_by_hospital(nearest_hosp)
-            notified_docs = [d['id'] if isinstance(d, dict) else d.id for d in hosp_staff]
+            # If they have an assigned doctor, notify them specifically
+            if ward_info.get('doctor_id'):
+                notified_docs = [ward_info['doctor_id']]
             
-            # ── Debug Logging ──
-            print(f"\n{'='*60}")
-            print(f"[SOS ROUTING] Patient Location: Lat={lat}, Lon={lon}")
-            print(f"[SOS ROUTING] Nearest Hospital: {nearest_hosp} ({dist_km} km)")
-            print(f"[SOS DISPATCH] Found {len(hosp_staff)} staff at '{nearest_hosp}'")
-            for s in hosp_staff:
-                s_name = s.get('name') if isinstance(s, dict) else s.name
-                s_role = s.get('role') if isinstance(s, dict) else s.role
-                s_id = s.get('id') if isinstance(s, dict) else s.id
-                print(f"  -> Will notify: {s_name} (role={s_role}, id={s_id})")
-            print(f"[SOS DISPATCH] Notified IDs: {notified_docs}")
-            print(f"{'='*60}\n")
-        else:
-            print(f"\n[SOS ROUTING] WARNING: No hospital found for Lat={lat}, Lon={lon}\n")
+            print(f"[SOS ROUTING] Internal Ward SOS detected for Patient={patient_id} in Ward={ward_number}")
+        
+        # 1. Remote Trace (Only if not in a ward or as a safety fallback)
+        if location_type == 'REMOTE':
+            hosp_data = AppointmentService.calculate_nearest_hospital(lat, lon)
+            if hosp_data:
+                nearest_hosp = hosp_data['name']
+                dist_km = hosp_data['distance']
+                room_desc = f"Near {nearest_hosp} ({dist_km} km)"
+                
+                # Notify all doctors and nurses at this dynamically selected hospital
+                hosp_staff = DBService.get_medical_staff_by_hospital(nearest_hosp)
+                notified_docs = [d['id'] if isinstance(d, dict) else d.id for d in hosp_staff]
+                
+                # ── Debug Logging ──
+                print(f"\n{'='*60}")
+                print(f"[SOS ROUTING] Patient Location: Lat={lat}, Lon={lon}")
+                print(f"[SOS ROUTING] Nearest Hospital: {nearest_hosp} ({dist_km} km)")
+                print(f"[SOS DISPATCH] Found {len(hosp_staff)} staff at '{nearest_hosp}'")
+                for s in hosp_staff:
+                    s_name = s.get('name') if isinstance(s, dict) else s.name
+                    s_role = s.get('role') if isinstance(s, dict) else s.role
+                    s_id = s.get('id') if isinstance(s, dict) else s.id
+                    print(f"  -> Will notify: {s_name} (role={s_role}, id={s_id})")
+                print(f"[SOS DISPATCH] Notified IDs: {notified_docs}")
+                print(f"{'='*60}\n")
+            else:
+                print(f"\n[SOS ROUTING] WARNING: No hospital found for Lat={lat}, Lon={lon}\n")
 
         alert_data = {
             "patient_id": patient_id,
             "room_number": room_desc,
+            "ward_number": ward_number,
             "status": "CRITICAL",
             "confidence": "100%",
             "reason": "S.O.S EMERGENCY SIGNAL",
