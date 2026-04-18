@@ -17,6 +17,9 @@ import Profile from './pages/Profile';
 import GoogleCallback from './pages/GoogleCallback';
 import AdmittedPatients from './pages/AdmittedPatients';
 import PatientMonitoringPage from './pages/PatientMonitoring';
+import AdminLogin from './pages/AdminLogin';
+import ManageDoctors from './pages/ManageDoctors';
+import ApprovalGuard from './components/ApprovalGuard';
 import GamificationWidget from './components/GamificationWidget';
 import { AIChatBot } from './components/AIChatBot';
 import SOSButton from './components/SOSButton';
@@ -34,7 +37,7 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   return children;
 };
 
-// MedicalRoute Component - Restricted to doctors and nurses
+// MedicalRoute Component - Restricted to doctors, nurses and admins
 const MedicalRoute = ({ children }: { children: JSX.Element }) => {
   const token = localStorage.getItem('token');
   const userStr = localStorage.getItem('user');
@@ -44,7 +47,7 @@ const MedicalRoute = ({ children }: { children: JSX.Element }) => {
   try {
     const user = JSON.parse(userStr);
     const role = user.role?.toLowerCase();
-    if (role === 'doctor' || role === 'nurse') {
+    if (role === 'doctor' || role === 'nurse' || role === 'admin') {
       return children;
     }
   } catch (e) {}
@@ -52,7 +55,21 @@ const MedicalRoute = ({ children }: { children: JSX.Element }) => {
   return <Navigate to="/" replace />;
 };
 
+// AdminRoute Component
+const AdminRoute = ({ children }: { children: JSX.Element }) => {
+  const token = localStorage.getItem('token');
+  const userStr = localStorage.getItem('user');
+  if (!token || !userStr) return <Navigate to="/admin-login" replace />;
+  try {
+    const user = JSON.parse(userStr);
+    if (user.role === 'admin') return children;
+  } catch (e) {}
+  return <Navigate to="/admin-login" replace />;
+};
+
 function App() {
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : null;
   return (
     <Router>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
@@ -71,6 +88,16 @@ function App() {
           <Route path="/google-callback" element={<GoogleCallback />} />
           <Route path="/about" element={<About />} />
           <Route path="/what-we-do" element={<WhatWeDo />} />
+          <Route path="/admin-login" element={<AdminLogin />} />
+          
+          <Route 
+            path="/manage-doctors" 
+            element={
+              <AdminRoute>
+                <ManageDoctors />
+              </AdminRoute>
+            } 
+          />
           
           {/* Protected Routes */}
           <Route 
@@ -149,7 +176,9 @@ function App() {
             path="/admitted-patients" 
             element={
               <MedicalRoute>
-                <AdmittedPatients />
+                <ApprovalGuard user={user}>
+                  <AdmittedPatients />
+                </ApprovalGuard>
               </MedicalRoute>
             } 
           />
@@ -157,7 +186,9 @@ function App() {
             path="/patient/:patientId/monitor" 
             element={
               <MedicalRoute>
-                <PatientMonitoringPage />
+                <ApprovalGuard user={user}>
+                  <PatientMonitoringPage />
+                </ApprovalGuard>
               </MedicalRoute>
             } 
           />

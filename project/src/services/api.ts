@@ -23,13 +23,56 @@ api.interceptors.request.use((cfg) => {
 
 export default api;
 
-export const signup = async (name: string, email: string, password: string, role: string = 'user') => {
+export const signup = async (name: string, email: string, password: string, role: string = 'user', certificate?: File) => {
+    if (role === 'doctor' && certificate) {
+        const fd = new FormData();
+        fd.append('name', name);
+        fd.append('email', email);
+        fd.append('password', password);
+        fd.append('role', role);
+        fd.append('certificate', certificate);
+        const res = await api.post('/auth/signup', fd, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        return res.data;
+    }
     const res = await api.post('/auth/signup', { name, email, password, role });
     return res.data;
 };
 
 export const login = async (email: string, password: string) => {
     const res = await api.post('/auth/login', { email, password });
+    return res.data;
+};
+
+// --- Admin & Doctor Verification Endpoints ---
+
+export const getPendingDoctors = async () => {
+    const res = await api.get('/api/admin/pending-doctors');
+    return res.data;
+};
+
+export const getDoctorDetails = async (userId: string | number) => {
+    const res = await api.get(`/api/admin/doctor/${userId}`);
+    return res.data;
+};
+
+export const approveDoctor = async (userId: string | number) => {
+    const res = await api.post(`/api/admin/approve/${userId}`);
+    return res.data;
+};
+
+export const rejectDoctor = async (userId: string | number, reason: string) => {
+    const res = await api.post(`/api/admin/reject/${userId}`, { reason });
+    return res.data;
+};
+
+export const uploadDoctorCertificate = async (file: File) => {
+    const fd = new FormData();
+    fd.append('certificate', file);
+    const res = await api.post('/auth/doctor/upload-certificate', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
     return res.data;
 };
 

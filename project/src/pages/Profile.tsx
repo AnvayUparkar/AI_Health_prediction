@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Shield, Scale, Ruler, Users, Search, Hospital, Save, Plus, X, HeartPulse, Stethoscope, Activity, Heart, Edit } from 'lucide-react';
+import { User, Mail, Shield, Scale, Ruler, Users, Search, Hospital, Save, Plus, X, HeartPulse, Stethoscope, Activity, Heart, Edit, Upload, Clock, ShieldCheck, AlertCircle, FileText, ExternalLink } from 'lucide-react';
 import GlassCard from '../components/GlassCard';
 import AnimatedBackground from '../components/AnimatedBackground';
-import { getProfile, updateProfile, searchUsers, updatePatientProfile } from '../services/api';
+import { getProfile, updateProfile, searchUsers, updatePatientProfile, uploadDoctorCertificate } from '../services/api';
 import toast from 'react-hot-toast';
 
 const Profile = () => {
@@ -22,6 +22,7 @@ const Profile = () => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
   const [newHospital, setNewHospital] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -35,11 +36,32 @@ const Profile = () => {
       setSex(data.profile?.sex || '');
       setWeight(data.profile?.weight || '');
       setHeight(data.profile?.height || '');
+      
+      // Keep localStorage in sync for other components
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const parsed = JSON.parse(storedUser);
+        localStorage.setItem('user', JSON.stringify({ ...parsed, ...data }));
+      }
     } catch (error) {
       console.error("Failed to fetch profile", error);
       toast.error("Failed to load profile");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCertificateUpload = async (file: File) => {
+    setIsUploading(true);
+    const toastId = toast.loading('Uploading medical certificate...');
+    try {
+      await uploadDoctorCertificate(file);
+      toast.success('Certificate uploaded successfully. Pending admin review.', { id: toastId });
+      fetchProfile();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Failed to upload certificate', { id: toastId });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -188,6 +210,119 @@ const Profile = () => {
 
           {/* Health & Clinical Data Card */}
           <div className="lg:col-span-2 space-y-8">
+            
+            {/* Doctor Verification Section */}
+            {userRole === 'doctor' && (
+              <GlassCard className="p-8 border-l-4 border-l-blue-500">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center">
+                    <ShieldCheck className="w-6 h-6 mr-2 text-blue-500" />
+                    <h3 className="text-2xl font-bold text-gray-800">Professional Verification</h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500 font-medium">Attempts: {currentUser.verification?.attempts || 0} / 3</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Current Status */}
+                  <div className="space-y-4">
+                    <div className="p-6 rounded-2xl bg-gray-50 border border-gray-100">
+                      <p className="text-sm text-gray-500 uppercase tracking-wider mb-2">Current Status</p>
+                      <div className="flex items-center gap-3">
+                        {currentUser.isApproved ? (
+                          <>
+                            <div className="p-2 bg-green-100 rounded-lg text-green-600">
+                              <ShieldCheck className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <p className="font-bold text-green-700">Fully Verified</p>
+                              <p className="text-xs text-green-600">Clinical features unlocked</p>
+                            </div>
+                          </>
+                        ) : currentUser.verification?.rejection_reason ? (
+                          <>
+                            <div className="p-2 bg-red-100 rounded-lg text-red-600">
+                              <AlertCircle className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <p className="font-bold text-red-700">Verification Rejected</p>
+                              <p className="text-xs text-red-600">Action required</p>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="p-2 bg-amber-100 rounded-lg text-amber-600">
+                              <Clock className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <p className="font-bold text-amber-700">Pending Review</p>
+                              <p className="text-xs text-amber-600">Awaiting admin approval</p>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {currentUser.verification?.rejection_reason && !currentUser.isApproved && (
+                      <div className="p-4 rounded-xl bg-red-50 border border-red-100">
+                        <p className="text-sm font-bold text-red-700 mb-1 flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4" />
+                          Administrator Feedback
+                        </p>
+                        <p className="text-sm text-red-600 italic">"{currentUser.verification.rejection_reason}"</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Upload Section */}
+                  <div className="flex flex-col justify-center">
+                    {!currentUser.isApproved && (
+                      <div className="space-y-4">
+                        <p className="text-sm font-medium text-gray-700">
+                          {currentUser.verification?.certificate_url 
+                            ? "Update your medical certificate to re-apply for verification."
+                            : "Upload your medical license or certificate to unlock clinical features."}
+                        </p>
+                        <div className="relative group p-6 border-2 border-dashed border-blue-200 rounded-2xl bg-blue-50/30 hover:bg-blue-50/50 transition-colors text-center cursor-pointer">
+                          <input 
+                            type="file" 
+                            disabled={isUploading}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleCertificateUpload(file);
+                            }}
+                            accept=".pdf,.jpg,.jpeg,.png"
+                          />
+                          <div className="flex flex-col items-center gap-2">
+                            <Upload className={`h-8 w-8 ${isUploading ? 'animate-bounce text-blue-400' : 'text-blue-500'}`} />
+                            <p className="font-bold text-blue-700">{isUploading ? 'Uploading...' : 'Click to Upload License'}</p>
+                            <p className="text-xs text-blue-400">PDF, JPG, or PNG (Max 5MB)</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {currentUser.verification?.certificate_url && (
+                      <div className="mt-4 flex items-center gap-2 text-sm text-gray-500 font-medium">
+                        <FileText className="w-4 h-4" />
+                        <span>Current file: </span>
+                        <a 
+                          href={currentUser.verification.certificate_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline flex items-center gap-1"
+                        >
+                          View License <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </GlassCard>
+            )}
+
             <GlassCard className="p-8">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-2xl font-bold text-gray-800 flex items-center">

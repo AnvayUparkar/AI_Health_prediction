@@ -23,6 +23,13 @@ class User(db.Model):
     streak = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
+    # Verification system for doctors
+    isApproved = db.Column(db.Boolean, default=False)
+    certificate_url = db.Column(db.String(512), nullable=True)
+    certificate_type = db.Column(db.String(20), nullable=True) # "image" or "pdf"
+    verification_attempts = db.Column(db.Integer, default=0)
+    rejection_reason = db.Column(db.Text, nullable=True)
+    
     # Profile fields
     age = db.Column(db.Integer, nullable=True)
     sex = db.Column(db.String(20), nullable=True)
@@ -53,6 +60,13 @@ class User(db.Model):
             "role": self.role or "user",
             "points": self.points or 0,
             "streak": self.streak or 0,
+            "isApproved": self.isApproved,
+            "verification": {
+                "certificate_url": self.certificate_url,
+                "certificate_type": self.certificate_type,
+                "attempts": self.verification_attempts,
+                "rejection_reason": self.rejection_reason
+            },
             "profile": {
                 "age": self.age,
                 "sex": self.sex,

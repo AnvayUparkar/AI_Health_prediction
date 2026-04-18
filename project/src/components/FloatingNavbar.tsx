@@ -15,6 +15,7 @@ const FloatingNavbar = () => {
   const navigate = useNavigate();
 
   const isMedicalStaff = userRole?.toLowerCase() === 'doctor' || userRole?.toLowerCase() === 'nurse';
+  const isAdmin = userRole?.toLowerCase() === 'admin';
 
   const navigation = [
     { name: 'Home', href: '/' },
@@ -22,6 +23,7 @@ const FloatingNavbar = () => {
     { name: 'What We Do', href: '/what-we-do' },
     // { name: 'Report Analyzer', href: '/report-analyzer' },
     ...(isMedicalStaff ? [{ name: 'Monitoring', href: '/admitted-patients' }] : []),
+    ...(isAdmin ? [{ name: 'Manage Doctors', href: '/manage-doctors' }] : []),
   ];
 
   useEffect(() => {

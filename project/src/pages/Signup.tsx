@@ -13,6 +13,7 @@ const Signup: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [role, setRole] = useState('user');
+  const [certificate, setCertificate] = useState<File | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -33,12 +34,21 @@ const Signup: React.FC = () => {
       return;
     }
 
+    if (role === 'doctor' && !certificate) {
+      setError('Medical certificate is required for doctor verification');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const data = await signup(name, email, password, role);
+      const data = await signup(name, email, password, role, certificate || undefined);
       if (data && data.success) {
-        setSuccess('Account created successfully! Redirecting to login...');
+        if (role === 'doctor') {
+          setSuccess('Account created! Pending medical verification. Redirecting to login...');
+        } else {
+          setSuccess('Account created successfully! Redirecting to login...');
+        }
         setTimeout(() => navigate('/login'), 2000);
       } else {
         setError(data.error || 'Signup failed');
@@ -276,18 +286,54 @@ const Signup: React.FC = () => {
                   <select
                     className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white/70 backdrop-blur-sm hover:bg-white/90 appearance-none cursor-pointer text-gray-700"
                     value={role}
-                    onChange={e => setRole(e.target.value)}
+                    onChange={e => {
+                      setRole(e.target.value);
+                      if (e.target.value !== 'doctor') setCertificate(null);
+                    }}
                     required
                   >
                     <option value="user">Patient / User</option>
-                    <option value="nurse">Medical Professional / Nurse</option>
-                    <option value="doctor">Lead Doctor / Administrator</option>
+                    <option value="nurse">Nurse / Medical Staff</option>
+                    <option value="doctor">Doctor (Verification Required)</option>
+                    <option value="admin">System Administrator</option>
                   </select>
                   <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
                     <ArrowRight className="h-4 w-4 text-gray-400 rotate-90" />
                   </div>
                 </div>
               </motion.div>
+
+              {/* Certificate Upload for Doctors */}
+              {role === 'doctor' && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="space-y-2 mt-4"
+                >
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Medical Certificate (PDF or Image)
+                  </label>
+                  <div className="relative group p-6 border-2 border-dashed border-gray-200 rounded-2xl bg-blue-50/30 hover:bg-blue-50/50 transition-colors cursor-pointer text-center">
+                    <input
+                      type="file"
+                      id="certificate"
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      onChange={(e) => setCertificate(e.target.files?.[0] || null)}
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      required
+                    />
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="p-3 bg-blue-100 rounded-2xl text-blue-600 shadow-sm">
+                        <UserPlus className="h-6 w-6" />
+                      </div>
+                      <span className="text-sm font-bold text-blue-700">
+                        {certificate ? certificate.name : "Click or drag to upload your license"}
+                      </span>
+                      <span className="text-xs text-blue-400 font-medium">Supporting PDFs, JPGs, or PNGs (Max 5MB)</span>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
 
               {/* Error Message */}
               {error && (

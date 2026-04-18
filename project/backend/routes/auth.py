@@ -8,6 +8,9 @@ from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identi
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import timedelta
 from sqlalchemy.exc import IntegrityError
+from backend.services.cloudinary_service import upload_certificate
+from flask_jwt_extended import get_jwt
+import os
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -15,15 +18,21 @@ auth_bp = Blueprint('auth', __name__)
 def signup():
     """
     POST /auth/signup
-    Body: { name, email, password, role }
+    Supports JSON or multipart/form-data (for doctor certificates)
     """
-    data = request.get_json() or {}
+    if request.is_json:
+        data = request.get_json() or {}
+        files = {}
+    else:
+        data = request.form
+        files = request.files
+
     name = data.get('name', '').strip()
     email = data.get('email', '').strip().lower()
     password = data.get('password', '')
     role = data.get('role', 'user').strip().lower()
     
-    if role not in ["doctor", "nurse", "user"]:
+    if role not in ["doctor", "nurse", "user", "admin"]:
         role = "user"
 
     if not (name and email and password):
@@ -33,14 +42,99 @@ def signup():
     if existing:
         return jsonify({'error': 'Email already exists'}), 409
 
+    # Handle doctor certificate
+    cert_url = None
+    cert_type = None
+    is_approved = (role != 'doctor') # Admins, Nurses, Users are "approved" by default
+    
+    if role == 'doctor':
+        cert_file = files.get('certificate')
+        if cert_file:
+            res = upload_certificate(cert_file)
+            if res:
+                cert_url = res['secure_url']
+                cert_type = "pdf" if cert_url.endswith('.pdf') else "image"
+            else:
+                return jsonify({'error': 'Failed to upload certificate'}), 500
+        else:
+            # Doctors MUST upload a certificate at signup
+            return jsonify({'error': 'Medical certificate is required for doctors'}), 400
+
     try:
-        user = DBService.create_user(name, email, generate_password_hash(password), role=role)
+        user = DBService.create_user(
+            name, email, 
+            generate_password_hash(password), 
+            role=role,
+            is_approved=is_approved,
+            certificate_url=cert_url,
+            certificate_type=cert_type
+        )
         
-        # Handle if user is a dict (Mongo) or object (SQL)
         user_dict = user if isinstance(user, dict) else user.to_dict()
         return jsonify({'success': True, 'user': user_dict}), 201
     except IntegrityError:
         return jsonify({'error': 'Failed to create user'}), 500
+
+@auth_bp.route('/doctor/upload-certificate', methods=['POST'])
+@jwt_required()
+def doctor_upload_certificate():
+    """Allows existing doctors to upload/re-upload certificates (e.g. after rejection)"""
+    user_id = get_jwt_identity()
+    claims = get_jwt()
+    if claims.get('role') != 'doctor':
+        return jsonify({'error': 'Only doctors can upload certificates'}), 403
+        
+    if 'certificate' not in request.files:
+        return jsonify({'error': 'No certificate file provided'}), 400
+        
+    cert_file = request.files['certificate']
+    res = upload_certificate(cert_file)
+    if not res:
+        return jsonify({'error': 'Failed to upload certificate'}), 500
+        
+    cert_url = res['secure_url']
+    cert_type = "pdf" if cert_url.endswith('.pdf') else "image"
+    
+    # Update user properties - reset approval on re-upload
+    from backend.db_service import DBService
+    user = DBService.get_user_by_id(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+        
+    # Standardize update logic for both SQL and Mongo
+    update_data = {
+        "certificate_url": cert_url,
+        "certificate_type": cert_type,
+        "isApproved": False,
+        "verification_attempts": ((user.get('verification_attempts') or 0) if isinstance(user, dict) else (user.verification_attempts or 0)) + 1
+    }
+
+    if not isinstance(user, dict):
+        user.certificate_url = update_data["certificate_url"]
+        user.certificate_type = update_data["certificate_type"]
+        user.isApproved = update_data["isApproved"]
+        user.verification_attempts = update_data["verification_attempts"]
+        from backend.models import db
+        db.session.commit()
+    
+    # Sync to Mongo
+    mongo_filter = {"sql_id": int(user_id)} if (isinstance(user_id, str) and user_id.isdigit()) or isinstance(user_id, int) else {"_id": DBService.get_mongo_obj_id(user_id)}
+    
+    mongo_update = {
+        "certificate_url": cert_url,
+        "certificate_type": cert_type,
+        "isApproved": False,
+        "verification.certificate_url": cert_url,
+        "verification.certificate_type": cert_type,
+        "verification.attempts": update_data["verification_attempts"]
+    }
+    DBService._async_mongo_write('users', 'update', mongo_update, mongo_filter)
+        
+    return jsonify({
+        'success': True, 
+        'message': 'Certificate uploaded. Pending admin review.',
+        'certificate_url': cert_url
+    })
 
 @auth_bp.route('/login', methods=['POST'])
 def login():

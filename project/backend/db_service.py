@@ -15,6 +15,15 @@ class DBService:
     _mongo_client = None
     _mongo_db = None
 
+    @staticmethod
+    def get_mongo_obj_id(obj_id: Any):
+        if not obj_id:
+            return None
+        try:
+            return ObjectId(obj_id) if isinstance(obj_id, str) and len(obj_id) == 24 else None
+        except:
+            return None
+
     @classmethod
     def get_mongo_db(cls):
         if cls._mongo_db is None:
@@ -102,12 +111,24 @@ class DBService:
                 except:
                     pass
         
-        return User.query.get(user_id)
+        try:
+            return User.query.get(int(user_id))
+        except:
+            return User.query.get(user_id)
 
     @staticmethod
-    def create_user(name: str, email: str, password_hash: str, role: str = 'user'):
+    def create_user(name: str, email: str, password_hash: str, role: str = 'user', is_approved: bool = False, certificate_url: str = None, certificate_type: str = None):
         # 1. Primary Write (SQL)
-        user = User(name=name, email=email, password_hash=password_hash, role=role)
+        user = User(
+            name=name, 
+            email=email, 
+            password_hash=password_hash, 
+            role=role,
+            isApproved=is_approved,
+            certificate_url=certificate_url,
+            certificate_type=certificate_type,
+            verification_attempts=0
+        )
         db.session.add(user)
         try:
             db.session.commit()
@@ -120,6 +141,13 @@ class DBService:
                     "email": email.lower(),
                     "password_hash": password_hash,
                     "role": role,
+                    "isApproved": is_approved,
+                    "verification": {
+                        "certificate_url": certificate_url,
+                        "certificate_type": certificate_type,
+                        "attempts": 0,
+                        "rejection_reason": None
+                    },
                     "created_at": datetime.utcnow(),
                     "profile": {
                         "age": None,
@@ -214,6 +242,72 @@ class DBService:
             return DBService.get_user_by_id(user_id)
             
         return user
+
+    @staticmethod
+    def get_pending_doctors():
+        """List all doctors who are not yet approved."""
+        mode = os.environ.get('READ_FROM', 'sql')
+        if mode == 'mongo':
+            mongodb = DBService.get_mongo_db()
+            if mongodb is not None:
+                docs = list(mongodb.users.find({"role": "doctor", "isApproved": False}))
+                for d in docs:
+                    d['id'] = str(d.pop('_id'))
+                return docs
+        
+        return User.query.filter_by(role='doctor', isApproved=False).all()
+
+    @staticmethod
+    def approve_doctor(user_id: Any):
+        """Approve a doctor's certificate."""
+        user = DBService.get_user_by_id(user_id)
+        if not user: return False
+        
+        # SQL Update
+        if not isinstance(user, dict):
+            user.isApproved = True
+            db.session.commit()
+        
+        # Mongo Update
+        if os.environ.get('DB_MODE') in ['hybrid', 'mongo']:
+            update_data = {"isApproved": True}
+            filter_q = {"sql_id": int(user_id)} if not isinstance(user_id, str) or user_id.isdigit() else {"_id": ObjectId(user_id)}
+            DBService._async_mongo_write('users', 'update', update_data, filter_q)
+        
+        return True
+
+    @staticmethod
+    def reject_doctor(user_id: Any, reason: str):
+        """Reject a doctor's certificate and increment attempt counter."""
+        user = DBService.get_user_by_id(user_id)
+        if not user: return False
+        
+        # SQL Update
+        if not isinstance(user, dict):
+            user.isApproved = False
+            user.rejection_reason = reason
+            user.verification_attempts = (user.verification_attempts or 0) + 1
+            db.session.commit()
+        
+        # Mongo Update
+        if os.environ.get('DB_MODE') in ['hybrid', 'mongo']:
+            # Calculate new attempts
+            current_attempts = 0
+            if isinstance(user, dict):
+                current_attempts = (user.get('verification', {}).get('attempts') or 0) + 1
+            else:
+                current_attempts = user.verification_attempts or 1
+                
+            update_data = {
+                "isApproved": False,
+                "verification.rejection_reason": reason,
+                "verification.attempts": current_attempts
+            }
+            filter_q = {"sql_id": int(user_id)} if not isinstance(user_id, str) or user_id.isdigit() else {"_id": ObjectId(user_id)}
+            DBService._async_mongo_write('users', 'update', update_data, filter_q)
+            
+        return True
+
 
     @staticmethod
     def search_users(query: str):
