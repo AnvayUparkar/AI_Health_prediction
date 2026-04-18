@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Shield, Scale, Ruler, Users, Search, Hospital, Save, Plus, X, HeartPulse, Stethoscope, Activity, Heart } from 'lucide-react';
+import { User, Mail, Shield, Scale, Ruler, Users, Search, Hospital, Save, Plus, X, HeartPulse, Stethoscope, Activity, Heart, Edit } from 'lucide-react';
 import GlassCard from '../components/GlassCard';
 import AnimatedBackground from '../components/AnimatedBackground';
 import { getProfile, updateProfile, searchUsers, updatePatientProfile } from '../services/api';
@@ -150,12 +150,22 @@ const Profile = () => {
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center p-4 bg-white/40 rounded-xl">
-                <Mail className="w-5 h-5 text-gray-500 mr-3" />
-                <div className="text-left">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">Email Address</p>
-                  <p className="text-gray-800 font-medium">{currentUser.email}</p>
+              <div className="flex items-center justify-between p-4 bg-white/40 rounded-xl">
+                <div className="flex items-center flex-1">
+                  <Mail className="w-5 h-5 text-gray-500 mr-3" />
+                  <div className="text-left">
+                    <p className="text-xs text-gray-500 uppercase tracking-wider">Email Address</p>
+                    <p className="text-gray-800 font-medium">{currentUser.email}</p>
+                  </div>
                 </div>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="ml-4 p-2 text-gray-500 hover:text-blue-500 transition-colors duration-200 hover:bg-white/30 rounded-lg"
+                  title="Edit email"
+                >
+                  <Edit className="w-5 h-5" />
+                </motion.button>
               </div>
 
               <div className="flex items-center p-4 bg-white/40 rounded-xl">
