@@ -34,6 +34,24 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   return children;
 };
 
+// MedicalRoute Component - Restricted to doctors and nurses
+const MedicalRoute = ({ children }: { children: JSX.Element }) => {
+  const token = localStorage.getItem('token');
+  const userStr = localStorage.getItem('user');
+  if (!token || !userStr) {
+    return <Navigate to="/login" replace />;
+  }
+  try {
+    const user = JSON.parse(userStr);
+    const role = user.role?.toLowerCase();
+    if (role === 'doctor' || role === 'nurse') {
+      return children;
+    }
+  } catch (e) {}
+  
+  return <Navigate to="/" replace />;
+};
+
 function App() {
   return (
     <Router>
@@ -130,17 +148,17 @@ function App() {
           <Route 
             path="/admitted-patients" 
             element={
-              <ProtectedRoute>
+              <MedicalRoute>
                 <AdmittedPatients />
-              </ProtectedRoute>
+              </MedicalRoute>
             } 
           />
           <Route 
             path="/patient/:patientId/monitor" 
             element={
-              <ProtectedRoute>
+              <MedicalRoute>
                 <PatientMonitoringPage />
-              </ProtectedRoute>
+              </MedicalRoute>
             } 
           />
         </Routes>

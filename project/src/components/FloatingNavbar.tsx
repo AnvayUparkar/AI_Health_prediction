@@ -9,18 +9,19 @@ const FloatingNavbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userName, setUserName] = useState('');
+  const [userRole, setUserRole] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+
+  const isMedicalStaff = userRole?.toLowerCase() === 'doctor' || userRole?.toLowerCase() === 'nurse';
 
   const navigation = [
     { name: 'Home', href: '/' },
     { name: 'About', href: '/about' },
     { name: 'What We Do', href: '/what-we-do' },
-    { name: 'Report Analyzer', href: '/report-analyzer' },
-    { name: 'Monitoring', href: '/admitted-patients' },
-    // { name: 'Lung Cancer', href: '/lung-cancer' },
-    // { name: 'Diabetes', href: '/diabetes' },
+    // { name: 'Report Analyzer', href: '/report-analyzer' },
+    ...(isMedicalStaff ? [{ name: 'Monitoring', href: '/admitted-patients' }] : []),
   ];
 
   useEffect(() => {
@@ -41,11 +42,14 @@ const FloatingNavbar = () => {
           const user = JSON.parse(userStr);
           setIsAuthenticated(true);
           setUserName(user.name || 'User');
+          setUserRole(user.role || 'user');
         } catch (e) {
           setIsAuthenticated(false);
+          setUserRole('');
         }
       } else {
         setIsAuthenticated(false);
+        setUserRole('');
       }
     };
     
@@ -69,6 +73,7 @@ const FloatingNavbar = () => {
     localStorage.removeItem('auth_token');
     setIsAuthenticated(false);
     setUserName('');
+    setUserRole('');
     setShowUserMenu(false);
     navigate('/');
   };
