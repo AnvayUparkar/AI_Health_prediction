@@ -8,9 +8,22 @@ from flask import Blueprint, request, jsonify
 from datetime import datetime, timedelta
 from backend.models import db, Appointment, User, PatientMonitoring
 from backend.trend_engine import run_full_analysis
+from backend.db_service import DBService
 
 monitoring_bp = Blueprint('monitoring', __name__)
 
+
+class UserAdapter:
+    """Simple adapter to make a dict look like a User object for the monitoring UI."""
+    def __init__(self, data):
+        self._data = data
+        self.name = data.get('name', 'Unknown')
+        self.email = data.get('email')
+        self.age = data.get('age')
+        self.sex = data.get('sex')
+    
+    def to_dict(self):
+        return self._data
 
 def _resolve_patient(raw_id):
     """
@@ -18,32 +31,31 @@ def _resolve_patient(raw_id):
       - A SQL integer ID  (e.g. '3')
       - A MongoDB ObjectId string  (e.g. '69de1e81158caae568fdbfd8')
 
-    Returns (sql_user_or_None, canonical_pid_string)
-    The canonical_pid_string is what the Appointment table stores in patient_id.
+    Returns (UserLike_or_None, canonical_pid_string)
     """
-    # Try SQL integer lookup first
-    try:
-        sql_id = int(raw_id)
-        user = User.query.get(sql_id)
-        if user:
-            return user, str(sql_id)
-    except (ValueError, TypeError):
-        pass
+    user_data = DBService.get_user_by_id(raw_id)
+    
+    # If it's a dict from Mongo, wrap it
+    if isinstance(user_data, dict):
+        return UserAdapter(user_data), str(raw_id)
+    
+    # If it's a SQL object, return as is
+    if user_data:
+        return user_data, str(raw_id)
 
-    # It's a Mongo-style string — look up the appointment that stores this ID
+    # Fallback to appointment lookup if user not found directly
     appt = Appointment.query.filter_by(patient_id=str(raw_id), isAdmitted=True).first()
     if not appt:
         appt = Appointment.query.filter_by(patient_id=str(raw_id)).first()
 
-    # Try to resolve the user via SQL join if patient_id is numeric
-    user = None
     if appt and appt.patient_id:
-        try:
-            user = User.query.get(int(appt.patient_id))
-        except (ValueError, TypeError):
-            pass
+        user_data = DBService.get_user_by_id(appt.patient_id)
+        if isinstance(user_data, dict):
+            return UserAdapter(user_data), str(raw_id)
+        if user_data:
+            return user_data, str(raw_id)
 
-    return user, str(raw_id)
+    return None, str(raw_id)
 
 
 # ── GET Admitted Patients ─────────────────────────────────────────────────────
@@ -268,5 +280,162 @@ def update_monitoring(patient_id):
 
     except Exception as e:
         print(f"[ERROR] update_monitoring: {e}")
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+# ── GET Chart-Ready Time-Series ───────────────────────────────────────────────
+
+@monitoring_bp.route('/patient/<path:patient_id>/timeseries', methods=['GET', 'OPTIONS'])
+def get_timeseries(patient_id):
+    """
+    GET /api/patient/<id>/timeseries?days=7
+    Returns chart-ready arrays for each metric + trend analysis.
+    
+    Response:
+    {
+      "labels": ["D1-M", "D1-A", "D1-E", "D2-M", ...],
+      "glucose": [120, 130, 135, 140, 150, 160],
+      "bp_systolic": [...],
+      "bp_diastolic": [...],
+      "spo2": [...],
+      "trends": { "glucose": { "trend": "INCREASING", ... }, ... }
+    }
+    """
+    if request.method == 'OPTIONS':
+        return '', 204
+
+    try:
+        days = request.args.get('days', 7, type=int)
+        cutoff = (datetime.utcnow() - timedelta(days=days)).strftime('%Y-%m-%d')
+        _, canonical_pid = _resolve_patient(patient_id)
+
+        # Fetch sorted records
+        slot_order = {'morning': 0, 'afternoon': 1, 'evening': 2}
+        records = (
+            PatientMonitoring.query
+            .filter(PatientMonitoring.patient_id == canonical_pid)
+            .filter(PatientMonitoring.date >= cutoff)
+            .order_by(PatientMonitoring.date.asc(), PatientMonitoring.created_at.asc())
+            .all()
+        )
+
+        # Sort by date then slot order
+        records.sort(key=lambda r: (r.date, slot_order.get(r.time_slot, 9)))
+
+        # Build chart-ready arrays
+        labels = []
+        glucose_arr = []
+        bp_sys_arr = []
+        bp_dia_arr = []
+        spo2_arr = []
+
+        # Track unique days for label formatting
+        unique_days = sorted(set(r.date for r in records))
+        day_map = {d: f"D{i+1}" for i, d in enumerate(unique_days)}
+        slot_abbrev = {'morning': 'M', 'afternoon': 'A', 'evening': 'E'}
+
+        for rec in records:
+            day_label = day_map.get(rec.date, rec.date)
+            slot_label = slot_abbrev.get(rec.time_slot, rec.time_slot[0].upper())
+            labels.append(f"{day_label}-{slot_label}")
+
+            glucose_arr.append(rec.glucose)
+            bp_sys_arr.append(rec.bp_systolic)
+            bp_dia_arr.append(rec.bp_diastolic)
+            spo2_arr.append(rec.spo2)
+
+        # Run trend analysis
+        record_dicts = [r.to_dict() for r in records]
+        analysis = run_full_analysis(record_dicts)
+
+        return jsonify({
+            "labels": labels,
+            "glucose": glucose_arr,
+            "bp_systolic": bp_sys_arr,
+            "bp_diastolic": bp_dia_arr,
+            "spo2": spo2_arr,
+            "trends": analysis["trends"],
+            "alerts": analysis["alerts"],
+        }), 200
+
+    except Exception as e:
+        print(f"[ERROR] get_timeseries: {e}")
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+# ── POST AI Diet Recommendation (Gemini) ──────────────────────────────────────
+
+@monitoring_bp.route('/patient/<path:patient_id>/diet-ai', methods=['POST', 'OPTIONS'])
+def get_diet_ai(patient_id):
+    """
+    POST /api/patient/<id>/diet-ai
+    Generate personalized diet recommendation using Gemini AI.
+    Automatically runs trend analysis first, then calls Gemini.
+    """
+    if request.method == 'OPTIONS':
+        return '', 204
+
+    try:
+        from backend.services.gemini_service import generate_diet_recommendation
+
+        user, canonical_pid = _resolve_patient(patient_id)
+
+        # Fetch all monitoring records
+        records = (
+            PatientMonitoring.query
+            .filter(PatientMonitoring.patient_id == canonical_pid)
+            .order_by(PatientMonitoring.date.asc(), PatientMonitoring.created_at.asc())
+            .all()
+        )
+
+        record_dicts = [r.to_dict() for r in records]
+        analysis = run_full_analysis(record_dicts)
+
+        # Get patient info
+        appt = Appointment.query.filter_by(patient_id=canonical_pid, isAdmitted=True).first()
+
+        patient_data = {
+            "patient_id": canonical_pid,
+            "name": user.name if user else f"Patient {canonical_pid[:8]}",
+            "age": user.age if user else None,
+            "sex": user.sex if user else None,
+            "ward_number": appt.ward_number if appt else None,
+        }
+
+        # Call Gemini
+        diet = generate_diet_recommendation(patient_data, analysis["trends"], analysis["alerts"])
+
+        return jsonify({
+            "diet": diet,
+            "trends": analysis["trends"],
+            "alerts": analysis["alerts"],
+        }), 200
+
+    except Exception as e:
+        print(f"[ERROR] get_diet_ai: {e}")
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+# ── POST Seed Monitoring Data ─────────────────────────────────────────────────
+
+@monitoring_bp.route('/monitoring/seed', methods=['POST', 'OPTIONS'])
+def seed_monitoring():
+    """
+    POST /api/monitoring/seed
+    Seed 2 days of realistic monitoring data for all admitted patients.
+    Idempotent — skips patients who already have data.
+    """
+    if request.method == 'OPTIONS':
+        return '', 204
+
+    try:
+        from backend.seed_monitoring import seed_patient_monitoring
+        result = seed_patient_monitoring()
+        return jsonify({"message": "Seeding complete", **result}), 201
+    except Exception as e:
+        print(f"[ERROR] seed_monitoring: {e}")
         import traceback; traceback.print_exc()
         return jsonify({"error": str(e)}), 500

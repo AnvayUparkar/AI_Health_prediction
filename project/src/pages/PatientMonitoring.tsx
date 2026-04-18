@@ -4,9 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Activity, Droplets, Heart, Wind, AlertTriangle,
   TrendingUp, TrendingDown, Minus, Clock, Utensils, RefreshCw,
-  CheckCircle2, Circle, Sun, CloudSun, Moon,
+  CheckCircle2, Circle, Sun, CloudSun, Moon, Sparkles, ChefHat,
 } from 'lucide-react';
-import { getPatientMonitoring, updatePatientMonitoring } from '../services/api';
+import { getPatientMonitoring, updatePatientMonitoring, getPatientTimeseries, getAIDietRecommendation } from '../services/api';
+import {
+  ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip, Legend, AreaChart, Area,
+} from 'recharts';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -154,6 +158,14 @@ export default function PatientMonitoringPage() {
   const [snacksDone, setSnacksDone] = useState(false);
   const [dinnerDone, setDinnerDone] = useState(false);
 
+  // Chart data
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [chartLabels, setChartLabels] = useState<string[]>([]);
+
+  // AI Diet
+  const [dietPlan, setDietPlan] = useState<any>(null);
+  const [dietLoading, setDietLoading] = useState(false);
+
   const toastTimer = useRef<ReturnType<typeof setTimeout>>();
 
   const showToast = (msg: string) => {
@@ -191,9 +203,45 @@ export default function PatientMonitoringPage() {
     }
   }, [patientId]);
 
+  // Fetch chart data (timeseries)
+  const fetchTimeseries = useCallback(async () => {
+    if (!patientId) return;
+    try {
+      const ts = await getPatientTimeseries(patientId, 7);
+      const labels = ts.labels || [];
+      const combined = labels.map((label: string, i: number) => ({
+        name: label,
+        glucose: ts.glucose?.[i] ?? null,
+        bp_systolic: ts.bp_systolic?.[i] ?? null,
+        bp_diastolic: ts.bp_diastolic?.[i] ?? null,
+        spo2: ts.spo2?.[i] ?? null,
+      }));
+      setChartData(combined);
+      setChartLabels(labels);
+    } catch (e) {
+      console.error('Failed to fetch timeseries', e);
+    }
+  }, [patientId]);
+
+  // Fetch AI diet recommendation
+  const fetchDiet = useCallback(async () => {
+    if (!patientId) return;
+    setDietLoading(true);
+    try {
+      const res = await getAIDietRecommendation(patientId);
+      setDietPlan(res.diet || null);
+    } catch (e) {
+      console.error('Failed to fetch AI diet', e);
+      showToast('❌ AI diet generation failed');
+    } finally {
+      setDietLoading(false);
+    }
+  }, [patientId]);
+
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+    fetchTimeseries();
+  }, [fetchData, fetchTimeseries]);
 
   // ── Submit Vitals ──────────────────────────────────────────────────────
 
@@ -451,6 +499,190 @@ export default function PatientMonitoringPage() {
               </motion.div>
             );
           })}
+        </motion.div>
+
+        {/* ── Recharts Trend Charts ──────────────────────────────── */}
+        {chartData.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="mb-8 space-y-6"
+          >
+            {/* Glucose Chart */}
+            <div className="rounded-2xl bg-white/60 backdrop-blur-lg border border-white/30 shadow-lg p-5">
+              <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                <Droplets className="h-4 w-4 text-purple-500" />
+                Blood Glucose Trend
+              </h3>
+              <ResponsiveContainer width="100%" height={220}>
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="glucoseGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#9ca3af' }} />
+                  <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} domain={['dataMin - 10', 'dataMax + 10']} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: 12, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                    labelStyle={{ fontWeight: 600 }}
+                  />
+                  <Area type="monotone" dataKey="glucose" stroke="#8b5cf6" fill="url(#glucoseGrad)" strokeWidth={2.5} dot={{ r: 4 }} activeDot={{ r: 6 }} name="Glucose (mg/dL)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* BP + SpO2 Chart */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="rounded-2xl bg-white/60 backdrop-blur-lg border border-white/30 shadow-lg p-5">
+                <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                  <Heart className="h-4 w-4 text-rose-500" />
+                  Blood Pressure Trend
+                </h3>
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#9ca3af' }} />
+                    <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} />
+                    <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e5e7eb' }} />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Line type="monotone" dataKey="bp_systolic" stroke="#f43f5e" strokeWidth={2} dot={{ r: 3 }} name="Systolic" />
+                    <Line type="monotone" dataKey="bp_diastolic" stroke="#fb923c" strokeWidth={2} dot={{ r: 3 }} name="Diastolic" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="rounded-2xl bg-white/60 backdrop-blur-lg border border-white/30 shadow-lg p-5">
+                <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                  <Wind className="h-4 w-4 text-cyan-500" />
+                  SpO2 Trend
+                </h3>
+                <ResponsiveContainer width="100%" height={200}>
+                  <AreaChart data={chartData}>
+                    <defs>
+                      <linearGradient id="spo2Grad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#9ca3af' }} />
+                    <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} domain={[88, 100]} />
+                    <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e5e7eb' }} />
+                    <Area type="monotone" dataKey="spo2" stroke="#06b6d4" fill="url(#spo2Grad)" strokeWidth={2.5} dot={{ r: 4 }} name="SpO2 (%)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ── AI Diet Recommendation ────────────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-8 rounded-2xl bg-white/60 backdrop-blur-lg border border-white/30 shadow-lg p-6"
+        >
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-800">AI Diet Recommendation</h2>
+                <p className="text-xs text-gray-400">Powered by Gemini · Based on vitals trends</p>
+              </div>
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              disabled={dietLoading}
+              onClick={fetchDiet}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold shadow-md transition-all ${
+                dietLoading
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:shadow-lg'
+              }`}
+            >
+              {dietLoading ? (
+                <><RefreshCw className="h-4 w-4 animate-spin" /> Generating...</>
+              ) : (
+                <><Sparkles className="h-4 w-4" /> {dietPlan ? 'Regenerate' : 'Generate Diet Plan'}</>
+              )}
+            </motion.button>
+          </div>
+
+          {dietPlan ? (
+            <div className="space-y-4">
+              {/* Overall Reasoning */}
+              {dietPlan.overall_reasoning && (
+                <div className="bg-amber-50/60 border border-amber-200/50 rounded-xl p-4 text-sm text-amber-800">
+                  <p className="font-semibold mb-1">🧠 Clinical Strategy</p>
+                  <p>{dietPlan.overall_reasoning}</p>
+                </div>
+              )}
+
+              {/* Meal Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  { key: 'breakfast', emoji: '🥣', label: 'Breakfast', gradient: 'from-amber-100 to-orange-50' },
+                  { key: 'lunch', emoji: '🍛', label: 'Lunch', gradient: 'from-green-100 to-emerald-50' },
+                  { key: 'snacks', emoji: '🍎', label: 'Snacks', gradient: 'from-pink-100 to-rose-50' },
+                  { key: 'dinner', emoji: '🍽️', label: 'Dinner', gradient: 'from-indigo-100 to-blue-50' },
+                ].map((meal) => {
+                  const mealData = dietPlan[meal.key];
+                  if (!mealData) return null;
+                  return (
+                    <motion.div
+                      key={meal.key}
+                      whileHover={{ y: -2 }}
+                      className={`rounded-xl bg-gradient-to-br ${meal.gradient} border border-white/50 p-4`}
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-lg">{meal.emoji}</span>
+                        <h4 className="font-bold text-gray-800 text-sm">{meal.label}</h4>
+                      </div>
+                      <ul className="space-y-1 mb-2">
+                        {(mealData.items || []).map((item: string, i: number) => (
+                          <li key={i} className="text-sm text-gray-700 flex items-start gap-1.5">
+                            <span className="text-emerald-500 mt-0.5">•</span>
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                      {mealData.reasoning && (
+                        <p className="text-xs text-gray-500 italic border-t border-gray-200/60 pt-2 mt-2">
+                          {mealData.reasoning}
+                        </p>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              {/* Source Badge */}
+              <div className="text-right">
+                <span className={`text-xs px-2 py-1 rounded-full ${
+                  dietPlan.source === 'gemini'
+                    ? 'bg-purple-100 text-purple-700'
+                    : dietPlan.source === 'gemini_partial'
+                    ? 'bg-amber-100 text-amber-700'
+                    : 'bg-gray-100 text-gray-600'
+                }`}>
+                  {dietPlan.source === 'gemini' ? '✨ Gemini AI' : dietPlan.source === 'gemini_partial' ? '⚡ Gemini (partial)' : '📋 Fallback'}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-400">
+              <ChefHat className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <p className="text-sm">Click "Generate Diet Plan" to get AI-powered meal recommendations based on this patient's vitals.</p>
+            </div>
+          )}
         </motion.div>
 
         {/* ── Bottom Grid: Diet + Vitals Input ──────────────────────── */}

@@ -235,3 +235,18 @@ export const updatePatientMonitoring = async (patientId: number | string, data: 
     const res = await api.post(`/api/patient/${patientId}/update-monitoring`, data);
     return res.data;
 };
+
+export const getPatientTimeseries = async (patientId: number | string, days: number = 7) => {
+    const res = await api.get(`/api/patient/${patientId}/timeseries`, { params: { days } });
+    return res.data;
+};
+
+export const getAIDietRecommendation = async (patientId: number | string) => {
+    const res = await api.post(`/api/patient/${patientId}/diet-ai`);
+    return res.data;
+};
+
+export const seedMonitoringData = async () => {
+    const res = await api.post('/api/monitoring/seed');
+    return res.data;
+};
