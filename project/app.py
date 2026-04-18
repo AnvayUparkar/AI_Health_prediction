@@ -45,6 +45,7 @@ from backend.routes.chat import chat_bp
 from backend.routes.alert import alert_bp
 from backend.routes.doctor_appointments import doctor_appointments_bp
 from backend.routes.meal_plan import meal_plan_bp
+from backend.routes.monitoring import monitoring_bp
 from backend.db_service import DBService
 from backend.extensions import socketio
 
@@ -94,6 +95,7 @@ def create_app(config_overrides: Optional[dict] = None):
     app.register_blueprint(alert_bp, url_prefix='/api')
     app.register_blueprint(doctor_appointments_bp, url_prefix='/api')
     app.register_blueprint(meal_plan_bp, url_prefix='/api')
+    app.register_blueprint(monitoring_bp, url_prefix='/api')
 
     @app.route('/health', methods=['GET'])
     def health():

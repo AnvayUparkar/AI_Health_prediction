@@ -208,3 +208,30 @@ export const searchHospitals = async (query: string) => {
     const res = await api.get('/api/hospitals/search', { params: { q: query } });
     return res.data;
 };
+
+// --- Admitted Patient Monitoring ---
+
+export const getAdmittedPatients = async () => {
+    const res = await api.get('/api/patients/admitted');
+    return res.data;
+};
+
+export const getPatientMonitoring = async (patientId: number | string, days: number = 7) => {
+    const res = await api.get(`/api/patient/${patientId}/monitoring`, { params: { days } });
+    return res.data;
+};
+
+export const updatePatientMonitoring = async (patientId: number | string, data: {
+    time_slot: string;
+    glucose?: number;
+    bp_systolic?: number;
+    bp_diastolic?: number;
+    spo2?: number;
+    breakfast_done?: boolean;
+    lunch_done?: boolean;
+    snacks_done?: boolean;
+    dinner_done?: boolean;
+}) => {
+    const res = await api.post(`/api/patient/${patientId}/update-monitoring`, data);
+    return res.data;
+};

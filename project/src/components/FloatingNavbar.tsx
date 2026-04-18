@@ -18,6 +18,7 @@ const FloatingNavbar = () => {
     { name: 'About', href: '/about' },
     { name: 'What We Do', href: '/what-we-do' },
     { name: 'Report Analyzer', href: '/report-analyzer' },
+    { name: 'Monitoring', href: '/admitted-patients' },
     // { name: 'Lung Cancer', href: '/lung-cancer' },
     // { name: 'Diabetes', href: '/diabetes' },
   ];

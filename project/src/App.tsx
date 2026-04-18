@@ -15,6 +15,8 @@ import ReportAnalyzer from './pages/ReportAnalyzer';
 import Shop from './pages/Shop';
 import Profile from './pages/Profile';
 import GoogleCallback from './pages/GoogleCallback';
+import AdmittedPatients from './pages/AdmittedPatients';
+import PatientMonitoringPage from './pages/PatientMonitoring';
 import GamificationWidget from './components/GamificationWidget';
 import { AIChatBot } from './components/AIChatBot';
 import SOSButton from './components/SOSButton';
@@ -122,6 +124,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <Profile />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admitted-patients" 
+            element={
+              <ProtectedRoute>
+                <AdmittedPatients />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/patient/:patientId/monitor" 
+            element={
+              <ProtectedRoute>
+                <PatientMonitoringPage />
               </ProtectedRoute>
             } 
           />

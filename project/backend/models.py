@@ -259,6 +259,49 @@ class Hospital(db.Model):
             "emergency_available": self.emergency_available
         }
 
+class PatientMonitoring(db.Model):
+    """Vitals & diet tracking for admitted patients (3x daily)"""
+    __tablename__ = 'patient_monitoring'
+    id = db.Column(db.Integer, primary_key=True)
+    patient_id = db.Column(db.String(50), nullable=False, index=True)  # SQL int or Mongo ObjectId string
+    date = db.Column(db.String(10), nullable=False)  # YYYY-MM-DD
+    time_slot = db.Column(db.String(20), nullable=False)  # morning | afternoon | evening
+
+    # Vitals
+    glucose = db.Column(db.Float, nullable=True)
+    bp_systolic = db.Column(db.Float, nullable=True)
+    bp_diastolic = db.Column(db.Float, nullable=True)
+    spo2 = db.Column(db.Float, nullable=True)
+
+    # Diet compliance
+    breakfast_done = db.Column(db.Boolean, default=False)
+    lunch_done = db.Column(db.Boolean, default=False)
+    snacks_done = db.Column(db.Boolean, default=False)
+    dinner_done = db.Column(db.Boolean, default=False)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.Index('ix_monitoring_patient_date', 'patient_id', 'date'),
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "patient_id": self.patient_id,
+            "date": self.date,
+            "time_slot": self.time_slot,
+            "glucose": self.glucose,
+            "bp_systolic": self.bp_systolic,
+            "bp_diastolic": self.bp_diastolic,
+            "spo2": self.spo2,
+            "breakfast_done": self.breakfast_done,
+            "lunch_done": self.lunch_done,
+            "snacks_done": self.snacks_done,
+            "dinner_done": self.dinner_done,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        }
+
 def init_db(app):
     """
     Initialize the database and create tables if they don't exist.
