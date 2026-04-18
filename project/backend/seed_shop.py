@@ -17,34 +17,34 @@ def seed_shop():
         print("Seeding Shop Items...")
         
         items = [
-            {
-                "name": "Organic Herbal Soap",
-                "description": "Handcrafted with natural oils for a refreshing and healthy skin glow.",
-                "points_cost": 500,
-                "image_url": "https://images.unsplash.com/photo-1600857062241-98e5dba7f214?auto=format&fit=crop&q=80&w=800",
-                "category": "Hygiene"
-            },
-            {
-                "name": "Luxury Silk Shampoo",
-                "description": "Professional-grade hair nourishment with essential proteins.",
-                "points_cost": 700,
-                "image_url": "https://images.unsplash.com/photo-1535585209827-a15fcdce4c24?auto=format&fit=crop&q=80&w=800",
-                "category": "Personal Care"
-            },
+            # {
+            #     "name": "Organic Herbal Soap",
+            #     "description": "Handcrafted with natural oils for a refreshing and healthy skin glow.",
+            #     "points_cost": 500,
+            #     "image_url": "https://images.unsplash.com/photo-1600857062241-98e5dba7f214?auto=format&fit=crop&q=80&w=800",
+            #     "category": "Hygiene"
+            # },
+            # {
+            #     "name": "Luxury Silk Shampoo",
+            #     "description": "Professional-grade hair nourishment with essential proteins.",
+            #     "points_cost": 700,
+            #     "image_url": "https://images.unsplash.com/photo-1535585209827-a15fcdce4c24?auto=format&fit=crop&q=80&w=800",
+            #     "category": "Personal Care"
+            # },
             {
                 "name": "Advanced Hand Sanitizer",
                 "description": "Kills 99.9% of germs while keeping your skin moisturized.",
                 "points_cost": 600,
-                "image_url": "https://images.unsplash.com/photo-1584305686000-60b6910da562?auto=format&fit=crop&q=80&w=800",
+                "image_url": "https://images.unsplash.com/photo-1587854692152-cbe660dbde0d?auto=format&fit=crop&q=80&w=800",
                 "category": "Safety"
             },
-            {
-                "name": "GlowBoost Facewash",
-                "description": "Deep cleansing formula with Vitamin C to brighten your skin.",
-                "points_cost": 800,
-                "image_url": "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&q=80&w=800",
-                "category": "Skincare"
-            }
+            # {
+            #     "name": "GlowBoost Facewash",
+            #     "description": "Deep cleansing formula with Vitamin C to brighten your skin.",
+            #     "points_cost": 800,
+            #     "image_url": "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&q=80&w=800",
+            #     "category": "Skincare"
+            # }
         ]
 
         for item_data in items:
