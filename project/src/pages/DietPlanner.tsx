@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Upload, FileText, Loader, Utensils, Apple, Coffee, Drumstick, CheckCircle } from 'lucide-react';
 import AnimatedBackground from '../components/AnimatedBackground';
 import GlassCard from '../components/GlassCard';
+import { getProfile } from '../services/api';
 
 interface DietPlan {
   breakfast: string[];
@@ -23,6 +24,27 @@ const DietPlanner = () => {
     dietaryPreference: 'none',
     healthConditions: ''
   });
+
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        const data = await getProfile();
+        if (data && data.profile) {
+          setHealthData((prev: any) => ({
+            ...prev,
+            age: data.profile.age?.toString() || prev.age,
+            weight: data.profile.weight?.toString() || prev.weight,
+            height: data.profile.height?.toString() || prev.height,
+            dietaryPreference: data.profile.diet_preference || prev.dietaryPreference,
+            healthConditions: data.profile.allergies?.join(', ') || prev.healthConditions
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to fetch profile for auto-population', err);
+      }
+    };
+    fetchProfileData();
+  }, []);
   const [loading, setLoading] = useState(false);
   const [dietPlan, setDietPlan] = useState<DietPlan | null>(null);
 

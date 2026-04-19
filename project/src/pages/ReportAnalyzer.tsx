@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Download,
@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import AnimatedBackground from '../components/AnimatedBackground';
 import GlassCard from '../components/GlassCard';
-import { analyzeReport } from '../services/api';
+import { analyzeReport, getProfile } from '../services/api';
 
 // ---------- Types ----------
 
@@ -125,6 +125,27 @@ const ReportAnalyzer = () => {
     dietaryPreference: 'none',
     healthConditions: ''
   });
+
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        const data = await getProfile();
+        if (data && data.profile) {
+          setHealthData((prev: any) => ({
+            ...prev,
+            age: data.profile.age?.toString() || prev.age,
+            weight: data.profile.weight?.toString() || prev.weight,
+            height: data.profile.height?.toString() || prev.height,
+            dietaryPreference: data.profile.diet_preference || prev.dietaryPreference,
+            healthConditions: data.profile.allergies?.join(', ') || prev.healthConditions
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to fetch profile for auto-population', err);
+      }
+    };
+    fetchProfileData();
+  }, []);
 
   // File handlers
   const handleFileSelect = useCallback((f: File) => {
