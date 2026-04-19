@@ -98,7 +98,7 @@ def categorize_activity(steps: int) -> dict:
 # PROMPT BUILDER
 # ---------------------------------------------------------------------------
 
-def build_step_meal_prompt(steps: int, activity: dict) -> str:
+def build_step_meal_prompt(steps: int, activity: dict, diet_preference: str = "balanced", non_veg_preferences: list = None, allergies: list = None) -> str:
     """
     Build a Gemini prompt for step-based meal plan generation.
 
@@ -130,6 +130,11 @@ def build_step_meal_prompt(steps: int, activity: dict) -> str:
 
         CLINICAL ASSESSMENT:
         {activity['clinical_context']}
+
+        DIETARY PREFERENCES:
+        Diet Type: {diet_preference}
+        {f"Non-Veg Preferences: {', '.join(non_veg_preferences)}" if non_veg_preferences else ""}
+        {f"CRITICAL ALLERGIES (STRICTLY AVOID): {', '.join(allergies)}" if allergies else ""}
     """)
 
     task_block = textwrap.dedent("""\
@@ -155,11 +160,12 @@ def build_step_meal_prompt(steps: int, activity: dict) -> str:
         For each meal, briefly explain WHY those specific foods were chosen,
         linking back to the activity level and recovery/fueling needs.
 
-        IMPORTANT CONSTRAINTS:
           • No extreme diets or unsafe restrictions
           • Assume the patient is Indian, middle-class, home-cooking
           • Focus on affordable, locally available ingredients
           • Consider digestive comfort and meal timing
+          • ABSOLUTELY NO {", ".join(allergies) if allergies else "allergens mentioned above"}.
+          • STICK TO THE SAFETY WARNING: Always verify AI recommendations with a clinical professional.
     """)
 
     format_block = textwrap.dedent(f"""\
@@ -401,7 +407,7 @@ _SAFETY_NET_MEALS = {
 # MAIN PUBLIC API
 # ---------------------------------------------------------------------------
 
-def generate_step_meal_plan(steps: int) -> Dict[str, Any]:
+def generate_step_meal_plan(steps: int, diet_preference: str = "balanced", non_veg_preferences: list = None, allergies: list = None) -> Dict[str, Any]:
     """
     Full pipeline: steps → activity level → Gemini prompt → meal plan.
 
@@ -420,7 +426,7 @@ def generate_step_meal_plan(steps: int) -> Dict[str, Any]:
     """
     activity = categorize_activity(steps)
 
-    prompt = build_step_meal_prompt(steps, activity)
+    prompt = build_step_meal_prompt(steps, activity, diet_preference, non_veg_preferences, allergies)
     source = "gemini"
     meal_plan_data: Dict[str, Any] = {}
     error_msg: Optional[str] = None

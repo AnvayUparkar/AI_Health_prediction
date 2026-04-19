@@ -463,12 +463,18 @@ def get_diet_ai(patient_id):
         # Get patient info
         appt = Appointment.query.filter_by(patient_id=canonical_pid, isAdmitted=True).first()
 
+        user_dict = user.to_dict() if hasattr(user, 'to_dict') else user
+        profile = user_dict.get('profile', {})
+
         patient_data = {
             "patient_id": canonical_pid,
-            "name": user.name if user else f"Patient {canonical_pid[:8]}",
-            "age": user.age if user else None,
-            "sex": user.sex if user else None,
+            "name": user_dict.get('name', 'Unknown'),
+            "age": profile.get('age'),
+            "sex": profile.get('sex'),
             "ward_number": appt.ward_number if appt else None,
+            "diet_preference": profile.get('diet_preference', 'balanced'),
+            "non_veg_preferences": profile.get('non_veg_preferences', []),
+            "allergies": profile.get('allergies', [])
         }
 
         # Call Gemini

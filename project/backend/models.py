@@ -37,6 +37,11 @@ class User(db.Model):
     height = db.Column(db.Float, nullable=True)
     hospitals = db.Column(db.Text, nullable=True) # JSON list of hospital names
     
+    # New dietary and allergy fields
+    diet_preference = db.Column(db.String(20), default='veg')
+    non_veg_preferences = db.Column(db.Text, nullable=True) # JSON list
+    allergies = db.Column(db.Text, nullable=True) # JSON list
+    
     # Google OAuth fields
     google_token_json = db.Column(db.Text, nullable=True) # Stores the full creds JSON
     google_last_auth_at = db.Column(db.DateTime, nullable=True)
@@ -52,6 +57,16 @@ class User(db.Model):
             hospitals_list = json.loads(self.hospitals) if self.hospitals else []
         except:
             hospitals_list = []
+            
+        try:
+            non_veg_list = json.loads(self.non_veg_preferences) if self.non_veg_preferences else []
+        except:
+            non_veg_list = []
+
+        try:
+            allergies_list = json.loads(self.allergies) if self.allergies else []
+        except:
+            allergies_list = []
             
         return {
             "id": self.id, 
@@ -72,7 +87,10 @@ class User(db.Model):
                 "sex": self.sex,
                 "weight": self.weight,
                 "height": self.height,
-                "hospitals": hospitals_list
+                "hospitals": hospitals_list,
+                "diet_preference": self.diet_preference or 'veg',
+                "non_veg_preferences": non_veg_list,
+                "allergies": allergies_list
             }
         }
 

@@ -222,6 +222,8 @@ def build_diet_prompt(
     report_data: Dict[str, Dict],
     *,
     diet_preference: str = "balanced",
+    non_veg_preferences: List[str] = None,
+    allergies: List[str] = None,
     cuisine_preference: str = "Indian",
     extra_context: str = "",
 ) -> str:
@@ -293,7 +295,14 @@ def build_diet_prompt(
         report_section += "\n".join(normal) + "\n"
 
     # ---- Section 3: Diet preferences ----
-    pref_block = f"\nDiet preference: {diet_preference}\nCuisine preference: {cuisine_preference}\n"
+    pref_block = f"\nDiet preference: {diet_preference}\n"
+    if diet_preference in ["non_veg", "both", "non-vegetarian"] and non_veg_preferences:
+        pref_block += f"Non-Veg Preferences: {', '.join(non_veg_preferences)}\n"
+    
+    if allergies:
+        pref_block += f"CRITICAL - ALLERGIES (STRICTLY AVOID): {', '.join(allergies)}\n"
+        
+    pref_block += f"Cuisine preference: {cuisine_preference}\n"
     if extra_context:
         pref_block += f"Additional context: {extra_context}\n"
 
@@ -318,6 +327,8 @@ def build_diet_prompt(
             glycaemic control)
           • Prioritises whole foods over supplements where possible
           • Includes specific food items, not vague categories
+          • STICK TO THE SAFETY WARNING: Always verify AI recommendations with a clinical professional.
+          • ABSOLUTELY NO ingredients mentioned in the ALLERGIES list above.
 
         STEP 3 — PROVIDE REASONING
         Briefly explain WHY each major food recommendation is made, linking
@@ -803,6 +814,8 @@ def generate_diet_plan_with_gemini(
     report_data: Dict[str, Dict],
     *,
     diet_preference: str = "balanced",
+    non_veg_preferences: List[str] = None,
+    allergies: List[str] = None,
     cuisine_preference: str = "Indian",
     extra_context: str = "",
     model_name: str = "gemini-3-flash-preview",
@@ -847,6 +860,8 @@ def generate_diet_plan_with_gemini(
     prompt = build_diet_prompt(
         report_data,
         diet_preference=diet_preference,
+        non_veg_preferences=non_veg_preferences,
+        allergies=allergies,
         cuisine_preference=cuisine_preference,
         extra_context=extra_context,
     )

@@ -166,7 +166,15 @@ export const getProfile = async () => {
     return res.data;
 };
 
-export const updateProfile = async (data: { age?: number; sex?: string; weight?: number; height?: number }) => {
+export const updateProfile = async (data: { 
+    age?: number; 
+    sex?: string; 
+    weight?: number; 
+    height?: number;
+    diet_preference?: string;
+    non_veg_preferences?: string[];
+    allergies?: string[];
+}) => {
     const res = await api.put('/auth/profile', data);
     return res.data;
 };

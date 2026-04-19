@@ -184,6 +184,10 @@ def generate_diet_recommendation(patient_data: dict, trends: dict, alerts: list)
 
 def _build_prompt(patient_data: dict, trends: dict, alerts: list) -> str:
     """Build a detailed clinical nutrition prompt for Gemini."""
+    
+    diet_pref = patient_data.get('diet_preference', 'balanced')
+    non_veg_prefs = patient_data.get('non_veg_preferences', [])
+    allergies = patient_data.get('allergies', [])
 
     # Extract trend summaries
     glucose_trend = trends.get('glucose', {})
@@ -203,6 +207,9 @@ Patient Profile:
 - Age: {patient_data.get('age', 'Unknown')}
 - Sex: {patient_data.get('sex', 'Unknown')}
 - Ward: {patient_data.get('ward_number', 'General')}
+- Diet Preference: {diet_pref}
+{f"- Non-Veg Preferences: {', '.join(non_veg_prefs)}" if non_veg_prefs else ""}
+{f"- CRITICAL ALLERGIES (STRICTLY AVOID): {', '.join(allergies)}" if allergies else ""}
 
 Vitals Trend Summary (Last 2 Days):
 - Blood Glucose: Trend={glucose_trend.get('trend', 'N/A')}, Average={glucose_trend.get('average', 'N/A')} mg/dL, Slope={glucose_trend.get('slope', 'N/A')}
@@ -212,8 +219,13 @@ Vitals Trend Summary (Last 2 Days):
 
 {alert_summary}
 
-Based on these clinical indicators, generate a personalized daily diet plan.
+Based on these clinical indicators and dietary preferences, generate a personalized daily diet plan.
 Consider Indian dietary preferences and hospital food availability.
+
+IMPORTANT SAFETY CONSTRAINTS:
+1. ABSOLUTELY NO {", ".join(allergies) if allergies else "allergens mentioned above"}. Double check every meal.
+2. STICK TO THE SAFETY WARNING: Always verify AI recommendations with a clinical professional.
+3. If diet preference is vegetarian, do not suggest any meat/egg products.
 
 Respond ONLY with valid JSON in this exact format:
 {{

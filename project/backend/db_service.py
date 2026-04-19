@@ -154,7 +154,10 @@ class DBService:
                         "sex": None,
                         "weight": None,
                         "height": None,
-                        "hospitals": []
+                        "hospitals": [],
+                        "diet_preference": "veg",
+                        "non_veg_preferences": [],
+                        "allergies": []
                     }
                 }
                 DBService._async_mongo_write('users', 'insert', mongo_data)
@@ -213,6 +216,14 @@ class DBService:
                 if 'height' in profile_data: user.height = profile_data['height']
                 if 'hospitals' in profile_data: 
                     user.hospitals = json.dumps(profile_data['hospitals'])
+                if 'diet_preference' in profile_data:
+                    user.diet_preference = profile_data['diet_preference']
+                if 'non_veg_preferences' in profile_data:
+                    user.non_veg_preferences = json.dumps(profile_data['non_veg_preferences'])
+                if 'allergies' in profile_data:
+                    from backend.utils.diet_utils import normalize_allergies
+                    normalized = normalize_allergies(profile_data['allergies'])
+                    user.allergies = json.dumps(normalized)
                 db.session.commit()
         
         # 2. Mongo Write (Async)
@@ -223,6 +234,12 @@ class DBService:
             if 'weight' in profile_data: mongo_update["profile.weight"] = profile_data['weight']
             if 'height' in profile_data: mongo_update["profile.height"] = profile_data['height']
             if 'hospitals' in profile_data: mongo_update["profile.hospitals"] = profile_data['hospitals']
+            if 'diet_preference' in profile_data: mongo_update["profile.diet_preference"] = profile_data['diet_preference']
+            if 'non_veg_preferences' in profile_data: mongo_update["profile.non_veg_preferences"] = profile_data['non_veg_preferences']
+            if 'allergies' in profile_data:
+                from backend.utils.diet_utils import normalize_allergies
+                normalized = normalize_allergies(profile_data['allergies'])
+                mongo_update["profile.allergies"] = normalized
             
             if mongo_update:
                 if mongo_id:

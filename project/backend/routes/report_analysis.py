@@ -164,6 +164,9 @@ def analyze_report():
     # Prefer Gemini-powered generation; falls back to rule-based engine
     # automatically if GEMINI_API_KEY is not set or API is unavailable.
     diet_preference  = request.form.get("diet_preference") or (health_data.get("dietaryPreference") if health_data else "balanced")
+    non_veg_prefs    = request.form.getlist("non_veg_preferences") or (health_data.get("nonVegPreferences") if health_data else [])
+    allergies        = request.form.getlist("allergies") or (health_data.get("allergies") if health_data else [])
+    
     cuisine_pref     = request.form.get("cuisine_preference", "Indian")
     extra_context    = request.form.get("extra_context", "")
 
@@ -179,6 +182,8 @@ def analyze_report():
     gemini_result = generate_diet_plan_with_gemini(
         all_parameters,
         diet_preference=diet_preference,
+        non_veg_preferences=non_veg_prefs,
+        allergies=allergies,
         cuisine_preference=cuisine_pref,
         extra_context=extra_context,
         fallback_to_rules=True,
@@ -243,9 +248,15 @@ def _handle_manual_analysis(health_data):
         f"Pathology Context: {health_data.get('healthConditions')}."
     )
 
+    diet_pref       = health_data.get("dietaryPreference", health_data.get("diet_preference", "balanced"))
+    non_veg_prefs   = health_data.get("nonVegPreferences", health_data.get("non_veg_preferences", []))
+    allergies       = health_data.get("allergies", [])
+
     gemini_result = generate_diet_plan_with_gemini(
         {}, # No lab parameters
-        diet_preference=diet_preference,
+        diet_preference=diet_pref,
+        non_veg_preferences=non_veg_prefs,
+        allergies=allergies,
         extra_context=manual_context,
         fallback_to_rules=True,
         raw_text=health_data.get('healthConditions', '')

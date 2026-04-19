@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Shield, Scale, Ruler, Users, Search, Hospital, Save, Plus, X, HeartPulse, Stethoscope, Activity, Heart, Edit, Upload, Clock, ShieldCheck, AlertCircle, FileText, ExternalLink } from 'lucide-react';
+import { User, Mail, Shield, Search, Hospital, Save, Plus, X, HeartPulse, Stethoscope, Activity, Heart, Edit, Upload, Clock, ShieldCheck, AlertCircle, FileText, ExternalLink, Check, ChevronRight, Info, Utensils } from 'lucide-react';
 import GlassCard from '../components/GlassCard';
 import AnimatedBackground from '../components/AnimatedBackground';
 import { getProfile, updateProfile, searchUsers, updatePatientProfile, uploadDoctorCertificate } from '../services/api';
@@ -16,6 +16,13 @@ const Profile = () => {
   const [sex, setSex] = useState('');
   const [weight, setWeight] = useState('');
   const [height, setHeight] = useState('');
+
+  // Dietary States
+  const [dietPreference, setDietPreference] = useState('veg');
+  const [nonVegPreferences, setNonVegPreferences] = useState<string[]>([]);
+  const [allergies, setAllergies] = useState<string[]>([]);
+  const [allergyInput, setAllergyInput] = useState('');
+  const [showNonVegModal, setShowNonVegModal] = useState(false);
 
   // Doctor/Nurse Search States
   const [searchQuery, setSearchQuery] = useState('');
@@ -36,6 +43,9 @@ const Profile = () => {
       setSex(data.profile?.sex || '');
       setWeight(data.profile?.weight || '');
       setHeight(data.profile?.height || '');
+      setDietPreference(data.profile?.diet_preference || 'veg');
+      setNonVegPreferences(data.profile?.non_veg_preferences || []);
+      setAllergies(data.profile?.allergies || []);
       
       // Keep localStorage in sync for other components
       const storedUser = localStorage.getItem('user');
@@ -73,6 +83,21 @@ const Profile = () => {
       if (age && !isNaN(parseInt(age))) profileData.age = parseInt(age);
       if (weight && !isNaN(parseFloat(weight))) profileData.weight = parseFloat(weight);
       if (height && !isNaN(parseFloat(height))) profileData.height = parseFloat(height);
+
+      profileData.diet_preference = dietPreference;
+      profileData.non_veg_preferences = nonVegPreferences;
+      
+      // Auto-add pending allergy if exists before save
+      let finalAllergies = [...allergies];
+      if (allergyInput.trim()) {
+        const pending = allergyInput.trim().toLowerCase();
+        if (!finalAllergies.includes(pending)) {
+          finalAllergies.push(pending);
+          setAllergies(finalAllergies);
+          setAllergyInput('');
+        }
+      }
+      profileData.allergies = finalAllergies;
 
       await updateProfile(profileData);
       toast.success("Profile updated successfully");
@@ -323,113 +348,362 @@ const Profile = () => {
               </GlassCard>
             )}
 
-            <GlassCard className="p-8">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold text-gray-800 flex items-center">
-                  <HeartPulse className="w-6 h-6 mr-2 text-pink-500" />
-                  Health Profile
-                </h3>
-                {!editing ? (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setEditing(true)}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-semibold hover:shadow-lg transition-all"
-                  >
-                    Edit Profile
-                  </motion.button>
-                ) : (
-                  <button
-                    onClick={() => setEditing(false)}
-                    className="text-gray-500 hover:text-gray-700 font-medium"
-                  >
-                    Cancel
-                  </button>
-                )}
-              </div>
+            <form onSubmit={handleUpdateProfile} className="space-y-8">
+              <GlassCard className="p-8">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-2xl font-bold text-gray-800 flex items-center">
+                    <HeartPulse className="w-6 h-6 mr-2 text-pink-500" />
+                    Health Profile
+                  </h3>
+                  {!editing ? (
+                    <motion.button
+                      type="button"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setEditing(true)}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-semibold hover:shadow-lg transition-all"
+                    >
+                      Edit Profile
+                    </motion.button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setEditing(false)}
+                      className="text-gray-500 hover:text-gray-700 font-medium"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
 
-              <form onSubmit={handleUpdateProfile} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-600 block">Age</label>
-                  <div className="relative">
-                    <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Age</label>
                     <input
                       type="number"
-                      disabled={!editing}
                       value={age}
                       onChange={(e) => setAge(e.target.value)}
-                      placeholder="Enter age"
-                      className="w-full pl-10 pr-4 py-3 bg-white/50 border border-white/30 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all disabled:opacity-50"
+                      disabled={!editing}
+                      className="w-full px-4 py-3 bg-white/50 border border-white/30 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                     />
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-600 block">Sex</label>
-                  <select
-                    disabled={!editing}
-                    value={sex}
-                    onChange={(e) => setSex(e.target.value)}
-                    className="w-full px-4 py-3 bg-white/50 border border-white/30 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all disabled:opacity-50"
-                  >
-                    <option value="">Select Sex</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-600 block">Weight (kg)</label>
-                  <div className="relative">
-                    <Scale className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Sex</label>
+                    <select
+                      value={sex}
+                      onChange={(e) => setSex(e.target.value)}
+                      disabled={!editing}
+                      className="w-full px-4 py-3 bg-white/50 border border-white/30 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                    >
+                      <option value="">Select Sex</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Weight (kg)</label>
                     <input
                       type="number"
-                      step="0.1"
-                      disabled={!editing}
                       value={weight}
                       onChange={(e) => setWeight(e.target.value)}
-                      placeholder="Enter weight"
-                      className="w-full pl-10 pr-4 py-3 bg-white/50 border border-white/30 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all disabled:opacity-50"
+                      disabled={!editing}
+                      className="w-full px-4 py-3 bg-white/50 border border-white/30 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                     />
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-600 block">Height (cm)</label>
-                  <div className="relative">
-                    <Ruler className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Height (cm)</label>
                     <input
                       type="number"
-                      disabled={!editing}
                       value={height}
                       onChange={(e) => setHeight(e.target.value)}
-                      placeholder="Enter height"
-                      className="w-full pl-10 pr-4 py-3 bg-white/50 border border-white/30 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all disabled:opacity-50"
+                      disabled={!editing}
+                      className="w-full px-4 py-3 bg-white/50 border border-white/30 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                     />
                   </div>
                 </div>
+              </GlassCard>
 
-                <AnimatePresence>
-                  {editing && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      className="md:col-span-2"
+              {/* Dietary Preferences Card */}
+              <GlassCard className="p-8">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-2xl font-bold text-gray-800 flex items-center">
+                    <Utensils className="w-6 h-6 mr-2 text-orange-500" />
+                    Dietary Preferences
+                  </h3>
+                  {editing && dietPreference !== 'veg' && (
+                    <button 
+                      type="button"
+                      onClick={() => setShowNonVegModal(true)}
+                      className="text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center bg-blue-50 px-3 py-1.5 rounded-lg"
                     >
-                      <button
-                        type="submit"
-                        className="w-full py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all flex items-center justify-center space-x-2"
+                      Select Types <ChevronRight className="w-4 h-4 ml-1" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-8">
+                  {/* Custom Circular Radio Buttons */}
+                  <div className="flex flex-wrap gap-6">
+                    {[
+                      { id: 'veg', label: 'Vegetarian', color: 'bg-emerald-500' },
+                      { id: 'non_veg', label: 'Non-Vegetarian', color: 'bg-rose-500' },
+                      { id: 'both', label: 'Both / Flexitarian', color: 'bg-amber-500' }
+                    ].map((option) => (
+                      <label 
+                        key={option.id}
+                        className={`relative flex items-center gap-3 p-4 rounded-2xl cursor-pointer border-2 transition-all duration-300 min-w-[160px] ${
+                          dietPreference === option.id 
+                            ? 'border-blue-500 bg-blue-50/50 shadow-md' 
+                            : 'border-transparent bg-white/40 hover:bg-white/60'
+                        } ${!editing ? 'pointer-events-none' : ''}`}
                       >
-                        <Save className="w-5 h-5" />
-                        <span>Save Profile Data</span>
-                      </button>
+                        <input 
+                          type="radio" 
+                          name="dietPref" 
+                          value={option.id}
+                          checked={dietPreference === option.id}
+                          onChange={(e) => {
+                            setDietPreference(e.target.value);
+                            if (e.target.value !== 'veg' && editing) {
+                              setShowNonVegModal(true);
+                            }
+                          }}
+                          className="hidden"
+                        />
+                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                          dietPreference === option.id ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
+                        }`}>
+                          {dietPreference === option.id && <Check className="w-4 h-4 text-white" />}
+                        </div>
+                        <span className={`font-bold transition-colors ${
+                          dietPreference === option.id ? 'text-blue-700' : 'text-gray-600'
+                        }`}>{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+
+                  {/* Selected Non-Veg Preferences Chips */}
+                  {dietPreference !== 'veg' && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="space-y-3"
+                    >
+                      <p className="text-sm font-semibold text-gray-500 flex items-center gap-2">
+                         Protein Preferences {nonVegPreferences.length === 0 && <span className="text-rose-500 text-xs font-normal">(None selected)</span>}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {nonVegPreferences.map((pref) => (
+                          <span key={pref} className="px-3 py-1.5 bg-rose-50 text-rose-600 rounded-full text-xs font-bold border border-rose-100 flex items-center gap-1">
+                            {pref}
+                            {editing && (
+                              <X 
+                                className="w-3 h-3 cursor-pointer hover:text-rose-800" 
+                                onClick={() => setNonVegPreferences(prev => prev.filter(p => p !== pref))}
+                              />
+                            )}
+                          </span>
+                        ))}
+                        {editing && (
+                          <button 
+                            type="button"
+                            onClick={() => setShowNonVegModal(true)}
+                            className="px-3 py-1.5 bg-gray-100 text-gray-500 rounded-full text-xs font-bold border border-dashed border-gray-300 hover:bg-gray-200 transition-colors"
+                          >
+                            + Add/Edit
+                          </button>
+                        )}
+                      </div>
                     </motion.div>
                   )}
-                </AnimatePresence>
-              </form>
-            </GlassCard>
+
+                  {/* Allergy Section */}
+                  <div className="space-y-4 pt-4 border-t border-gray-100">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-bold text-gray-800">Allergies & Sensitivities</h4>
+                      <div className="group relative">
+                        <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-800 text-white text-[10px] rounded shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                          AI will strictly avoid these ingredients in your diet plans.
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {allergies.map((allergy) => (
+                        <motion.span 
+                          layout
+                          initial={{ scale: 0.8, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          key={allergy} 
+                          className="px-3 py-1.5 bg-orange-100 text-orange-700 rounded-full text-xs font-bold border border-orange-200 flex items-center gap-2"
+                        >
+                          {allergy}
+                          {editing && (
+                            <X 
+                               className="w-4 h-4 cursor-pointer hover:text-orange-900 bg-white/50 rounded-full p-0.5" 
+                               onClick={() => setAllergies(prev => prev.filter(a => a !== allergy))}
+                            />
+                          )}
+                        </motion.span>
+                      ))}
+                      {allergies.length === 0 && <p className="text-sm text-gray-400 italic">No allergies listed.</p>}
+                    </div>
+
+                    {editing && (
+                      <div className="space-y-4">
+                        <div className="flex gap-2">
+                          <div className="relative flex-grow">
+                            <input
+                              type="text"
+                              value={allergyInput}
+                              onChange={(e) => setAllergyInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if ((e.key === 'Enter' || e.key === ',') && allergyInput.trim()) {
+                                  e.preventDefault();
+                                  const newAllergy = allergyInput.trim().toLowerCase();
+                                  if (!allergies.includes(newAllergy)) {
+                                    setAllergies([...allergies, newAllergy]);
+                                  }
+                                  setAllergyInput('');
+                                }
+                              }}
+                              placeholder="Type allergy (e.g. peanuts, dairy)"
+                              className="w-full px-4 py-3 bg-white/50 border border-white/30 rounded-xl outline-none focus:ring-2 focus:ring-orange-500 transition-all text-sm pr-12"
+                            />
+                            {allergyInput.trim() && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newAllergy = allergyInput.trim().toLowerCase();
+                                  if (!allergies.includes(newAllergy)) {
+                                    setAllergies([...allergies, newAllergy]);
+                                  }
+                                  setAllergyInput('');
+                                }}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors shadow-md"
+                              >
+                                <Plus className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <span className="text-xs font-semibold text-gray-400 mr-2 flex items-center">Quick Add:</span>
+                          {['Peanuts', 'Dairy', 'Soy', 'Gluten', 'Eggs', 'Seafood'].map(item => (
+                            <button
+                              key={item}
+                              type="button"
+                              disabled={allergies.includes(item.toLowerCase())}
+                              onClick={() => setAllergies([...allergies, item.toLowerCase()])}
+                              className={`px-3 py-1 rounded-lg text-[10px] font-bold transition-all ${
+                                allergies.includes(item.toLowerCase()) 
+                                  ? 'bg-gray-100 text-gray-300 cursor-not-allowed' 
+                                  : 'bg-white border border-gray-200 text-gray-600 hover:border-orange-300 hover:text-orange-500'
+                              }`}
+                            >
+                              {item}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Safety Warning */}
+                  <div className="bg-blue-50 rounded-2xl p-4 flex gap-3 items-start border border-blue-100 mt-4">
+                    <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                    <p className="text-xs text-blue-700 leading-relaxed italic">
+                      <span className="font-bold">Safety Note:</span> Dietary preferences and allergies are used to guide AI recommendations. <strong>Always verify AI recommendations with a clinical professional</strong> before implementation.
+                    </p>
+                  </div>
+
+                  {/* Save Button for the entire form */}
+                  <AnimatePresence>
+                    {editing && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="pt-6"
+                      >
+                        <button
+                          type="submit"
+                          className="w-full py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all flex items-center justify-center space-x-2"
+                        >
+                          <Save className="w-5 h-5" />
+                          <span>Save All Changes</span>
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </GlassCard>
+            </form>
+
+            {/* Non-Veg Selection Modal */}
+            <AnimatePresence>
+              {showNonVegModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setShowNonVegModal(false)}
+                    className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                    className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden p-8"
+                  >
+                    <h3 className="text-2xl font-bold text-gray-800 mb-2">Protein Preferences</h3>
+                    <p className="text-sm text-gray-500 mb-6">Select the types of non-veg items you consume.</p>
+                    
+                    <div className="grid grid-cols-2 gap-3 mb-8">
+                      {['Chicken', 'Fish', 'Egg', 'Mutton', 'Beef', 'Pork', 'Seafood'].map(pref => (
+                        <label 
+                          key={pref}
+                          className={`flex items-center gap-3 p-4 rounded-2xl cursor-pointer border-2 transition-all ${
+                            nonVegPreferences.includes(pref)
+                              ? 'border-rose-500 bg-rose-50 text-rose-700'
+                              : 'border-gray-100 bg-gray-50 hover:bg-gray-100 text-gray-600'
+                          }`}
+                        >
+                          <input 
+                            type="checkbox"
+                            className="hidden"
+                            checked={nonVegPreferences.includes(pref)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setNonVegPreferences([...nonVegPreferences, pref]);
+                              } else {
+                                setNonVegPreferences(nonVegPreferences.filter(p => p !== pref));
+                              }
+                            }}
+                          />
+                          <div className={`w-5 h-5 rounded-md border flex items-center justify-center ${
+                            nonVegPreferences.includes(pref) ? 'bg-rose-500 border-rose-500' : 'border-gray-300'
+                          }`}>
+                            {nonVegPreferences.includes(pref) && <Check className="w-3 h-3 text-white" />}
+                          </div>
+                          <span className="font-bold text-sm">{pref}</span>
+                        </label>
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={() => setShowNonVegModal(false)}
+                      className="w-full py-4 bg-gray-800 text-white rounded-2xl font-bold hover:bg-gray-900 transition-colors"
+                    >
+                      Confirm Selection
+                    </button>
+                  </motion.div>
+                </div>
+              )}
+            </AnimatePresence>
 
             {/* Associated Hospitals - Shared Visibility */}
             <GlassCard className="p-8">

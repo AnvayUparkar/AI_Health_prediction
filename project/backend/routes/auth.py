@@ -192,13 +192,17 @@ def update_profile():
     role = claims.get('role', 'user')
     
     # Restrict users to only update certain fields
-    allowed_fields = ['age', 'sex', 'weight', 'height']
+    allowed_fields = ['age', 'sex', 'weight', 'height', 'diet_preference', 'non_veg_preferences', 'allergies']
     
     # Allow medical staff to edit their assigned hospitals list
     if role in ['doctor', 'nurse']:
         allowed_fields.append('hospitals')
         
     profile_data = {k: v for k, v in data.items() if k in allowed_fields}
+    
+    # Cross-field validation: If diet is veg, non_veg_preferences must be empty
+    if profile_data.get('diet_preference') == 'veg':
+        profile_data['non_veg_preferences'] = []
     
     user = DBService.update_user_profile(user_id, profile_data)
     if not user:

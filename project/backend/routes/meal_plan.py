@@ -65,8 +65,19 @@ def get_meal_plan():
 
         yesterday_steps = yesterday_record.steps or 0
 
+        # Fetch user profile for dietary preferences
+        from backend.db_service import DBService
+        user = DBService.get_user_by_id(user_id)
+        user_dict = user.to_dict() if hasattr(user, 'to_dict') else user
+        profile = user_dict.get('profile', {})
+
         # Generate meal plan via Gemini (with safety-net fallback)
-        result = generate_step_meal_plan(yesterday_steps)
+        result = generate_step_meal_plan(
+            yesterday_steps,
+            diet_preference=profile.get('diet_preference', 'balanced'),
+            non_veg_preferences=profile.get('non_veg_preferences', []),
+            allergies=profile.get('allergies', [])
+        )
 
         return jsonify({
             "success": True,
@@ -144,7 +155,17 @@ def export_report():
         activity = categorize_activity(yesterday_steps)
 
         # 3. Generate meal plan
-        meal_result = generate_step_meal_plan(yesterday_steps)
+        from backend.db_service import DBService
+        user = DBService.get_user_by_id(user_id)
+        user_dict = user.to_dict() if hasattr(user, 'to_dict') else user
+        profile = user_dict.get('profile', {})
+
+        meal_result = generate_step_meal_plan(
+            yesterday_steps,
+            diet_preference=profile.get('diet_preference', 'balanced'),
+            non_veg_preferences=profile.get('non_veg_preferences', []),
+            allergies=profile.get('allergies', [])
+        )
         meal_data = meal_result["meal_plan_data"]
 
         # 4. Build PDF
