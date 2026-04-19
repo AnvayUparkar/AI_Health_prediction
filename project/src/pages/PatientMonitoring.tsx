@@ -160,7 +160,7 @@ export default function PatientMonitoringPage() {
 
   // Chart data
   const [chartData, setChartData] = useState<any[]>([]);
-  const [chartLabels, setChartLabels] = useState<string[]>([]);
+  // const [chartLabels, setChartLabels] = useState<string[]>([]);
 
   // AI Diet
   const [dietPlan, setDietPlan] = useState<any>(null);
@@ -217,7 +217,7 @@ export default function PatientMonitoringPage() {
         spo2: ts.spo2?.[i] ?? null,
       }));
       setChartData(combined);
-      setChartLabels(labels);
+      // setChartLabels(labels);
     } catch (e) {
       console.error('Failed to fetch timeseries', e);
     }
@@ -409,24 +409,21 @@ export default function PatientMonitoringPage() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: idx * 0.1 }}
-                  className={`rounded-xl border p-4 flex items-start gap-3 ${
-                    alert.type === 'CRITICAL'
+                  className={`rounded-xl border p-4 flex items-start gap-3 ${alert.type === 'CRITICAL'
                       ? 'bg-red-50/80 border-red-200 text-red-800'
                       : alert.type === 'WARNING'
-                      ? 'bg-amber-50/80 border-amber-200 text-amber-800'
-                      : 'bg-blue-50/80 border-blue-200 text-blue-800'
-                  }`}
+                        ? 'bg-amber-50/80 border-amber-200 text-amber-800'
+                        : 'bg-blue-50/80 border-blue-200 text-blue-800'
+                    }`}
                 >
                   <AlertTriangle
-                    className={`h-5 w-5 flex-shrink-0 mt-0.5 ${
-                      alert.type === 'CRITICAL' ? 'text-red-500' : alert.type === 'WARNING' ? 'text-amber-500' : 'text-blue-500'
-                    }`}
+                    className={`h-5 w-5 flex-shrink-0 mt-0.5 ${alert.type === 'CRITICAL' ? 'text-red-500' : alert.type === 'WARNING' ? 'text-amber-500' : 'text-blue-500'
+                      }`}
                   />
                   <div>
                     <span
-                      className={`text-xs font-bold uppercase tracking-wide ${
-                        alert.type === 'CRITICAL' ? 'text-red-600' : alert.type === 'WARNING' ? 'text-amber-600' : 'text-blue-600'
-                      }`}
+                      className={`text-xs font-bold uppercase tracking-wide ${alert.type === 'CRITICAL' ? 'text-red-600' : alert.type === 'WARNING' ? 'text-amber-600' : 'text-blue-600'
+                        }`}
                     >
                       {alert.type}
                     </span>
@@ -602,11 +599,10 @@ export default function PatientMonitoringPage() {
               whileTap={{ scale: 0.95 }}
               disabled={dietLoading}
               onClick={fetchDiet}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold shadow-md transition-all ${
-                dietLoading
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold shadow-md transition-all ${dietLoading
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:shadow-lg'
-              }`}
+                }`}
             >
               {dietLoading ? (
                 <><RefreshCw className="h-4 w-4 animate-spin" /> Generating...</>
@@ -666,13 +662,12 @@ export default function PatientMonitoringPage() {
 
               {/* Source Badge */}
               <div className="text-right">
-                <span className={`text-xs px-2 py-1 rounded-full ${
-                  dietPlan.source === 'gemini'
+                <span className={`text-xs px-2 py-1 rounded-full ${dietPlan.source === 'gemini'
                     ? 'bg-purple-100 text-purple-700'
                     : dietPlan.source === 'gemini_partial'
-                    ? 'bg-amber-100 text-amber-700'
-                    : 'bg-gray-100 text-gray-600'
-                }`}>
+                      ? 'bg-amber-100 text-amber-700'
+                      : 'bg-gray-100 text-gray-600'
+                  }`}>
                   {dietPlan.source === 'gemini' ? '✨ Gemini AI' : dietPlan.source === 'gemini_partial' ? '⚡ Gemini (partial)' : '📋 Fallback'}
                 </span>
               </div>
@@ -716,11 +711,10 @@ export default function PatientMonitoringPage() {
                   onClick={() => {
                     handleDietUpdate(item.field, !item.val);
                   }}
-                  className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl border transition-all duration-200 ${
-                    item.val
+                  className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl border transition-all duration-200 ${item.val
                       ? 'bg-emerald-50/80 border-emerald-200 text-emerald-800'
                       : 'bg-white/40 border-gray-200/60 text-gray-600 hover:bg-white/60'
-                  }`}
+                    }`}
                 >
                   <span className="text-xl">{item.emoji}</span>
                   <span className="font-medium flex-1 text-left">{item.label}</span>
@@ -778,11 +772,10 @@ export default function PatientMonitoringPage() {
                     key={slot.value}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setTimeSlot(slot.value)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 border ${
-                      active
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 border ${active
                         ? `bg-gradient-to-r ${slot.color} text-white border-transparent shadow-md`
                         : 'bg-white/40 border-gray-200/60 text-gray-500 hover:bg-white/60'
-                    }`}
+                      }`}
                   >
                     <SlotIcon className="h-4 w-4" />
                     {slot.label}
@@ -857,11 +850,10 @@ export default function PatientMonitoringPage() {
               whileTap={{ scale: 0.98 }}
               disabled={saving}
               onClick={handleSubmitVitals}
-              className={`w-full py-3 rounded-xl text-white font-semibold text-sm shadow-lg transition-all duration-200 flex items-center justify-center gap-2 ${
-                saving
+              className={`w-full py-3 rounded-xl text-white font-semibold text-sm shadow-lg transition-all duration-200 flex items-center justify-center gap-2 ${saving
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:shadow-xl'
-              }`}
+                }`}
             >
               {saving ? (
                 <>
@@ -915,11 +907,10 @@ export default function PatientMonitoringPage() {
                           {new Date(rec.date + 'T00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                            rec.time_slot === 'morning' ? 'bg-amber-100 text-amber-700' :
-                            rec.time_slot === 'afternoon' ? 'bg-sky-100 text-sky-700' :
-                            'bg-indigo-100 text-indigo-700'
-                          }`}>
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${rec.time_slot === 'morning' ? 'bg-amber-100 text-amber-700' :
+                              rec.time_slot === 'afternoon' ? 'bg-sky-100 text-sky-700' :
+                                'bg-indigo-100 text-indigo-700'
+                            }`}>
                             {rec.time_slot === 'morning' ? '☀️' : rec.time_slot === 'afternoon' ? '🌤️' : '🌙'}
                             {rec.time_slot}
                           </span>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, Heart, AlertTriangle, ShieldCheck, BedDouble, Search, RefreshCw, User, Hospital, Check } from 'lucide-react';
+import { Activity, Heart, AlertTriangle, ShieldCheck, BedDouble, Search, RefreshCw, Hospital, Check } from 'lucide-react';
 import { getAdmittedPatients } from '../services/api';
 
 interface AdmittedPatient {
