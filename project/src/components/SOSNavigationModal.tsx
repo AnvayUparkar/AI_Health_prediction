@@ -4,6 +4,7 @@ import { X, Navigation, AlertTriangle, Clock, MapPin, ExternalLink, Loader2 } fr
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getNearestHospital } from '../services/api';
+import { useSOSContext } from '../context/SOSContext';
 
 // ── Marker Icons ─────────────────────────────────────────────────────────────
 
@@ -50,8 +51,10 @@ interface RouteInfo {
 // ── Component ────────────────────────────────────────────────────────────────
 
 const SOSNavigationModal: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const { sosState, activateSOS, minimizeSOS, closeSOS } = useSOSContext();
+  const isOpen = sosState.isActive && !sosState.isMinimized && !sosState.isResolved;
+  const userCoords = sosState.userCoords;
+
   const [hospital, setHospital] = useState<HospitalData | null>(null);
   const [route, setRoute] = useState<RouteInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,8 +68,7 @@ const SOSNavigationModal: React.FC = () => {
   useEffect(() => {
     const handler = (e: CustomEvent<{ lat: number; lng: number }>) => {
       console.log('[SOSNav] Received sos-navigate event:', e.detail);
-      setUserCoords({ lat: e.detail.lat, lng: e.detail.lng });
-      setIsOpen(true);
+      activateSOS(e.detail.lat, e.detail.lng);
       setLoading(true);
       setError(null);
       setHospital(null);
@@ -75,7 +77,7 @@ const SOSNavigationModal: React.FC = () => {
 
     window.addEventListener('sos-navigate', handler as EventListener);
     return () => window.removeEventListener('sos-navigate', handler as EventListener);
-  }, []);
+  }, [activateSOS]);
 
   // ── Fetch nearest hospital when modal opens ────────────────────────────────
   useEffect(() => {
@@ -211,7 +213,7 @@ const SOSNavigationModal: React.FC = () => {
 
   // ── Cleanup map on close ───────────────────────────────────────────────────
   const handleClose = () => {
-    setIsOpen(false);
+    closeSOS();
     if (mapRef.current) {
       mapRef.current.remove();
       mapRef.current = null;
@@ -323,8 +325,14 @@ const SOSNavigationModal: React.FC = () => {
                   className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transition-all text-sm"
                 >
                   <ExternalLink className="h-4 w-4" />
-                  Navigate in Google Maps
+                  Navigate in Maps
                 </a>
+                <button
+                  onClick={minimizeSOS}
+                  className="px-4 py-3 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-xl transition-colors text-sm"
+                >
+                  Minimize
+                </button>
                 <button
                   onClick={handleClose}
                   className="px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors text-sm"

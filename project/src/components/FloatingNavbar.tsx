@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Menu, X, User, LogOut } from 'lucide-react';
 import api from '../services/api';
+import SOSNavbarWidget from './SOSNavbarWidget';
 
 const FloatingNavbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -142,6 +143,7 @@ const FloatingNavbar = () => {
 
           {/* Auth Section */}
           <div className="hidden md:flex items-center space-x-2">
+            <SOSNavbarWidget />
             {isAuthenticated ? (
               <div className="relative">
                 <motion.button

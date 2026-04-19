@@ -114,6 +114,12 @@ def update_alert(alert_id):
             **updates,
             'alert': response_data
         })
+        
+        if updates.get('resolved'):
+            socketio.emit('SOS_RESOLVED', {
+                'id': alert_id,
+                'patient_id': response_data.get('patient_id')
+            })
             
         return jsonify(response_data), 200
         
