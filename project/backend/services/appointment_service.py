@@ -234,6 +234,7 @@ class AppointmentService:
                         "patient_id": patient_id,
                         "ward_number": doc.get('ward_number'),
                         "doctor_id": doc.get('doctor_id'),
+                        "hospital_name": doc.get('hospital_name'),
                         "status": "ADMITTED" if doc.get('isAdmitted') else "CHECKED"
                     }
         
@@ -249,6 +250,7 @@ class AppointmentService:
                 "patient_id": patient_id,
                 "ward_number": appt.ward_number,
                 "doctor_id": appt.doctor_id,
+                "hospital_name": appt.hospital_name,
                 "status": "ADMITTED" if appt.isAdmitted else "CHECKED"
             }
         return None

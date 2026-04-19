@@ -175,8 +175,18 @@ def trigger_sos():
             # If they have an assigned doctor, notify them specifically
             if ward_info.get('doctor_id'):
                 notified_docs = [ward_info['doctor_id']]
+                
+            # ALSO notify all staff (including nurses) at that hospital
+            hosp_name = ward_info.get('hospital_name')
+            if hosp_name:
+                nearest_hosp = hosp_name
+                hosp_staff = DBService.get_medical_staff_by_hospital(hosp_name)
+                staff_ids = [d['id'] if isinstance(d, dict) else d.id for d in hosp_staff]
+                for sid in staff_ids:
+                    if sid not in notified_docs:
+                        notified_docs.append(sid)
             
-            print(f"[SOS ROUTING] Internal Ward SOS detected for Patient={patient_id} in Ward={ward_number}")
+            print(f"[SOS ROUTING] Internal Ward SOS detected for Patient={patient_id} in Ward={ward_number} Hospital={nearest_hosp}")
         
         # 1. Remote Trace (Only if not in a ward or as a safety fallback)
         if location_type == 'REMOTE':
