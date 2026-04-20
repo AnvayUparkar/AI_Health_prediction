@@ -20,9 +20,13 @@ GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
 # Model fallback chain — try each until one works
 _MODEL_FALLBACK_CHAIN = [
-    "gemini-2.5-flash",
-    "gemini-2.0-flash",
-    "gemini-flash-latest",
+    "gemini-3-pro-preview",
+    # "gemini-3-pro-preview-09-2026",
+    # "gemini-2.5-pro",
+    # "gemini-2.5-flash-lite",
+    # "gemini-2.5-flash",
+    # "gemini-2.0-flash",
+    # "gemini-flash-latest",
 ]
 
 # In-memory cache: patient_id -> { result, timestamp }
@@ -30,7 +34,7 @@ _diet_cache: dict = {}
 CACHE_TTL_SECONDS = 3600  # 1 hour
 
 
-def generate_diet_recommendation(patient_data: dict, trends: dict, alerts: list) -> dict:
+def generate_diet_recommendation(patient_data: dict, trends: dict, alerts: list, trend_raw: dict = None) -> dict:
     """
     Call Gemini API to generate a personalized diet recommendation.
     Tries multiple models in fallback chain if quota is exceeded.
@@ -39,6 +43,7 @@ def generate_diet_recommendation(patient_data: dict, trends: dict, alerts: list)
         patient_data: { name, age, sex, ward_number, ... }
         trends: { glucose: { trend, slope, average }, bp_systolic: {...}, ... }
         alerts: [ { type, message, metric }, ... ]
+        trend_raw: { glucose_values, bp_values, spo2_values, ... }
 
     Returns:
         {
@@ -53,7 +58,7 @@ def generate_diet_recommendation(patient_data: dict, trends: dict, alerts: list)
     api_key = os.environ.get('GEMINI_API_KEY', '')
     if not api_key:
         print("[GEMINI] No API key found. Using fallback.")
-        return _fallback_diet(trends)
+        return _fallback_diet(trends, trend_raw, patient_data)
 
     # Check cache
     pid = str(patient_data.get('patient_id', ''))
@@ -179,7 +184,7 @@ def generate_diet_recommendation(patient_data: dict, trends: dict, alerts: list)
 
     # All models exhausted — use fallback
     print("[GEMINI] All models exhausted. Using fallback diet.")
-    return _fallback_diet(trends)
+    return _fallback_diet(trends, trend_raw, patient_data)
 
 
 def _build_prompt(patient_data: dict, trends: dict, alerts: list) -> str:
@@ -251,69 +256,53 @@ Respond ONLY with valid JSON in this exact format:
     return prompt
 
 
-def _fallback_diet(trends: dict) -> dict:
+def _fallback_diet(trends: dict, trend_raw: dict = None, patient_data: dict = None) -> dict:
     """
     Deterministic fallback diet when Gemini is unavailable.
-    Uses the advanced rule-based engine and USDA database instead of hardcoded strings.
+    Upgraded to generate narrative clinical recommendations.
     """
-    from backend.fallback_diet_engine import fallback_diet_engine
-    from backend.fallback_monitoring_engine import _map_trends_to_diet_input
-    
-    # Map trends to a simulated lab report for the diet engine
-    input_data, raw_text_pad = _map_trends_to_diet_input(trends, "LOW")
-    
     try:
-        # Generate diet using the advanced Expert Rules/USDA engine
-        diet_engine_result = fallback_diet_engine(input_data=input_data, raw_text=raw_text_pad)
-        meal_plan = diet_engine_result.get("meal_plan", {})
-        recommended_foods = diet_engine_result.get("recommended_foods", [])
+        from backend.services.clinical_diet_engine import generate_clinical_diet
         
-        # The engine returns a list of pre-formatted strings for issues
-        raw_issues = diet_engine_result.get("issues_detected", [])
-        issues = []
-        for i in raw_issues:
-            if isinstance(i, dict):
-                issues.append(i.get("condition", "General Wellness"))
-            else:
-                # Direct string format: "Technical Name [Validated...] — Explanation"
-                # Strip the extra technical details for the overall reasoning summary
-                issues.append(i.split(" — ")[0].split(" [")[0])
+        # Use provided raw trends or simulate from existing metrics
+        if not trend_raw:
+            trend_raw = {
+                "glucose_values": [trends.get('glucose', {}).get('average', 120)],
+                "bp_values": [trends.get('bp_systolic', {}).get('average', 120)],
+                "spo2_values": [trends.get('spo2', {}).get('average', 98)],
+                "meals_missed": False,
+                "activity_level": "moderate"
+            }
         
-        # Proper reasoning extraction: map foods to their clinical justifications
-        food_reasoning_map = {}
-        for rec in recommended_foods:
-            parts = rec.split(" — ")
-            if len(parts) >= 2:
-                food_reasoning_map[parts[0].strip().lower()] = parts[1].strip()
-
-        def build_meal_with_reasoning(meal_key, default_items):
-            items = meal_plan.get(meal_key, [])
-            if not items:
-                return {"items": default_items, "reasoning": "Standard clinical sustenance for recovery."}
-            
-            # Synthesize reasoning by looking up benefits for each food item
-            reasons = []
-            for item in items:
-                clean_name = item.replace(" (Synergy Booster)", "").strip().lower()
-                if clean_name in food_reasoning_map:
-                    reasons.append(f"{clean_name.title()}: {food_reasoning_map[clean_name]}")
-            
-            reasoning_str = " ".join(reasons) if reasons else "Selected for optimal metabolic glycemic response."
-            return {"items": items, "reasoning": reasoning_str}
-
-        overall_reasoning = f"Advanced clinical protocol applied. Addressed issues: {', '.join(issues)}." if issues else "Balanced precision diet based on normal baseline."
+        # Call the new clinical engine
+        result = generate_clinical_diet(patient_data or {}, trend_raw)
         
+        # Map back to old UI structure to avoid breaking frontend
+        meals = result.get('meals', {})
         return {
-            "breakfast": build_meal_with_reasoning("breakfast", ["Oatmeal (Low GI)", "Lemon Water"]),
-            "lunch": build_meal_with_reasoning("lunch", ["Brown Rice", "Lentil Soup"]),
-            "snacks": build_meal_with_reasoning("snack", ["Roasted Makhana", "Buttermilk"]),
-            "dinner": build_meal_with_reasoning("dinner", ["Multigrain Roti", "Vegetable Stew"]),
-            "overall_reasoning": overall_reasoning,
+            "breakfast": {
+                "items": meals.get('breakfast', {}).get('items', []),
+                "reasoning": meals.get('breakfast', {}).get('reason', '')
+            },
+            "lunch": {
+                "items": meals.get('lunch', {}).get('items', []),
+                "reasoning": meals.get('lunch', {}).get('reason', '')
+            },
+            "snacks": {
+                "items": meals.get('snacks', {}).get('items', []),
+                "reasoning": meals.get('snacks', {}).get('reason', '')
+            },
+            "dinner": {
+                "items": meals.get('dinner', {}).get('items', []),
+                "reasoning": meals.get('dinner', {}).get('reason', '')
+            },
+            "overall_reasoning": result.get('strategy', ''),
             "source": "fallback"
         }
     except Exception as e:
         import logging
-        logging.getLogger(__name__).error(f"Advanced fallback diet failed: {e}")
+        logging.getLogger(__name__).error(f"Clinical fallback diet failed: {e}")
+        # Secondary fallback to hardcoded if everything fails
         return {
             "breakfast": {"items": ["Idli", "Milk"], "reasoning": "Standard support."},
             "lunch": {"items": ["Rice", "Dal"], "reasoning": "Standard support."},

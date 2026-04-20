@@ -620,7 +620,7 @@ export default function PatientMonitoringPage() {
               </div>
               <div>
                 <h2 className="text-lg font-bold text-gray-800">AI Diet Recommendation</h2>
-                <p className="text-xs text-gray-400">Powered by Gemini · Based on vitals trends</p>
+                <p className="text-xs text-gray-400">AI-Powered · Based on vital trends</p>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-3">
@@ -716,7 +716,7 @@ export default function PatientMonitoringPage() {
                       ? 'bg-amber-100 text-amber-700'
                       : 'bg-gray-100 text-gray-600'
                   }`}>
-                  {dietPlan.source === 'gemini' ? '✨ Gemini AI' : dietPlan.source === 'gemini_partial' ? '⚡ Gemini (partial)' : '📋 Fallback'}
+                  {dietPlan.source === 'gemini' ? '✨ Advanced AI' : dietPlan.source === 'gemini_partial' ? '⚡ Hybrid AI' : '📋 Clinical Core'}
                 </span>
               </div>
             </div>

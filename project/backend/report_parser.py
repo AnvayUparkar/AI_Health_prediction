@@ -1018,9 +1018,6 @@ def summarize_report(parameters: Dict[str, dict]) -> str:
     if not parameters:
         return "No medical parameters were detected in the report."
 
-    if not parameters:
-        return "No medical parameters were detected in the report."
-
     abnormal = [
         f"{name} ({info['status']})"
         for name, info in parameters.items()
@@ -1106,19 +1103,33 @@ def detect_high_level_conditions(parameters: Dict[str, dict]) -> List[str]:
     if albumin.get("status") == "Low" or total_protein.get("status") == "Low":
         conditions.append("protein_deficiency")
 
-    # 7. Liver/Kidney/Thyroid - Only if markers are present and definitively abnormal
+    # 7. Liver - Comprehensive GGT/ALP/Bilirubin check
     sgpt = parameters.get("SGPT", {})
     sgot = parameters.get("SGOT", {})
-    if sgpt.get("status") == "High" or sgot.get("status") == "High":
+    ggt = parameters.get("GGT", {})
+    alp = parameters.get("Alkaline Phosphatase", {})
+    bilirubin = parameters.get("Bilirubin Total", {})
+    
+    if any(p.get("status") == "High" for p in [sgpt, sgot, ggt, alp, bilirubin]):
         conditions.append("liver_stress")
 
+    # 8. Kidney - BUN/Urea support
     creatinine = parameters.get("Creatinine", {})
-    if creatinine.get("status") == "High":
+    bun = parameters.get("BUN", {})
+    urea = parameters.get("Urea", {})
+    if any(p.get("status") == "High" for p in [creatinine, bun, urea]):
         conditions.append("kidney_strain")
 
+    # 9. Thyroid
     tsh = parameters.get("TSH", {})
     if tsh.get("status") in ("Low", "High"):
         conditions.append("thyroid_issues")
+
+    # 10. Electrolytes
+    sodium = parameters.get("Sodium", {})
+    potassium = parameters.get("Potassium", {})
+    if any(p.get("status") in ("Low", "High") for p in [sodium, potassium]):
+        conditions.append("electrolyte_imbalance")
 
     return list(set(conditions))
 

@@ -477,8 +477,17 @@ def get_diet_ai(patient_id):
             "allergies": profile.get('allergies', [])
         }
 
+        # Prepare raw values for the clinical diet engine
+        trend_raw = {
+            "glucose_values": [r.get('glucose') for r in record_dicts if r.get('glucose') is not None],
+            "bp_values": [r.get('bp_systolic') for r in record_dicts if r.get('bp_systolic') is not None],
+            "spo2_values": [r.get('spo2') for r in record_dicts if r.get('spo2') is not None],
+            "meals_missed": any(not r.get('breakfast_done') or not r.get('lunch_done') or not r.get('dinner_done') for r in record_dicts[-3:] if record_dicts),
+            "activity_level": profile.get('activity_level', 'moderate')
+        }
+
         # Call Gemini
-        diet = generate_diet_recommendation(patient_data, analysis["trends"], analysis["alerts"])
+        diet = generate_diet_recommendation(patient_data, analysis["trends"], analysis["alerts"], trend_raw=trend_raw)
 
         return jsonify({
             "diet": diet,

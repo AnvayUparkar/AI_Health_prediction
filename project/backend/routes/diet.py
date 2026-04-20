@@ -101,43 +101,33 @@ def parse_health_keywords(text: Optional[str]) -> dict:
     return found
 
 def generate_diet_plan(parsed: dict) -> dict:
-    # Very simple rule-based diet plan generator
-    # defaults
-    calories = 2000
-    protein = '100g'
-    carbs = '250g'
-    fats = '70g'
-    include = ['Vegetables', 'Lean Protein (chicken, fish, tofu)', 'Whole grains', 'Legumes', 'Fruits (limited)']
-    avoid = ['Sugary drinks', 'Fried foods', 'Processed snacks', 'Excess salt']
-
-    if 'diabetes' in parsed or parsed.get('glucose_value') or parsed.get('hba1c_value'):
-        calories = 1800
-        protein = '110g'
-        carbs = '180g'
-        fats = '60g'
-        include = ['Non-starchy vegetables', 'Lean protein', 'Whole grains in moderation', 'Nuts & seeds']
-        avoid = ['Sugary drinks', 'White bread', 'Processed sweets', 'High GI foods']
-
-    if 'obesity' in parsed or ('bmi_value' in parsed and parsed['bmi_value'] >= 30):
-        calories = 1600
-        protein = '120g'
-        carbs = '150g'
-        fats = '50g'
-        include = ['High-fiber vegetables', 'Lean protein', 'Low-calorie snacks', 'Water-rich foods']
-        avoid += ['High-calorie desserts', 'Large portions']
-
-    if 'cholesterol' in parsed:
-        include += ['Oats', 'Fatty fish (omega-3)', 'Olive oil in moderation']
-        avoid += ['Full-fat dairy', 'Trans fats']
-
-    notes = "Personalized by simple keyword rules; for medical advice consult a clinician."
-
+    """
+    Advanced rule-based diet plan generator using the Clinical Fallback Engine.
+    Grounds all 'upload-report' recommendations in Expert KB + USDA data.
+    """
+    from backend.fallback_diet_engine import fallback_diet_engine
+    
+    # Map 'glucose_value' etc. from diet.py parser to structure expected by engine
+    engine_data = {}
+    if parsed.get('glucose_value'):
+        engine_data['Glucose'] = {'value': parsed['glucose_value'], 'status': 'High' if parsed['glucose_value'] > 140 else 'Normal'}
+    if parsed.get('hba1c_value'):
+        engine_data['HbA1c'] = {'value': parsed['hba1c_value'], 'status': 'High' if parsed['hba1c_value'] > 6.4 else 'Normal'}
+    if parsed.get('bmi_value'):
+        engine_data['BMI'] = {'value': parsed['bmi_value'], 'status': 'High' if parsed['bmi_value'] > 25 else 'Normal'}
+    
+    # Trigger the engine
+    fb_result = fallback_diet_engine(engine_data)
+    
+    is_glucose_high = any(v.get('status') == 'High' for k,v in engine_data.items() if k in ['Glucose', 'HbA1c'])
+    
+    # Adapt engine output to the format expected by this legacy route
     return {
-        'calories_target': calories,
-        'macros': {'protein': protein, 'carbs': carbs, 'fats': fats},
-        'foods_to_include': include,
-        'foods_to_avoid': avoid,
-        'notes': notes
+        'calories_target': 1800 if is_glucose_high else 2000,
+        'macros': {'protein': '100g+', 'carbs': '150-200g', 'fats': '50-60g'},
+        'foods_to_include': [f.split('—')[0].strip() for f in fb_result.get('recommended_foods', [])],
+        'foods_to_avoid': [f.split('—')[0].strip() for f in fb_result.get('foods_to_avoid', [])],
+        'notes': fb_result.get('summary', "Personalized by Advanced Clinical Engine.")
     }
 
 @diet_bp.route('/upload-report', methods=['POST'])

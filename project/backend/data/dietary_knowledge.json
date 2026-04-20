@@ -65,7 +65,8 @@
     "high_uric_acid": [
       "high_water",
       "low_purine",
-      "vitamin_c"
+      "vitamin_c",
+      "cherries"
     ],
     "hypoxia": [
       "iron",
@@ -183,7 +184,15 @@
       "chia seeds",
       "almonds",
       "walnuts",
-      "sweet potato"
+      "sweet potato",
+      "multigrain roti",
+      "roti",
+      "poha",
+      "moong dal khichdi",
+      "roasted makhana",
+      "vegetable sabzi",
+      "green salad",
+      "lentil dal"
     ],
     "omega_3": [
       "walnuts",
@@ -261,7 +270,10 @@
       "sprouts",
       "chana",
       "apples",
-      "berries"
+      "berries",
+      "multigrain roti",
+      "moong dal khichdi",
+      "roasted makhana"
     ],
     "antioxidants": [
       "turmeric",
@@ -316,6 +328,20 @@
       "cashews",
       "almonds",
       "eggs"
+    ],
+    "curcumin": [
+      "turmeric",
+      "curry powder"
+    ],
+    "purine_neutral": [
+      "cherries",
+      "lemon water",
+      "cucumber"
+    ],
+    "low_potassium": [
+      "bottle gourd",
+      "cauliflower",
+      "cabbage"
     ]
   },
   "food_details": {
@@ -327,6 +353,7 @@
         "fiber",
         "potassium",
         "magnesium",
+        "hypoxia",
         "meal_lunch"
       ]
     },
@@ -336,6 +363,7 @@
         "iron",
         "antioxidants",
         "fiber",
+        "hypoxia",
         "meal_lunch"
       ]
     },
@@ -346,6 +374,7 @@
         "antioxidants",
         "vitamin_c",
         "potassium",
+        "hypoxia",
         "meal_breakfast",
         "meal_snack"
       ]
@@ -429,6 +458,34 @@
         "meal_snack"
       ]
     },
+    "brazil nuts": {
+      "benefits": "Single most concentrated source of Selenium, critical for T4 to T3 conversion",
+      "tags": [
+        "selenium",
+        "healthy_fats",
+        "thyroid_issues",
+        "meal_snack"
+      ]
+    },
+    "seaweed": {
+      "benefits": "Natural source of Iodine, the essential building block for thyroid hormones",
+      "tags": [
+        "iodine",
+        "minerals",
+        "thyroid_issues",
+        "meal_lunch"
+      ]
+    },
+    "cherries": {
+      "benefits": "Contains anthocyanins that may reduce serum uric acid and inflammation",
+      "tags": [
+        "antioxidants",
+        "vitamin_c",
+        "purine_neutral",
+        "high_uric_acid",
+        "meal_snack"
+      ]
+    },
     "brown rice": {
       "benefits": "Whole grain bran layer supports metabolic steady-state",
       "tags": [
@@ -470,7 +527,39 @@
         "low_sodium",
         "fiber",
         "high_water",
+        "low_potassium",
+        "kidney_strain",
         "meal_dinner"
+      ]
+    },
+    "cauliflower": {
+      "benefits": "Low-potassium cruciferous choice for renal electrolyte management",
+      "tags": [
+        "fiber",
+        "vitamin_c",
+        "low_potassium",
+        "kidney_strain",
+        "meal_lunch"
+      ]
+    },
+    "cabbage": {
+      "benefits": "Phytochemicals support mucosal healing with low electrolyte impact",
+      "tags": [
+        "fiber",
+        "vitamin_c",
+        "low_potassium",
+        "kidney_strain",
+        "meal_lunch"
+      ]
+    },
+    "lemon water": {
+      "benefits": "Promotes systemic alkalinity and assists in uric acid clearance",
+      "tags": [
+        "hydration",
+        "vitamin_c",
+        "purine_neutral",
+        "high_uric_acid",
+        "meal_snack"
       ]
     },
     "sprouts": {
@@ -796,6 +885,23 @@
         "iron",
         "calcium",
         "vitamin_c",
+        "hypoxia",
+        "meal_lunch"
+      ]
+    },
+    "moringa soup": {
+      "benefits": "High concentration of bioavailable iron and nitrates to support oxygen transport",
+      "tags": [
+        "iron",
+        "hypoxia",
+        "meal_dinner"
+      ]
+    },
+    "beetroot salad": {
+      "benefits": "Raw nitrate-dense preparation to optimize vascular dilation and SpO2 support",
+      "tags": [
+        "iron",
+        "hypoxia",
         "meal_lunch"
       ]
     },
@@ -832,6 +938,103 @@
         "antioxidants",
         "meal_snack",
         "meal_lunch"
+      ]
+    },
+    "multigrain roti": {
+      "benefits": "Slow-release carbohydrate profile supporting sustained glycemic stability",
+      "tags": [
+        "fiber",
+        "low_glycemic",
+        "meal_lunch",
+        "meal_dinner"
+      ]
+    },
+    "roti": {
+      "benefits": "Whole wheat based complex carbohydrate for energy",
+      "tags": [
+        "fiber",
+        "meal_lunch",
+        "meal_dinner"
+      ]
+    },
+    "poha": {
+      "benefits": "Parboiled rice flakes providing easy digestion and immediate energy",
+      "tags": [
+        "meal_breakfast"
+      ]
+    },
+    "moong dal khichdi": {
+      "benefits": "Synergistic protein-carb blend offering complete amino acids with minimal digestive load",
+      "tags": [
+        "protein",
+        "fiber",
+        "meal_dinner"
+      ]
+    },
+    "roasted makhana": {
+      "benefits": "Fox nuts rich in magnesium and low-GI carbohydrates for metabolic support",
+      "tags": [
+        "magnesium",
+        "fiber",
+        "low_glycemic",
+        "meal_snack"
+      ]
+    },
+    "vegetable sabzi": {
+      "benefits": "Fiber-dense micronutrient support for insulin modulation",
+      "tags": [
+        "fiber",
+        "antioxidants",
+        "meal_lunch",
+        "meal_dinner"
+      ]
+    },
+    "green salad": {
+      "benefits": "High volume, low-calorie fiber for satiety and glycemic control",
+      "tags": [
+        "fiber",
+        "antioxidants",
+        "meal_lunch",
+        "meal_dinner"
+      ]
+    },
+    "lentil dal": {
+      "benefits": "Base plant protein supporting broad nutritional goals and satiety",
+      "tags": [
+        "protein",
+        "iron",
+        "fiber",
+        "zinc",
+        "meal_lunch",
+        "meal_dinner"
+      ]
+    },
+    "bajra roti": {
+      "benefits": "Gluten-free pearl millet providing high satiety and stable metabolic energy",
+      "tags": [
+        "fiber",
+        "complex_carbs",
+        "meal_lunch",
+        "meal_dinner"
+      ]
+    },
+    "jowar roti": {
+      "benefits": "Sorghum-based energy source with a favorable glycemic load for metabolic disorders",
+      "tags": [
+        "fiber",
+        "low_glycemic",
+        "meal_lunch",
+        "meal_dinner"
+      ]
+    },
+    "sprouted moong salad": {
+      "benefits": "Bioavailable protein and enzyme-rich fiber for glycemic modulation",
+      "tags": [
+        "protein",
+        "fiber",
+        "vitamins",
+        "meal_breakfast",
+        "meal_snack"
       ]
     },
     "cod": {

@@ -142,7 +142,24 @@ def handle_chat():
                 
         if ai_text is None:
             logger.error(f"All models failed. Last error: {last_err}")
-            return jsonify({"error": "All AI models are currently overwhelmed or unavailable. Please try again later."}), 503
+            # RESCUE LOGIC: Deterministic clinical guidance if AI is down
+            from backend.fallback_diet_engine import detect_high_level_conditions, CONDITION_MAP
+            conditions = detect_high_level_conditions(message)
+            if conditions:
+                rescue_lines = [
+                    "⚠️ **Clinical Fallback Active**: My primary AI engine is currently unavailable, but here is my deterministic medical guidance based on your symptoms:",
+                    ""
+                ]
+                for cond in conditions:
+                    info = CONDITION_MAP[cond]
+                    rescue_lines.append(f"**Concerning: {info['technical_name']}**")
+                    rescue_lines.append(f"- {info['explanation']}")
+                    rescue_lines.append(f"- *Action*: {info['solution']}")
+                    rescue_lines.append("")
+                rescue_lines.append("*Please consult a doctor for a formal diagnosis. This is an automated safety fallback.*")
+                ai_text = "\n".join(rescue_lines)
+            else:
+                return jsonify({"error": "All AI models are currently overwhelmed. Please try again later."}), 503
         
         # Post-flight disclaimer check (Ensure the AI actually included a disclaimer)
         if "consult" not in ai_text.lower() and "doctor" not in ai_text.lower():

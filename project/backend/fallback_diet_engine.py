@@ -212,25 +212,32 @@ CONDITION_MAP = {
         "markers": ["Total Protein", "Albumin"]
     },
     "liver_stress": {
-        "technical_name": "Hepatic Stress",
-        "explanation": "Elevated transaminase levels (SGPT/SGOT) indicate hepatocyte strain.",
-        "risk": "metabolic toxicity and impaired detoxification",
-        "solution": "Antioxidant-rich (Curcumin/Fiber) protocol; zero hepatotoxins.",
-        "markers": ["SGPT", "SGOT"]
+        "technical_name": "Hepatic (Liver) Stress",
+        "explanation": "Elevated transaminase or GGT levels indicate hepatocyte strain or biliary congestion.",
+        "risk": "impaired detoxification and metabolic toxicity",
+        "solution": "Prioritize antioxidant-rich (Curcumin/Fiber) protocol; strictly zero hepatotoxins.",
+        "markers": ["SGPT", "SGOT", "GGT", "Bilirubin Total", "Alkaline Phosphatase"]
     },
     "kidney_strain": {
-        "technical_name": "Renal Strain Indicators",
-        "explanation": "Increased creatinine suggests reduced glomerular filtration rate efficiency.",
-        "risk": "vascular toxicity and fluid imbalance",
-        "solution": "Regulated protein and optimized electrolyte (low sodium) intake.",
-        "markers": ["Creatinine"]
+        "technical_name": "Renal (Kidney) Strain",
+        "explanation": "Increased creatinine or BUN levels suggest reduced glomerular filtering efficiency.",
+        "risk": "fluid imbalance and systemic waste accumulation",
+        "solution": "Regulated protein (plant-preferred) and strictly low sodium intake.",
+        "markers": ["Creatinine", "BUN", "Urea"]
     },
     "thyroid_issues": {
-        "technical_name": "Thyroid Dysfunction Indicators",
-        "explanation": "Abnormal TSH suggests imbalance in metabolic rate regulation.",
-        "risk": "metabolic instability and systemic fatigue",
-        "solution": "Optimized Selenium and Iodine substrates; limit goitrogens.",
-        "markers": ["TSH"]
+        "technical_name": "Thyroid Metabolic Imbalance",
+        "explanation": "Abnormal TSH suggests disruption in the systemic metabolic regulation rate.",
+        "risk": "metabolic instability and chronic fatigue",
+        "solution": "Optimized Selenium and Zinc; Iodine balance (if indicated).",
+        "markers": ["TSH", "T3", "T4"]
+    },
+    "electrolyte_imbalance": {
+        "technical_name": "Electrolyte Dysregulation",
+        "explanation": "Abnormal Sodium, Potassium, or Chloride levels affect cellular signaling.",
+        "risk": "cardiac conduction issues and fluid volume stress",
+        "solution": "Mineral-specific titration (e.g., Potassium sources for High Sodium).",
+        "markers": ["Sodium", "Potassium", "Chloride"]
     }
 }
 
@@ -427,8 +434,85 @@ def fallback_diet_engine(input_data: Dict[str, Any], raw_text: Optional[str] = N
     # Conflict Resolution (Pre-flight check)
     recommended_with_reason = resolve_diet_conflicts(recommended_with_reason, avoid_map)
 
-    # 5. Generate Dynamic Meal Plan
-    meal_plan = distribute_meals(top_foods, avoid_set)
+    # 5. Generate Dynamic Meal Plan with SYNERGISTIC OVERLAYS
+    # Base Plan (Healthy Balanced)
+    plan = {
+        "breakfast": ["Poha with Vegetables", "Milk"],
+        "mid_morning": ["Walnuts & Almonds"],
+        "lunch": ["Multigrain Roti", "Lentil Dal", "Vegetable Sabzi", "Curd"],
+        "evening_snack": ["Green Tea", "Roasted Makhana"],
+        "dinner": ["Roti", "Lentil Dal", "Bottle Gourd Sabzi"]
+    }
+
+    # Overlay 1: Liver Stress (Antioxidant / Detox)
+    if "liver_stress" in conditions:
+        plan["breakfast"].append("Lemon Water (Detox support)")
+        plan["lunch"].append("Turmeric Rice (Curcumin support)")
+        plan["dinner"] = ["Moong Dal Soup", "Steamed Broccoli"]
+
+    # Overlay 2: Kidney Strain (Low Sodium / Regulated Protein)
+    if "kidney_strain" in conditions:
+        plan["lunch"] = ["Rice (1 bowl)", "Lentil Dal (Limit portion)", "Bottle Gourd Sabzi"]
+        plan["evening_snack"] = ["Apple (1 unit)"]
+        # Remove high sodium or high protein items if any
+        if "Spinach" in str(plan): plan["lunch"] = [i for i in plan["lunch"] if "Spinach" not in i]
+
+    # Overlay 3: Hypoxia / Anemia (Iron & Oxygen Support)
+    if "hypoxia" in conditions or "iron_deficiency_anemia" in conditions:
+        plan["breakfast"].append("Pomegranate")
+        plan["lunch"].append("Beetroot Salad")
+        plan["dinner"].append("Moringa Soup")
+
+    # Overlay 4: Metabolic / Glucose
+    if "prediabetes" in conditions or "hyperglycemia" in conditions:
+        plan["breakfast"] = ["Oats with Flaxseeds", "Moong Dal Sprouts"]
+        plan["evening_snack"].append("Cinnamon Tea")
+
+    # Overlay 5: Thyroid (Selenium & Iodine)
+    if "thyroid_issues" in conditions:
+        plan["breakfast"].append("Brazil Nuts (Selenium support)")
+        plan["lunch"].append("Seaweed (Natural Iodine source)")
+
+    # Convert to structured clinical reasoning output
+    def get_reasoning(meal_items):
+        reasons = []
+        for item in meal_items:
+            # Handle common multi-word items or variations
+            clean = item.split('(')[0].split(' with ')[0].strip().lower()
+            
+            # Sub-string match or exact match
+            details = {}
+            if clean in expert_kb.data.get("food_details", {}):
+                details = expert_kb.get_food_details(clean)
+            else:
+                # Try simple word match (e.g. "Moong Dal Soup" -> "Moong Dal")
+                for key in expert_kb.data.get("food_details", {}):
+                    if key in clean or clean in key:
+                        details = expert_kb.get_food_details(key)
+                        break
+
+            if details.get("benefits"):
+                reasons.append(details["benefits"])
+            
+            # USDA Biochemical check
+            biochem = usda_manager.get_food_biochemicals(clean)
+            if not biochem and " " in clean: # try base word
+                biochem = usda_manager.get_food_biochemicals(clean.split()[-1])
+            
+            if biochem:
+                nuts = biochem.get("nutrients", {})
+                if "kidney_strain" in conditions and nuts.get("sodium", 0) < 50:
+                    reasons.append("Low sodium supports renal stability.")
+                if "liver_stress" in conditions and "antioxidants" in details.get("tags", []):
+                    reasons.append("High antioxidants assist hepatic recovery.")
+        return " ".join(list(set(reasons))[:2])
+
+    meal_plan = {
+        slot: {
+            "items": items,
+            "reasoning": get_reasoning(items)
+        } for slot, items in plan.items()
+    }
 
     avoid_with_reason = []
     for food, reason in avoid_map.items():

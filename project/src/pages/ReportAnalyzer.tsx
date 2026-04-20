@@ -318,7 +318,7 @@ const ReportAnalyzer = () => {
                     ? 'bg-violet-50 text-violet-700 border-violet-200'
                     : 'bg-gray-50 text-gray-600 border-gray-200'
                 }`}>
-                  {isGemini ? '✦ AI-Powered by Gemini' : '⚙ Rule-Based Perfection Engine'}
+                  {isGemini ? '✦ AI-Powered Clinical Co-Pilot' : '⚙ Data-Grounded Resilience Engine'}
                 </span>
               </div>
               {diet_warning && (
@@ -575,14 +575,23 @@ const ReportAnalyzer = () => {
                       { key: 'evening_snack', label: 'Evening Snack',      emoji: '🍎' },
                       { key: 'dinner',        label: 'Dinner',             emoji: '🥗' },
                     ] as const).map(({ key, label, emoji }) => {
-                      const items = mealPlan[key] ?? [];
+                      const rawData = mealPlan[key];
+                      if (!rawData) return null;
+                      
+                      // Normalize: handle both array of strings and { items, reasoning } object
+                      const items: string[] = Array.isArray(rawData) 
+                        ? rawData 
+                        : (rawData as any).items ?? [];
+                      const mealReason: string = (rawData as any).reasoning ?? (rawData as any).reason ?? '';
+
                       if (!items.length) return null;
+                      
                       return (
-                        <div key={key} className="bg-white/50 rounded-xl p-4 border border-gray-100">
+                        <div key={key} className="bg-white/50 rounded-xl p-4 border border-gray-100 flex flex-col h-full shadow-sm">
                           <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
                             <span className="mr-2">{emoji}</span>{label}
                           </h4>
-                          <ul className="space-y-1.5">
+                          <ul className="space-y-1.5 flex-grow">
                             {items.map((item, idx) => (
                               <li key={idx} className="text-sm text-gray-600 flex items-start">
                                 <span className="text-purple-400 mr-1.5 mt-1">•</span>
@@ -590,6 +599,14 @@ const ReportAnalyzer = () => {
                               </li>
                             ))}
                           </ul>
+                          {mealReason && (
+                            <div className="mt-3 pt-3 border-t border-gray-100">
+                              <p className="text-[10px] leading-relaxed text-purple-600 italic font-medium">
+                                <Activity className="inline h-2.5 w-2.5 mr-1 -mt-0.5" />
+                                {mealReason}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       );
                     })}

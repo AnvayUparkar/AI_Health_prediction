@@ -890,18 +890,10 @@ def generate_diet_plan_with_gemini(
                 # Import the new advanced fallback engine
                 from backend.fallback_diet_engine import fallback_diet_engine
                 
-                # Filter to only important/abnormal parameters for context
-                important = {
-                    k: v for k, v in report_data.items()
-                    if v.get("status", "Normal") not in ("Normal", "Unknown")
-                }
-                if not important:
-                    important = report_data
-
-                # Pass both structured parameters and raw OCR text
-                diet_plan = fallback_diet_engine(important, raw_text=raw_text)
+                # Use the full clinical result to satisfy UI requirements
+                diet_plan = fallback_diet_engine(report_data, raw_text=raw_text)
                 
-                # Add source notification
+                # Add source notification to the summary field
                 diet_plan["summary"] = (
                     "Diet plan generated using advanced rule-based clinical engine "
                     "(Gemini API fallback triggered)."
@@ -909,8 +901,8 @@ def generate_diet_plan_with_gemini(
                 
                 logger.info(
                     "Advanced fallback succeeded: %d issues, %d foods",
-                    len(diet_plan["issues_detected"]),
-                    len(diet_plan["recommended_foods"]),
+                    len(diet_plan.get("issues_detected", [])),
+                    len(diet_plan.get("recommended_foods", [])),
                 )
             except Exception as fb_exc:
                 logger.error("Advanced fallback also failed: %s", fb_exc)
