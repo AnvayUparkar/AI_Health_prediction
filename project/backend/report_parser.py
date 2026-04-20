@@ -1131,10 +1131,10 @@ def detect_conditions_from_text(text: str) -> List[str]:
     conditions = []
 
     mappings = {
-        "diabetes": ["diabetes", "diabetic", "hyperglycemia", "sugar", "type 2"],
-        "high_cholesterol": ["cholesterol", "lipid", "triglycerides", "hyperlipidemia"],
+        "hyperglycemia": ["diabetes", "diabetic", "hyperglycemia", "sugar", "type 2"],
+        "hyperlipidemia": ["cholesterol", "lipid", "triglycerides", "hyperlipidemia"],
         "hypertension": ["hypertension", "high blood pressure", "hbp"],
-        "anemia": ["anemia", "anaemia", "low hemoglobin", "iron deficiency"],
+        "iron_deficiency_anemia": ["anemia", "anaemia", "low hemoglobin", "iron deficiency"],
         "protein_deficiency": ["protein deficiency", "low protein", "hypoproteinemia", "malnutrition"],
         "thyroid_issues": ["thyroid", "hypothyroid", "hyperthyroid", "goiter", "hashimoto", "tsh"],
         "kidney_strain": ["kidney", "renal", "nephro", "creatinine", "dialysis"],
@@ -1142,6 +1142,7 @@ def detect_conditions_from_text(text: str) -> List[str]:
         "vitamin_d_deficiency": ["vitamin d deficiency", "low vit d", "osteomalacia", "rickets"],
         "vitamin_b12_deficiency": ["vitamin b12 deficiency", "low b12", "cobalamin deficiency"],
         "high_uric_acid": ["uric acid", "gout", "joint pain", "hyperuricemia"],
+        "hypoxia": ["hypoxia", "low oxygen", "oxygen", "spo2", "breathing", "respiratory"],
     }
 
     for condition, keywords in mappings.items():

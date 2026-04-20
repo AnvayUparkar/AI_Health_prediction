@@ -25,16 +25,20 @@ def _map_trends_to_diet_input(trends, risk_level):
     glucose_avg = trends.get('glucose', {}).get('average', 100)
     glucose_trend = trends.get('glucose', {}).get('trend', 'STABLE')
     if glucose_avg > 140 or glucose_trend in ["INCREASING", "STRONGLY_INCREASING"]:
-        input_data["Glucose"] = {"value": glucose_avg, "unit": "mg/dL"}
+        input_data["Glucose"] = {"value": glucose_avg, "unit": "mg/dL", "status": "High"}
+    elif glucose_avg < 70:
+        input_data["Glucose"] = {"value": glucose_avg, "unit": "mg/dL", "status": "Low"}
         
     bp_sys_avg = trends.get('bp_systolic', {}).get('average', 120)
     bp_sys_trend = trends.get('bp_systolic', {}).get('trend', 'STABLE')
     if bp_sys_avg > 130 or bp_sys_trend in ["INCREASING", "STRONGLY_INCREASING"]:
-        input_data["Blood Pressure (Systolic)"] = {"value": bp_sys_avg, "unit": "mmHg"}
+        input_data["Blood Pressure (Systolic)"] = {"value": bp_sys_avg, "unit": "mmHg", "status": "High"}
+    elif bp_sys_avg < 90:
+        input_data["Blood Pressure (Systolic)"] = {"value": bp_sys_avg, "unit": "mmHg", "status": "Low"}
 
     spo2_avg = trends.get('spo2', {}).get('average', 98)
     if spo2_avg < 95:
-        input_data["SpO2"] = {"value": spo2_avg, "unit": "%"}
+        input_data["SpO2"] = {"value": spo2_avg, "unit": "%", "status": "Low"}
 
     # Hack to force specific conditions in the condition engine
     clinical_summary = []

@@ -254,54 +254,72 @@ Respond ONLY with valid JSON in this exact format:
 def _fallback_diet(trends: dict) -> dict:
     """
     Deterministic fallback diet when Gemini is unavailable.
-    Adjusts recommendations based on trend data.
+    Uses the advanced rule-based engine and USDA database instead of hardcoded strings.
     """
-    glucose_trend = trends.get('glucose', {}).get('trend', 'STABLE')
-    glucose_avg = trends.get('glucose', {}).get('average', 120)
+    from backend.fallback_diet_engine import fallback_diet_engine
+    from backend.fallback_monitoring_engine import _map_trends_to_diet_input
+    
+    # Map trends to a simulated lab report for the diet engine
+    input_data, raw_text_pad = _map_trends_to_diet_input(trends, "LOW")
+    
+    try:
+        # Generate diet using the advanced Expert Rules/USDA engine
+        diet_engine_result = fallback_diet_engine(input_data=input_data, raw_text=raw_text_pad)
+        meal_plan = diet_engine_result.get("meal_plan", {})
+        recommended_foods = diet_engine_result.get("recommended_foods", [])
+        
+        # The engine returns a list of pre-formatted strings for issues
+        raw_issues = diet_engine_result.get("issues_detected", [])
+        issues = []
+        for i in raw_issues:
+            if isinstance(i, dict):
+                issues.append(i.get("condition", "General Wellness"))
+            else:
+                # Direct string format: "Technical Name [Validated...] — Explanation"
+                # Strip the extra technical details for the overall reasoning summary
+                issues.append(i.split(" — ")[0].split(" [")[0])
+        
+        # Proper reasoning extraction: map foods to their clinical justifications
+        food_reasoning_map = {}
+        for rec in recommended_foods:
+            parts = rec.split(" — ")
+            if len(parts) >= 2:
+                food_reasoning_map[parts[0].strip().lower()] = parts[1].strip()
 
-    # Adjust diet based on glucose trend
-    if glucose_trend in ('STRONGLY_INCREASING', 'INCREASING') or glucose_avg > 150:
+        def build_meal_with_reasoning(meal_key, default_items):
+            items = meal_plan.get(meal_key, [])
+            if not items:
+                return {"items": default_items, "reasoning": "Standard clinical sustenance for recovery."}
+            
+            # Synthesize reasoning by looking up benefits for each food item
+            reasons = []
+            for item in items:
+                clean_name = item.replace(" (Synergy Booster)", "").strip().lower()
+                if clean_name in food_reasoning_map:
+                    reasons.append(f"{clean_name.title()}: {food_reasoning_map[clean_name]}")
+            
+            reasoning_str = " ".join(reasons) if reasons else "Selected for optimal metabolic glycemic response."
+            return {"items": items, "reasoning": reasoning_str}
+
+        overall_reasoning = f"Advanced clinical protocol applied. Addressed issues: {', '.join(issues)}." if issues else "Balanced precision diet based on normal baseline."
+        
         return {
-            "breakfast": {
-                "items": ["Oats porridge (no sugar)", "Boiled egg whites (2)", "Green tea"],
-                "reasoning": "Low glycemic index breakfast to control rising glucose levels."
-            },
-            "lunch": {
-                "items": ["Brown rice (small portion)", "Dal with spinach", "Grilled fish/paneer", "Cucumber salad"],
-                "reasoning": "Complex carbs with high protein to stabilize blood sugar post-meal."
-            },
-            "snacks": {
-                "items": ["Roasted chana (small handful)", "Buttermilk"],
-                "reasoning": "Low-glycemic protein snack to prevent sugar spikes between meals."
-            },
-            "dinner": {
-                "items": ["Multigrain roti (1)", "Mixed vegetable curry", "Curd (low fat)"],
-                "reasoning": "Light, fiber-rich dinner to prevent overnight glucose elevation."
-            },
-            "overall_reasoning": f"Patient shows {glucose_trend.lower().replace('_', ' ')} glucose trend (avg: {glucose_avg} mg/dL). "
-                                 f"Diet focuses on glycemic control with low-GI foods, adequate protein, and fiber.",
+            "breakfast": build_meal_with_reasoning("breakfast", ["Oatmeal (Low GI)", "Lemon Water"]),
+            "lunch": build_meal_with_reasoning("lunch", ["Brown Rice", "Lentil Soup"]),
+            "snacks": build_meal_with_reasoning("snack", ["Roasted Makhana", "Buttermilk"]),
+            "dinner": build_meal_with_reasoning("dinner", ["Multigrain Roti", "Vegetable Stew"]),
+            "overall_reasoning": overall_reasoning,
             "source": "fallback"
         }
-    else:
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Advanced fallback diet failed: {e}")
         return {
-            "breakfast": {
-                "items": ["Idli with sambar (2 pcs)", "Fresh fruit", "Milk (low fat)"],
-                "reasoning": "Balanced breakfast with adequate carbs and protein for recovery."
-            },
-            "lunch": {
-                "items": ["Rice", "Dal", "Seasonal vegetable", "Curd", "Salad"],
-                "reasoning": "Standard balanced hospital meal supporting recovery."
-            },
-            "snacks": {
-                "items": ["Fresh fruit", "Biscuits (2)"],
-                "reasoning": "Light energy boost between meals."
-            },
-            "dinner": {
-                "items": ["Chapati (2)", "Paneer/chicken curry", "Soup"],
-                "reasoning": "Protein-rich dinner to support overnight tissue repair."
-            },
-            "overall_reasoning": f"Patient vitals are within acceptable range (glucose avg: {glucose_avg} mg/dL). "
-                                 f"Standard balanced diet provided for recovery support.",
+            "breakfast": {"items": ["Idli", "Milk"], "reasoning": "Standard support."},
+            "lunch": {"items": ["Rice", "Dal"], "reasoning": "Standard support."},
+            "snacks": {"items": ["Fruit"], "reasoning": "Standard support."},
+            "dinner": {"items": ["Chapati", "Soup"], "reasoning": "Standard support."},
+            "overall_reasoning": "Standard hospital diet deployed due to engine limits.",
             "source": "fallback"
         }
 

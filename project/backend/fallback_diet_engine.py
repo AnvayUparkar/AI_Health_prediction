@@ -248,9 +248,14 @@ def validate_and_deduplicate(conditions: List[str], input_data: Dict[str, Any]) 
             markers = CONDITION_MAP[cond].get("markers", [])
             has_evidence = False
             for m in markers:
-                if m in input_data and input_data[m].get("status") in ("Low", "High", "Borderline", "Critical"):
-                    has_evidence = True
-                    break
+                if m in input_data:
+                    # If status is missing, assume it's valid evidence if it exists at all
+                    # (Fallback monitoring engine now adds status, but this adds robustness)
+                    marker_info = input_data[m]
+                    status = marker_info.get("status")
+                    if status in ("Low", "High", "Borderline", "Critical") or status is None:
+                        has_evidence = True
+                        break
             if has_evidence:
                 valid_conditions.append(cond)
 
