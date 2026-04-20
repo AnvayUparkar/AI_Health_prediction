@@ -22,3 +22,4 @@ dnspython>=2.4.0
 flask-socketio==5.3.6
 eventlet==0.33.3
 reportlab>=4.0.0                  # PDF generation for health report export
+requests>=2.31.0                   # API communication

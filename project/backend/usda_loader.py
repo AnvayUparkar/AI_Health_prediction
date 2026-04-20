@@ -1,108 +1,144 @@
+
+import os
 import json
 import logging
-import os
-from typing import Dict, List, Any, Optional, Tuple
+import requests
+from typing import Dict, List, Any, Optional
 
 logger = logging.getLogger(__name__)
 
-class USDAManager:
+class USDALoader:
     """
-    Singleton Manager for USDA FoodData Central (Foundation dataset).
-    Handles indexing of nutrients for biochemical-based ranking.
+    Low-level data fetcher for USDA nutritional data.
+    Provides methods for both Live API and Local JSON access.
     """
-    NUTRIENT_MAP = {
-        "iron": "Iron, Fe",
-        "vitamin_c": "Vitamin C, total ascorbic acid",
-        "vitamin_b12": "Vitamin B-12",
-        "calcium": "Calcium, Ca",
-        "vitamin_d": "Vitamin D (D2 + D3)",
-        "fiber": "Fiber, total dietary",
-        "protein": "Protein",
-        "potassium": "Potassium, K",
-        "magnesium": "Magnesium, Mg",
-        "selenium": "Selenium, Se",
-        "zinc": "Zinc, Zn",
-        "sodium": "Sodium, Na",
-        "sugar": "Sugars, Total"
+    
+    # Map for standardized schema extraction
+    NUTRIENT_IDS = {
+        "protein": 1003,
+        "fiber": 1079,
+        "sugar": 2000,
+        "carbohydrates": 1005,
+        "calories": 1008,
+        "calcium": 1087,
+        "iron": 1089,
+        "magnesium": 1090,
+        "phosphorus": 1091,
+        "potassium": 1092,
+        "sodium": 1093,
+        "zinc": 1095,
+        "vitamin_c": 1162,
+        "vitamin_b12": 1178,
+        "vitamin_d": 1114
     }
 
-    _instance = None
-
-    def __new__(cls, *args, **kwargs):
-        if not cls._instance:
-            cls._instance = super(USDAManager, cls).__new__(cls)
-            cls._instance.initialized = False
-        return cls._instance
-
-    def __init__(self, json_path: str):
-        if self.initialized:
-            return
-            
-        self.path = json_path
-        self.food_index = {} # fdcId -> {name, nutrients}
-        self.nutrient_rankings = {} # nutrient_key -> list of (fdcId, amount) sorted by amount
+    def __init__(self):
+        self.api_key = os.getenv("USDA_API_KEY")
+        self.enabled = os.getenv("USDA_API_ENABLED", "False").lower() == "true"
         
-        self._load_and_index()
-        self.initialized = True
+        # Local JSON path
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.json_path = os.path.join(os.path.dirname(base_dir), "FoodData_Central_foundation_food_json_2025-12-18.json")
+        self.local_index = None # fdcId -> data
+        self.nutrient_rankings = {} # nutrient_key -> list of (fdcId, amount)
 
-    def _load_and_index(self):
-        """Loads and indexes the Foundation dataset."""
+    def fetch_from_usda_api(self, food_name: str) -> Optional[dict]:
+        """
+        Primary source: Fetch live data from USDA API.
+        Target Schema: {name, protein, fiber, carbs, sugar, calories, nutrients: {full set}}
+        """
+        if not self.enabled or not self.api_key:
+            return None
+
         try:
-            if not os.path.exists(self.path):
-                logger.error("USDA dataset not found at %s", self.path)
-                return
-
-            with open(self.path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-
-            foods = data.get("FoundationFoods", [])
-            logger.info("USDA_LOADER | Starting index for %d foundation foods.", len(foods))
-
-            # Temp storage for rankings
-            temp_ranks = {k: [] for k in self.NUTRIENT_MAP.keys()}
-
-            for food in foods:
-                fdc_id = food.get("fdcId")
-                description = food.get("description", "Unknown Food")
-                nutrients = food.get("foodNutrients", [])
+            url = f"https://api.nal.usda.gov/fdc/v1/foods/search?api_key={self.api_key}"
+            payload = {
+                "query": food_name.lower(),
+                "pageSize": 1,
+                "dataType": ["Foundation", "SR Legacy"]
+            }
+            # Requirement: 5s timeout
+            response = requests.post(url, json=payload, timeout=5)
+            response.raise_for_status()
+            data = response.json()
+            
+            # --- VERBOSE TERMINAL DEBUGGING ---
+            print(f"\n[LIVE_API] Raw Response for: {food_name.upper()}")
+            print(f"[LIVE_API] Found {len(data.get('foods', []))} match(es)")
+            if data.get('foods'):
+                print(f"[LIVE_API] Best Match: {data['foods'][0].get('description')}")
+            print("-" * 50)
+            # ----------------------------------
+            
+            foods = data.get("foods", [])
+            if not foods:
+                return None
                 
-                food_data = {
-                    "name": description,
-                    "nutrients": {},
-                    "calories": 0.0,
-                    "units": {}
-                }
+            best = foods[0]
+            result = {
+                "name": best.get("description", food_name).title(),
+                "protein": 0.0,
+                "fiber": 0.0,
+                "carbs": 0.0,
+                "sugar": 0.0,
+                "calories": 0.0,
+                "nutrients": {} 
+            }
 
-                # Extract mapped nutrients
-                for nut_entry in nutrients:
-                    nut_obj = nut_entry.get("nutrient", {})
-                    nut_name = nut_obj.get("name")
-                    amount = nut_entry.get("amount", 0.0)
-                    unit = nut_obj.get("unitName", "")
-                    
-                    if nut_name == "Energy" and unit == "kcal":
-                        food_data["calories"] = amount
+            for nut in best.get("foodNutrients", []):
+                n_id = nut.get("nutrientId")
+                val = nut.get("value", 0.0)
+                
+                # Internal nutrients map for the engine
+                for key, target_id in self.NUTRIENT_IDS.items():
+                    if n_id == target_id:
+                        result["nutrients"][key] = val
+                
+                # Energy fallback
+                if nut.get("nutrientName", "").lower() == "energy" and nut.get("unitName", "").lower() == "kcal":
+                    result["calories"] = val
+                    result["nutrients"]["calories"] = val
 
-                    for engine_key, usda_name in self.NUTRIENT_MAP.items():
-                        if usda_name == nut_name:
-                            food_data["nutrients"][engine_key] = amount
-                            food_data["units"][engine_key] = unit
-                            temp_ranks[engine_key].append((fdc_id, amount))
+            # Top-level mapping for user request
+            result["protein"] = result["nutrients"].get("protein", 0.0)
+            result["fiber"] = result["nutrients"].get("fiber", 0.0)
+            result["carbs"] = result["nutrients"].get("carbohydrates", 0.0)
+            result["sugar"] = result["nutrients"].get("sugar", 0.0)
+            result["calories"] = result["nutrients"].get("calories", result["calories"])
 
-                self.food_index[fdc_id] = food_data
-
-            # Sort rankings by amount (desc)
-            for key in temp_ranks:
-                temp_ranks[key].sort(key=lambda x: x[1], reverse=True)
-                self.nutrient_rankings[key] = temp_ranks[key]
-
-            logger.info("USDA_LOADER | Successfully indexed %d foods.", len(self.food_index))
+            return result
 
         except Exception as e:
-            logger.error("USDA_LOADER | Critical failure: %s", e)
+            logger.warning(f"USDA_LOADER | API Failure for {food_name}: {e}")
+            return None
+
+    def fetch_from_local_json(self, food_name: str) -> Optional[dict]:
+        """
+        Fallback source: Search local Foundation dataset.
+        """
+        if not self.local_index:
+            self._load_local_index()
+            
+        name_clean = food_name.lower()
+        for fid, food in self.local_index.items():
+            # Match strictly first, then fuzzy
+            if food["name"].lower() == name_clean or name_clean in food["name"].lower():
+                return {
+                    "name": food["name"],
+                    "protein": food["nutrients"].get("protein", 0.0),
+                    "fiber": food["nutrients"].get("fiber", 0.0),
+                    "carbs": food["nutrients"].get("carbohydrates", 0.0),
+                    "sugar": food["nutrients"].get("sugar", 0.0),
+                    "calories": food.get("calories", 0.0),
+                    "nutrients": food["nutrients"]
+                }
+        return None
 
     def get_top_foods(self, nutrient_key: str, limit: int = 15) -> List[Dict[str, Any]]:
-        """Returns top sources for a given nutrient, prioritizing natural foundation items."""
+        """Returns top sources for a given nutrient from the indexed Foundation dataset."""
+        if not self.local_index:
+            self._load_local_index()
+            
         if nutrient_key not in self.nutrient_rankings:
             return []
             
@@ -111,43 +147,71 @@ class USDAManager:
         for fdc_id, amount in rankings:
             if len(results) >= limit: break
             
-            food = self.food_index[fdc_id]
-            desc = food["name"].lower()
-            
-            # Simple heuristic: Prioritize foods without 'canned', 'processed', 'salted' in the first 10 results
-            if any(x in desc for x in ["canned", "salted", "frankfurter"]):
-                if len(results) < (limit // 2): continue # Skip processed if we have plenty of room
-                
+            food = self.local_index[fdc_id]
             if amount > 0:
                 results.append({
                     "name": food["name"],
                     "amount": amount,
-                    "unit": food["units"].get(nutrient_key, ""),
                     "calories": food["calories"],
                     "fdc_id": fdc_id
                 })
         return results
 
-    def get_food_biochemicals(self, food_name: str) -> Optional[Dict[str, Any]]:
-        """Attempt to find biochemical data for a food by name (fuzzy match)."""
-        name_lower = food_name.lower()
+    def _load_local_index(self):
+        """Loads and indexes foundations foods with rankings support."""
+        self.local_index = {}
+        self.nutrient_rankings = {k: [] for k in self.NUTRIENT_IDS.keys()}
         
-        # 1. Direct match check
-        for fid, data in self.food_index.items():
-            if data["name"].lower() == name_lower:
-                return data
-        
-        # 2. Key word match check
-        best_match = None
-        for fid, data in self.food_index.items():
-            if name_lower in data["name"].lower():
-                # Prefer shorter descriptions as they are usually raw items
-                if not best_match or len(data["name"]) < len(best_match["name"]):
-                    best_match = data
-                    
-        return best_match
+        if not os.path.exists(self.json_path):
+            logger.error(f"USDA_LOADER | Local JSON not found at {self.json_path}")
+            return
 
-# Singleton creation
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-USDA_PATH = os.path.join(os.path.dirname(BASE_DIR), "FoodData_Central_foundation_food_json_2025-12-18.json")
-usda_manager = USDAManager(USDA_PATH)
+        try:
+            with open(self.json_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            foods = data.get("FoundationFoods", [])
+            for f in foods:
+                fdc_id = f.get("fdcId")
+                desc = f.get("description", "Unknown")
+                nuts = f.get("foodNutrients", [])
+                
+                food_data = {"name": desc, "nutrients": {}, "calories": 0.0}
+                for n_entry in nuts:
+                    nut_obj = n_entry.get("nutrient", {})
+                    name = nut_obj.get("name")
+                    amount = n_entry.get("amount", 0.0)
+                    
+                    # Mapping logic matching internal keys
+                    internal_key = None
+                    if name == "Protein": internal_key = "protein"
+                    elif name == "Fiber, total dietary": internal_key = "fiber"
+                    elif name == "Sugars, Total": internal_key = "sugar"
+                    elif name == "Carbohydrate, by difference": internal_key = "carbohydrates"
+                    elif name == "Iron, Fe": internal_key = "iron"
+                    elif name == "Potassium, K": internal_key = "potassium"
+                    elif name == "Sodium, Na": internal_key = "sodium"
+                    elif name == "Calcium, Ca": internal_key = "calcium"
+                    elif name == "Magnesium, Mg": internal_key = "magnesium"
+                    elif name == "Zinc, Zn": internal_key = "zinc"
+                    elif name == "Vitamin C, total ascorbic acid": internal_key = "vitamin_c"
+                    elif name == "Vitamin B-12": internal_key = "vitamin_b12"
+                    
+                    if internal_key:
+                        food_data["nutrients"][internal_key] = amount
+                        self.nutrient_rankings[internal_key].append((fdc_id, amount))
+                        
+                    if name == "Energy" and nut_obj.get("unitName") == "kcal": 
+                        food_data["calories"] = amount
+                
+                self.local_index[fdc_id] = food_data
+
+            # Sort rankings
+            for key in self.nutrient_rankings:
+                self.nutrient_rankings[key].sort(key=lambda x: x[1], reverse=True)
+                
+            logger.info(f"USDA_LOADER | Successfully indexed {len(self.local_index)} foods and rankings.")
+        except Exception as e:
+            logger.error(f"USDA_LOADER | Failed to index local JSON: {e}")
+
+# Singleton instance
+usda_loader = USDALoader()

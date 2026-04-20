@@ -343,6 +343,48 @@ PARAMETER_DB: Dict[str, dict] = {
         "ref_min": 32,
         "ref_max": 36,
     },
+    "Homocysteine": {
+        "aliases": ["homocysteine", "hcy", "serum homocysteine"],
+        "unit": "µmol/L",
+        "ref_min": 3.7,
+        "ref_max": 13.9,
+    },
+    "Apolipoprotein A1": {
+        "aliases": ["apolipoprotein -a1", "apo-a1", "apolipoprotein a1", "apo a1"],
+        "unit": "mg/dl",
+        "ref_min": 105,
+        "ref_max": 205,
+    },
+    "Apolipoprotein B": {
+        "aliases": ["apolipoprotein b", "apo-b", "apolipoprotein b(apo-b)", "apo b"],
+        "unit": "mg/dl",
+        "ref_min": 55,
+        "ref_max": 130,
+    },
+    "CEA": {
+        "aliases": ["carcino embryonic antigen (cea)", "carcinoembryonic antigen", "cea"],
+        "unit": "ng/mL",
+        "ref_min": 0,
+        "ref_max": 2.5,
+    },
+    "CA-125": {
+        "aliases": ["ca -125", "ca-125", "cancer antigen 125", "cancer antigen-125"],
+        "unit": "U/mL",
+        "ref_min": 0,
+        "ref_max": 35,
+    },
+    "CA-19.9": {
+        "aliases": ["ca -19.9", "ca-19.9", "cancer antigen 19.9", "ca19-9"],
+        "unit": "U/mL",
+        "ref_min": 0,
+        "ref_max": 37,
+    },
+    "CA-15.3": {
+        "aliases": ["ca 15-3", "ca -15.3", "ca-15.3", "cancer antigen 15.3", "ca15.3"],
+        "unit": "U/ml",
+        "ref_min": 0,
+        "ref_max": 23.5,
+    },
 }
 
 # Build a fast lookup: lowered alias → canonical name
@@ -384,6 +426,11 @@ _RANGE_TO_PATTERN = re.compile(
     r"(\d+[\.,]?\d*)\s+to\s+(\d+[\.,]?\d*)", re.I
 )
 
+# Detects threshold boundaries like "< 2.50" or "> 10.0"
+_SINGLE_BOUNDARY_PATTERN = re.compile(
+    r"([<>]=?|less than|greater than)\s*(\d+[\.,]?\d*)", re.I
+)
+
 # Simple number finder
 _VALUE_NUMBER = re.compile(r"(\d+[\.,]?\d*)")
 
@@ -407,8 +454,8 @@ _UNIT_PATTERN = re.compile(
     r"(g/dL|g/dl|mg/dL|mg/dl|ng/mL|ng/ml|pg/mL|pg/ml|"
     r"µg/dL|µg/dl|ug/dL|ug/dl|"
     r"µIU/mL|µIU/ml|uIU/mL|uIU/ml|mIU/L|mIU/l|"
-    r"U/L|u/l|IU/L|iu/l|"
-    r"mEq/L|meq/l|mmol/L|mmol/l|"
+    r"U/L|u/l|IU/L|iu/l|U/mL|u/ml|"
+    r"mEq/L|meq/l|mmol/L|mmol/l|µmol/L|umol/l|umol/L|"
     r"cells/µL|cells/ul|cells/cumm|/cumm|x10[³3]/µL|"
     r"million/µL|million/ul|mill/cumm|"
     r"lakh/µL|lakhs/ul|lac/ul|"
@@ -589,6 +636,14 @@ def _collect_range_numbers(text: str) -> set:
                 # Also add the integer part so '3' from '3.5' is excluded
                 if '.' in grp:
                     blacklist.add(grp.split('.')[0])
+    
+    # Handle single thresholds (e.g. < 2.50)
+    for m in _SINGLE_BOUNDARY_PATTERN.finditer(text):
+        val = m.group(2)
+        blacklist.add(val)
+        if '.' in val:
+            blacklist.add(val.split('.')[0])
+            
     return blacklist
 
 

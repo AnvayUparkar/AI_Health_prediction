@@ -5,13 +5,21 @@ import AnimatedBackground from '../components/AnimatedBackground';
 import GlassCard from '../components/GlassCard';
 import { getProfile } from '../services/api';
 
+interface MealItem {
+  item: string;
+  explanation: string;
+  nutrients?: {
+    p: number;
+    f: number;
+    c: number;
+  };
+}
+
 interface DietPlan {
-  breakfast: string[];
-  lunch: string[];
-  dinner: string[];
-  snacks: string[];
-  recommendations: string[];
-  restrictions: string[];
+  breakfast: MealItem[];
+  lunch: MealItem[];
+  dinner: MealItem[];
+  snacks: MealItem[];
 }
 
 const DietPlanner = () => {
@@ -45,6 +53,7 @@ const DietPlanner = () => {
     };
     fetchProfileData();
   }, []);
+
   const [loading, setLoading] = useState(false);
   const [dietPlan, setDietPlan] = useState<DietPlan | null>(null);
 
@@ -66,20 +75,23 @@ const DietPlanner = () => {
     setLoading(true);
 
     try {
-      const formData = new FormData();
-      if (file) {
-        formData.append('report', file);
-      }
-      formData.append('healthData', JSON.stringify(healthData));
-
-      const response = await fetch('http://localhost:5000/api/diet-plan', {
+      const response = await fetch('http://localhost:5000/api/generate-diet', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          patient_data: {
+            ...healthData,
+            glucose: healthData.healthConditions.toLowerCase().includes('diabetes') ? 140 : 100,
+            bp: healthData.healthConditions.toLowerCase().includes('pressure') ? '140/90' : '120/80',
+          }
+        }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        setDietPlan(data.dietPlan);
+        setDietPlan(data.diet_plan);
       } else {
         alert('Failed to generate diet plan. Please try again.');
       }
@@ -118,11 +130,15 @@ const DietPlanner = () => {
                   <Coffee className="h-6 w-6 text-yellow-500 mr-3" />
                   <h3 className="text-2xl font-bold text-gray-800">Breakfast</h3>
                 </div>
-                <ul className="space-y-2">
+                <ul className="space-y-4">
                   {dietPlan.breakfast.map((item, idx) => (
-                    <li key={idx} className="flex items-start">
-                      <span className="text-green-500 mr-2">•</span>
-                      <span className="text-gray-700">{item}</span>
+                    <li key={idx}>
+                      <div className="flex items-start">
+                        <span className="text-green-500 mr-2 font-bold">• {item.item}</span>
+                      </div>
+                      <p className="text-sm text-gray-600 ml-4 italic mt-1 border-l-2 border-green-200 pl-3">
+                        {item.explanation}
+                      </p>
                     </li>
                   ))}
                 </ul>
@@ -133,11 +149,15 @@ const DietPlanner = () => {
                   <Drumstick className="h-6 w-6 text-orange-500 mr-3" />
                   <h3 className="text-2xl font-bold text-gray-800">Lunch</h3>
                 </div>
-                <ul className="space-y-2">
+                <ul className="space-y-4">
                   {dietPlan.lunch.map((item, idx) => (
-                    <li key={idx} className="flex items-start">
-                      <span className="text-green-500 mr-2">•</span>
-                      <span className="text-gray-700">{item}</span>
+                    <li key={idx}>
+                      <div className="flex items-start">
+                        <span className="text-orange-500 mr-2 font-bold">• {item.item}</span>
+                      </div>
+                      <p className="text-sm text-gray-600 ml-4 italic mt-1 border-l-2 border-orange-200 pl-3">
+                        {item.explanation}
+                      </p>
                     </li>
                   ))}
                 </ul>
@@ -148,11 +168,15 @@ const DietPlanner = () => {
                   <Utensils className="h-6 w-6 text-red-500 mr-3" />
                   <h3 className="text-2xl font-bold text-gray-800">Dinner</h3>
                 </div>
-                <ul className="space-y-2">
+                <ul className="space-y-4">
                   {dietPlan.dinner.map((item, idx) => (
-                    <li key={idx} className="flex items-start">
-                      <span className="text-green-500 mr-2">•</span>
-                      <span className="text-gray-700">{item}</span>
+                    <li key={idx}>
+                      <div className="flex items-start">
+                        <span className="text-red-500 mr-2 font-bold">• {item.item}</span>
+                      </div>
+                      <p className="text-sm text-gray-600 ml-4 italic mt-1 border-l-2 border-red-200 pl-3">
+                        {item.explanation}
+                      </p>
                     </li>
                   ))}
                 </ul>
@@ -163,44 +187,20 @@ const DietPlanner = () => {
                   <Apple className="h-6 w-6 text-green-500 mr-3" />
                   <h3 className="text-2xl font-bold text-gray-800">Snacks</h3>
                 </div>
-                <ul className="space-y-2">
+                <ul className="space-y-4">
                   {dietPlan.snacks.map((item, idx) => (
-                    <li key={idx} className="flex items-start">
-                      <span className="text-green-500 mr-2">•</span>
-                      <span className="text-gray-700">{item}</span>
+                    <li key={idx}>
+                      <div className="flex items-start">
+                        <span className="text-emerald-500 mr-2 font-bold">• {item.item}</span>
+                      </div>
+                      <p className="text-sm text-gray-600 ml-4 italic mt-1 border-l-2 border-emerald-200 pl-3">
+                        {item.explanation}
+                      </p>
                     </li>
                   ))}
                 </ul>
               </GlassCard>
             </div>
-
-            {dietPlan.recommendations.length > 0 && (
-              <GlassCard className="p-6 mb-6">
-                <h3 className="text-2xl font-bold text-gray-800 mb-4">Recommendations</h3>
-                <ul className="space-y-2">
-                  {dietPlan.recommendations.map((item, idx) => (
-                    <li key={idx} className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-700">{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </GlassCard>
-            )}
-
-            {dietPlan.restrictions.length > 0 && (
-              <GlassCard className="p-6 mb-6">
-                <h3 className="text-2xl font-bold text-gray-800 mb-4">Foods to Avoid</h3>
-                <ul className="space-y-2">
-                  {dietPlan.restrictions.map((item, idx) => (
-                    <li key={idx} className="flex items-start">
-                      <span className="text-red-500 mr-2">⚠</span>
-                      <span className="text-gray-700">{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </GlassCard>
-            )}
 
             <div className="text-center">
               <motion.button

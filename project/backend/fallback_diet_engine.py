@@ -7,7 +7,7 @@ import requests
 from typing import Dict, List, Any, Optional, Tuple
 
 from backend.report_parser import detect_high_level_conditions, detect_conditions_from_text
-from backend.usda_loader import usda_manager
+from backend.usda_manager import usda_manager
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +87,8 @@ def score_food_hierarchical(food_name: str, target_nutrients: List[str], avoid_m
     score = 0.0
     name_clean = food_name.lower()
     details = expert_kb.get_food_details(name_clean)
-    biochem_data = usda_manager.get_food_biochemicals(name_clean)
+    # Use local-only for the high-frequency scoring loop to prevent timeouts (100+ calls)
+    biochem_data = usda_manager.get_food_nutrients_local(name_clean)
     biochem = biochem_data.get("nutrients", {}) if biochem_data else {}
     
     # 1. Expert Nutrient Match (+2.0)
@@ -406,7 +407,7 @@ def fallback_diet_engine(input_data: Dict[str, Any], raw_text: Optional[str] = N
 
     for food in top_foods[:12]: 
         details = expert_kb.get_food_details(food)
-        biochem_data = usda_manager.get_food_biochemicals(food)
+        biochem_data = usda_manager.get_food_nutrients(food)
         biochem = biochem_data.get("nutrients", {}) if biochem_data else {}
         
         benefit = details.get("benefits", "")
@@ -495,9 +496,9 @@ def fallback_diet_engine(input_data: Dict[str, Any], raw_text: Optional[str] = N
                 reasons.append(details["benefits"])
             
             # USDA Biochemical check
-            biochem = usda_manager.get_food_biochemicals(clean)
+            biochem = usda_manager.get_food_nutrients(clean)
             if not biochem and " " in clean: # try base word
-                biochem = usda_manager.get_food_biochemicals(clean.split()[-1])
+                biochem = usda_manager.get_food_nutrients(clean.split()[-1])
             
             if biochem:
                 nuts = biochem.get("nutrients", {})

@@ -200,3 +200,21 @@ def upload_report():
         'parsed': parsed
     }
     return jsonify(response)
+
+@diet_bp.route('/generate-diet', methods=['POST'])
+def generate_diet():
+    """
+    POST /api/generate-diet
+    Body: { patient_data: { glucose, bp, activityLevel, ... } }
+    """
+    from backend.services.diet_engine import generate_diet_plan_modular
+    data = request.json
+    patient_data = data.get('patient_data', {})
+    
+    # Run the modular pipeline
+    result = generate_diet_plan_modular(patient_data)
+    
+    return jsonify({
+        "status": "success",
+        "diet_plan": result
+    })
