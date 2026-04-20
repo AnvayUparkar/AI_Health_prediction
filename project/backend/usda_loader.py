@@ -13,6 +13,21 @@ class USDALoader:
     Provides methods for both Live API and Local JSON access.
     """
     
+    # --- [LOCAL OVERRIDE] Indian Staples Biochemical Mapping ---
+    # Ensures these foods have accurate scores even if API/Foundation JSON lacks them.
+    INDIAN_OVERRIDES = {
+        "roti": {"protein": 3.0, "fiber": 4.0, "carbohydrates": 15.0, "sugar": 0.0, "calories": 100.0, "nutrients": {"protein": 3.0, "fiber": 4.0, "iron": 1.5}},
+        "multigrain roti": {"protein": 5.0, "fiber": 6.0, "carbohydrates": 18.0, "sugar": 0.0, "calories": 110.0, "nutrients": {"protein": 5.0, "fiber": 6.0, "iron": 2.5}},
+        "jowar roti": {"protein": 4.0, "fiber": 7.0, "carbohydrates": 20.0, "sugar": 0.0, "calories": 120.0, "nutrients": {"protein": 4.0, "fiber": 7.0, "magnesium": 40.0}},
+        "bajra roti": {"protein": 4.5, "fiber": 8.0, "carbohydrates": 22.0, "sugar": 0.0, "calories": 130.0, "nutrients": {"protein": 4.5, "fiber": 8.0, "iron": 3.0}},
+        "poha": {"protein": 2.5, "fiber": 2.0, "carbohydrates": 25.0, "sugar": 0.0, "calories": 150.0, "nutrients": {"protein": 2.5, "fiber": 2.0, "iron": 5.0}},
+        "moong dal": {"protein": 24.0, "fiber": 16.0, "carbohydrates": 60.0, "sugar": 0.0, "calories": 340.0, "nutrients": {"protein": 24.0, "fiber": 16.0, "iron": 6.0}},
+        "lentil dal": {"protein": 9.0, "fiber": 8.0, "carbohydrates": 20.0, "sugar": 0.0, "calories": 116.0, "nutrients": {"protein": 9.0, "fiber": 8.0, "iron": 3.3, "potassium": 369.0}},
+        "vegetable sabzi": {"protein": 2.0, "fiber": 5.0, "carbohydrates": 10.0, "sugar": 0.0, "calories": 80.0, "nutrients": {"protein": 2.0, "fiber": 5.0, "vitamin_c": 15.0}},
+        "bitter gourd sabzi": {"protein": 1.0, "fiber": 3.0, "carbohydrates": 5.0, "sugar": 0.0, "calories": 40.0, "nutrients": {"protein": 1.0, "fiber": 3.0, "potassium": 300.0}},
+        "roasted makhana": {"protein": 9.0, "fiber": 14.0, "carbohydrates": 60.0, "sugar": 0.0, "calories": 350.0, "nutrients": {"protein": 9.0, "fiber": 14.0, "magnesium": 65.0}}
+    }
+    
     # Map for standardized schema extraction
     NUTRIENT_IDS = {
         "protein": 1003,
@@ -114,12 +129,21 @@ class USDALoader:
 
     def fetch_from_local_json(self, food_name: str) -> Optional[dict]:
         """
-        Fallback source: Search local Foundation dataset.
+        Fallback source: Search Indian Overrides first, then local Foundation dataset.
         """
+        name_clean = food_name.lower()
+        
+        # 1. Check Indian Overrides (Cuisine Specialization)
+        if name_clean in self.INDIAN_OVERRIDES:
+            return self.INDIAN_OVERRIDES[name_clean]
+        for key, val in self.INDIAN_OVERRIDES.items():
+            if key in name_clean:
+                return val
+
+        # 2. Check USDA Foundation Dataset
         if not self.local_index:
             self._load_local_index()
             
-        name_clean = food_name.lower()
         for fid, food in self.local_index.items():
             # Match strictly first, then fuzzy
             if food["name"].lower() == name_clean or name_clean in food["name"].lower():

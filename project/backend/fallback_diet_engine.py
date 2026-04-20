@@ -118,6 +118,10 @@ def score_food_hierarchical(food_name: str, target_nutrients: List[str], avoid_m
     if name_clean in avoid_map:
         return -100.0, avoid_map[name_clean]
             
+    # 5. [NEW] Cuisine Preference Bonus (+5.0 for Indian Staples)
+    if "indian_staple" in details.get("tags", []):
+        score += CUISINE_BIAS
+        
     return score, None
 
 def resolve_diet_conflicts(recommended: List[str], avoid_map: Dict[str, str]) -> List[str]:
@@ -277,75 +281,64 @@ def validate_and_deduplicate(conditions: List[str], input_data: Dict[str, Any]) 
 
     return list(final_set)
 
-def distribute_meals(top_foods: List[str], avoid_set: set) -> Dict[str, List[str]]:
-    """
-    Logically distributes recommended foods into Breakfast, Lunch, Dinner, and Snack slots.
-    """
 def distribute_meals(top_foods: List[str], target_nutrients: List[str]) -> Dict[str, List[str]]:
     """
-    Constructs a 5-slot synergistic meal plan using top-scored biochemical sources.
+    Constructs a 5-slot synergistic meal plan.
+    Prioritizes Indian Meal Pairings: [Carb + Protein + Fiber].
     """
     meal_plan = {
-        "breakfast": [],
-        "mid_morning": [],
-        "lunch": [],
-        "evening_snack": [],
-        "dinner": []
+        "breakfast": [], "mid_morning": [], "lunch": [], "evening_snack": [], "dinner": []
     }
-
-    # Internal helper for synergy lookup
-    synergy_rules = expert_kb.data.get("synergies", {})
+    
     used = set()
-
+    
+    # Categorize available top foods
+    categories = {"breakfast": [], "lunch_dinner": [], "snack": [], "staple": [], "protein": [], "veggie": []}
+    
     for food in top_foods:
-        if food in used: continue
         details = expert_kb.get_food_details(food)
         tags = details.get("tags", [])
         
-        assigned_slot = None
-        for meal_tag in ["meal_breakfast", "meal_lunch", "meal_dinner", "meal_snack"]:
-            if meal_tag in tags:
-                key = meal_tag.replace("meal_", "")
-                if key == "snack":
-                    # Distribute snacks between mid-morning and evening
-                    slot = "mid_morning" if not meal_plan["mid_morning"] else "evening_snack"
-                    if len(meal_plan[slot]) < 2:
-                        meal_plan[slot].append(food.title())
-                        assigned_slot = slot
-                elif len(meal_plan[key]) < 2:
-                    meal_plan[key].append(food.title())
-                    assigned_slot = key
-                
-                if assigned_slot:
+        # Indian Staples take priority
+        if "indian_staple" in tags: categories["staple"].append(food)
+        if "meal_breakfast" in tags: categories["breakfast"].append(food)
+        if "meal_lunch" in tags or "meal_dinner" in tags: categories["lunch_dinner"].append(food)
+        if "meal_snack" in tags: categories["snack"].append(food)
+        if "protein" in tags or "iron" in tags: categories["protein"].append(food)
+        if "fiber" in tags or "antioxidants" in tags: categories["veggie"].append(food)
+
+    def fill_slot(slot, type_keys, limit=3):
+        for type_key in type_keys:
+            for food in categories[type_key]:
+                if food not in used and len(meal_plan[slot]) < limit:
+                    meal_plan[slot].append(food.title())
                     used.add(food)
-                    # --- Synergy Layer ---
-                    # Check if this food triggers a synergy protocol
-                    for nut in tags:
-                        if nut in synergy_rules:
-                            rule = synergy_rules[nut]
-                            for enhancer in rule.get("enhancers", []):
-                                # Find a booster in the rest of top_foods
-                                for booster in top_foods:
-                                    if booster not in used:
-                                        b_details = expert_kb.get_food_details(booster)
-                                        if enhancer in b_details.get("tags", []):
-                                            if len(meal_plan[assigned_slot]) < 3:
-                                                meal_plan[assigned_slot].append(f"{booster.title()} (Synergy Booster)")
-                                                used.add(booster)
-                                            break
-                    break # Next food
+                    break
+
+    # 1. Breakfast: Focus on Poha/Upma/Oats
+    fill_slot("breakfast", ["breakfast", "staple"])
     
+    # 2. Lunch & Dinner: Proper Pairing [Staple + Protein + Veggie]
+    for slot in ["lunch", "dinner"]:
+        fill_slot(slot, ["staple"])   # e.g. Roti
+        fill_slot(slot, ["protein"]) # e.g. Dal
+        fill_slot(slot, ["veggie"])  # e.g. Sabzi
+
+    # 3. Snacks
+    fill_slot("mid_morning", ["snack", "veggie"], limit=2)
+    fill_slot("evening_snack", ["snack", "protein"], limit=2)
+
     # Fill empty slots with clinical placeholders
     fallbacks = {
-        "breakfast": ["Hydration: Lemon Water", "Oats with Flaxseeds"],
-        "mid_morning": ["Walnuts & Almonds"],
-        "lunch": ["Moong Dal & Quinoa"],
-        "evening_snack": ["Green Tea & Roasted Chana"],
-        "dinner": ["Bottle Gourd Soup"]
+        "breakfast": ["Poha with Vegetables", "Lemon Water"],
+        "mid_morning": ["Roasted Makhana", "Fruit"],
+        "lunch": ["Multigrain Roti", "Lentil Dal", "Vegetable Sabzi"],
+        "evening_snack": ["Roasted Chana", "Green Tea"],
+        "dinner": ["Jowar Roti", "Moong Dal", "Bottle Gourd Sabzi"]
     }
     for slot, items in meal_plan.items():
         if not items:
-            meal_plan[slot] = fallbacks.get(slot, ["Balanced Whole Food Portion"])
+            meal_plan[slot] = fallbacks.get(slot, ["Balanced Indian Portion"])
             
     return meal_plan
 
@@ -436,14 +429,8 @@ def fallback_diet_engine(input_data: Dict[str, Any], raw_text: Optional[str] = N
     recommended_with_reason = resolve_diet_conflicts(recommended_with_reason, avoid_map)
 
     # 5. Generate Dynamic Meal Plan with SYNERGISTIC OVERLAYS
-    # Base Plan (Healthy Balanced)
-    plan = {
-        "breakfast": ["Poha with Vegetables", "Milk"],
-        "mid_morning": ["Walnuts & Almonds"],
-        "lunch": ["Multigrain Roti", "Lentil Dal", "Vegetable Sabzi", "Curd"],
-        "evening_snack": ["Green Tea", "Roasted Makhana"],
-        "dinner": ["Roti", "Lentil Dal", "Bottle Gourd Sabzi"]
-    }
+    # Use USDA high-scored items to build the base plan
+    plan = distribute_meals(top_foods, target_nutrients)
 
     # Overlay 1: Liver Stress (Antioxidant / Detox)
     if "liver_stress" in conditions:

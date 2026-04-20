@@ -345,6 +345,58 @@
     ]
   },
   "food_details": {
+    "roti": {
+      "tags": ["meal_lunch", "meal_dinner", "fiber", "complex_carbs", "indian_staple"],
+      "benefits": "Whole wheat substrate for steady energy release and glycemic control."
+    },
+    "multigrain roti": {
+      "tags": ["meal_lunch", "meal_dinner", "fiber", "complex_carbs", "iron", "indian_staple"],
+      "benefits": "Enhanced micronutrient density with slow-release carbohydrates."
+    },
+    "jowar roti": {
+      "tags": ["meal_lunch", "meal_dinner", "fiber", "magnesium", "low_glycemic", "indian_staple"],
+      "benefits": "Gluten-free ancient grain supporting heart health and glucose regulation."
+    },
+    "bajra roti": {
+      "tags": ["meal_lunch", "meal_dinner", "fiber", "iron", "phosphorus", "indian_staple"],
+      "benefits": "High-density iron source for improved oxygen carriage and metabolic vigor."
+    },
+    "poha": {
+      "tags": ["meal_breakfast", "fiber", "iron", "carbohydrates", "indian_staple"],
+      "benefits": "Light, easily digestible iron-rich breakfast cereal."
+    },
+    "moong dal khichdi": {
+      "tags": ["meal_lunch", "meal_dinner", "protein", "fiber", "easy_digestion", "indian_staple"],
+      "benefits": "Synergistic amino acid profile for tissue repair and GI comfort."
+    },
+    "lentil dal": {
+      "tags": ["meal_lunch", "meal_dinner", "protein", "fiber", "iron", "indian_staple"],
+      "benefits": "Bioavailable plant-based protein supporting muscle and blood health."
+    },
+    "vegetable sabzi": {
+      "tags": ["meal_lunch", "meal_dinner", "fiber", "antioxidants", "indian_staple"],
+      "benefits": "Phytonutrient-rich fiber source for microbiome integrity."
+    },
+    "bottle gourd sabzi": {
+      "tags": ["meal_lunch", "meal_dinner", "hydration", "low_sodium", "indian_staple"],
+      "benefits": "High hydration index, critical for renal and hepatic support."
+    },
+    "bitter gourd sabzi": {
+      "tags": ["meal_lunch", "meal_dinner", "low_glycemic", "antioxidants", "indian_staple"],
+      "benefits": "Contains polypeptide-p to assist in natural glucose management."
+    },
+    "roasted makhana": {
+      "tags": ["meal_snack", "magnesium", "protein", "low_calorie", "indian_staple"],
+      "benefits": "Low-GI snack supporting cardiovascular and renal health."
+    },
+    "curd": {
+      "tags": ["meal_lunch", "probiotics", "protein", "calcium", "indian_staple"],
+      "benefits": "Natural probiotic source for enhanced digestive absorption."
+    },
+    "lemon water": {
+      "tags": ["meal_breakfast", "vitamin_c", "detox", "hydration", "indian_staple"],
+      "benefits": "Optimizes hepatic detox pathways and iron bioavailability."
+    },
     "spinach": {
       "benefits": "Supports hematopoietic health via folic acid and non-heme iron",
       "tags": [
