@@ -304,3 +304,130 @@ def _fallback_diet(trends: dict) -> dict:
                                  f"Standard balanced diet provided for recovery support.",
             "source": "fallback"
         }
+
+def generate_clinical_consult(patient_data: dict, trends: dict, alerts: list) -> str:
+    """
+    Call Gemini API to generate a clinical consultant recommendation
+    matching the requested peer-to-peer prompt.
+    """
+    from backend.fallback_monitoring_engine import generate_fallback_monitoring_text
+    
+    api_key = os.environ.get('GEMINI_API_KEY', '')
+    if not api_key:
+        print("[GEMINI] No API key found. Using fallback clinical copilot engine.")
+        return generate_fallback_monitoring_text(patient_data, trends, alerts)
+    
+    glucose_trend = trends.get('glucose', {})
+    bp_sys_trend = trends.get('bp_systolic', {})
+    bp_dia_trend = trends.get('bp_diastolic', {})
+    spo2_trend = trends.get('spo2', {})
+    
+    alert_summary = ""
+    if alerts:
+        alert_lines = [f"- [{a['type']}] {a['message']}" for a in alerts[:5]]
+        alert_summary = "Active Clinical Alerts:\n" + "\n".join(alert_lines)
+
+    patient_context = f"""
+Patient Profile:
+- Name: {patient_data.get('name', 'Unknown')}
+- Age: {patient_data.get('age', 'Unknown')}
+- Sex: {patient_data.get('sex', 'Unknown')}
+- Ward: {patient_data.get('ward_number', 'General')}
+
+Vitals Trend Summary (Last 2 Days):
+- Blood Glucose: Trend={glucose_trend.get('trend', 'N/A')}, Average={glucose_trend.get('average', 'N/A')} mg/dL
+- Systolic BP: Trend={bp_sys_trend.get('trend', 'N/A')}, Average={bp_sys_trend.get('average', 'N/A')} mmHg
+- Diastolic BP: Trend={bp_dia_trend.get('trend', 'N/A')}, Average={bp_dia_trend.get('average', 'N/A')} mmHg
+- SpO2: Trend={spo2_trend.get('trend', 'N/A')}, Average={spo2_trend.get('average', 'N/A')}%
+
+{alert_summary}
+"""
+
+    prompt = f"""You are a Peer-to-Peer Clinical Co-Pilot and Senior Medical Consultant with over 30 years of clinical experience in internal medicine, critical care, and evidence-based practice.
+
+Your role is to assist a licensed healthcare professional in interpreting clinical data, lab reports, imaging summaries, and patient symptoms.
+
+You must operate at an expert level with the following principles:
+
+CLINICAL THINKING APPROACH:
+- Use structured clinical reasoning (problem representation → differential diagnosis → prioritization → management plan).
+- Interpret abnormal values in clinical context, not isolation.
+- Identify red flags, severity markers, and urgent risks.
+- Apply evidence-based guidelines (WHO, NICE, ICMR, UpToDate-style reasoning).
+
+OUTPUT FORMAT (STRICT):
+
+1. **CLINICAL SUMMARY**
+- Brief synthesis of patient condition (1–3 lines)
+
+2. **KEY ABNORMAL FINDINGS**
+- Highlight important abnormal labs/vitals with interpretation
+
+3. **DIFFERENTIAL DIAGNOSIS (Ranked)**
+- Most likely → Less likely
+- Provide reasoning for each
+
+4. **CLINICAL INTERPRETATION**
+- Pathophysiology-based explanation
+- Correlate symptoms + labs
+
+5. **MANAGEMENT PLAN (For Physician Consideration Only)**
+- Suggested investigations
+- Treatment approach (drug classes + standard dosage ranges, NOT exact prescriptions)
+- Supportive care
+- Monitoring parameters
+
+6. **RED FLAGS / ESCALATION CRITERIA**
+- What requires immediate attention
+
+7. **FOLLOW-UP STRATEGY**
+- What to reassess and when
+
+RULES:
+- Do NOT act as a primary decision-maker.
+- Do NOT give direct prescriptions.
+- Suggest only standard dosage ranges where appropriate.
+- Always maintain a professional peer-to-peer tone.
+- Be concise but clinically dense.
+
+MANDATORY DISCLAIMER:
+"This is a clinical suggestion based on standard protocols. Please exercise your own medical judgement before prescribing."
+
+Here is the current patient data to analyze:
+{patient_context}
+"""
+
+    # Try each model
+    for model_name in _MODEL_FALLBACK_CHAIN:
+        url = f"{GEMINI_BASE_URL}/{model_name}:generateContent?key={api_key}"
+        try:
+            response = requests.post(
+                url,
+                headers={"Content-Type": "application/json"},
+                json={
+                    "contents": [{"parts": [{"text": prompt}]}],
+                    "generationConfig": {
+                        "temperature": 0.4,
+                        "maxOutputTokens": 2048,
+                    }
+                },
+                timeout=30,
+            )
+            if response.status_code == 429:
+                continue
+            if response.status_code != 200:
+                continue
+            
+            data = response.json()
+            parts = data['candidates'][0]['content'].get('parts', [])
+            all_text = ''.join(p.get('text', '') for p in parts)
+            if all_text:
+                return all_text
+                
+        except Exception as e:
+            print(f"[GEMINI] Consult failed for model {model_name}: {e}")
+            continue
+            
+    print("[GEMINI] All models exhausted for Clinical Consult. Using Fallback Engine.")
+    from backend.fallback_monitoring_engine import generate_fallback_monitoring_text
+    return generate_fallback_monitoring_text(patient_data, trends, alerts)

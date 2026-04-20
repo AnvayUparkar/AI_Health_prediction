@@ -492,6 +492,61 @@ def get_diet_ai(patient_id):
         return jsonify({"error": str(e)}), 500
 
 
+# ── POST AI Clinical Co-Pilot (Gemini) ────────────────────────────────────────
+
+@monitoring_bp.route('/patient/<path:patient_id>/clinical-copilot', methods=['POST', 'OPTIONS'])
+def get_clinical_copilot(patient_id):
+    """
+    POST /api/patient/<id>/clinical-copilot
+    Generate clinical consultant response using Gemini AI.
+    Runs trend analysis first, then calls Gemini.
+    """
+    if request.method == 'OPTIONS':
+        return '', 204
+
+    try:
+        from backend.services.gemini_service import generate_clinical_consult
+
+        user, canonical_pid = _resolve_patient(patient_id)
+
+        # Fetch all monitoring records
+        records = (
+            PatientMonitoring.query
+            .filter(PatientMonitoring.patient_id == canonical_pid)
+            .order_by(PatientMonitoring.date.asc(), PatientMonitoring.created_at.asc())
+            .all()
+        )
+
+        record_dicts = [r.to_dict() for r in records]
+        analysis = run_full_analysis(record_dicts)
+
+        # Get patient info
+        appt = Appointment.query.filter_by(patient_id=canonical_pid, isAdmitted=True).first()
+
+        user_dict = user.to_dict() if hasattr(user, 'to_dict') else user
+        profile = user_dict.get('profile', {})
+
+        patient_data = {
+            "patient_id": canonical_pid,
+            "name": user_dict.get('name', 'Unknown'),
+            "age": profile.get('age'),
+            "sex": profile.get('sex'),
+            "ward_number": appt.ward_number if appt else None,
+        }
+
+        # Call Gemini
+        consultation = generate_clinical_consult(patient_data, analysis["trends"], analysis["alerts"])
+
+        return jsonify({
+            "consultation": consultation,
+        }), 200
+
+    except Exception as e:
+        print(f"[ERROR] get_clinical_copilot: {e}")
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 # ── POST Seed Monitoring Data ─────────────────────────────────────────────────
 
 @monitoring_bp.route('/monitoring/seed', methods=['POST', 'OPTIONS'])

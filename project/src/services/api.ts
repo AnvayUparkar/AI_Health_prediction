@@ -297,6 +297,11 @@ export const getAIDietRecommendation = async (patientId: number | string) => {
     return res.data;
 };
 
+export const getClinicalCopilotConsult = async (patientId: number | string) => {
+    const res = await api.post(`/api/patient/${patientId}/clinical-copilot`);
+    return res.data;
+};
+
 export const seedMonitoringData = async () => {
     const res = await api.post('/api/monitoring/seed');
     return res.data;

@@ -66,6 +66,25 @@
       "high_water",
       "low_purine",
       "vitamin_c"
+    ],
+    "hypoxia": [
+      "iron",
+      "vitamin_c",
+      "antioxidants"
+    ],
+    "hyperglycemia": [
+      "fiber",
+      "low_glycemic",
+      "protein"
+    ],
+    "hypoglycemia": [
+      "complex_carbs",
+      "protein"
+    ],
+    "hypotension": [
+      "sodium",
+      "hydration",
+      "vitamin_b12"
     ]
   },
   "nutrient_foods": {
@@ -2652,15 +2671,14 @@
       "reason": "Directly contributes to lower protective (HDL) cholesterol levels."
     },
     "hypertension": {
+      "reason": "High sodium and saturated fats elevate blood pressure.",
       "foods": [
-        "salt",
-        "pickles",
-        "processed snacks",
-        "canned soup",
-        "soy sauce",
-        "papads"
-      ],
-      "reason": "Excess sodium increases vascular pressure and fluid retention."
+        "Pickles",
+        "Papad",
+        "Processed Meat",
+        "Canned Soup",
+        "Salted Nuts"
+      ]
     },
     "iron_deficiency_anemia": {
       "foods": [
@@ -2726,6 +2744,17 @@
         "low protein fillers"
       ],
       "reason": "Lacks the essential amino acid substrate for muscle repair."
+    },
+    "hyperglycemia": {
+      "reason": "Directly spikes blood glucose levels and exacerbates metabolic stress.",
+      "foods": [
+        "Sugar",
+        "Honey",
+        "White Rice",
+        "Refined Flour",
+        "Soda",
+        "Juice"
+      ]
     }
   },
   "synergies": {

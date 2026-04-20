@@ -30,9 +30,24 @@ An enterprise-grade, multi-modal healthcare platform integrating Predictive Anal
 - **Cross-Module Persistence**: The AI remembers your latest lab results and activity levels during the session.
 - **Safety Fallback Registry**: Hardcoded rule-based advisory system for when API quotas are reached.
 
+### 🩺 Clinical AI Co-Pilot (Senior Consultant Mode)
+- **Expert Peer-to-Peer Guidance**: Specialized clinical reasoning for healthcare professionals using a Senior Medical Consultant prompt (30+ years experience).
+- **Structured Differential Diagnosis**: Provides ranked DDx, pathophysiology interpretations, and standard management protocols.
+- **Safety Protocol**: Follows evidence-based guidelines (WHO, NICE, ICMR) with mandatory clinical disclaimers.
+
 ---
 
-## 🔮 2. Predictive Analytics (Machine Learning)
+## 🏥 2. Admitted Patient Monitoring System
+
+- **Real-Time Vitals Tracking**: Continuous monitoring of Blood Glucose, Blood Pressure (Systolic/Diastolic), and Oxygen Saturation (SpO2).
+- **Automated Trend Analysis**: Statistical engine calculating vital slopes (Rising/Stable/Declining) to predict clinical deterioration.
+- **Dietary Compliance Tracking**: Integrated monitoring of hospital meal consumption (Breakfast, Lunch, Snacks, Dinner).
+- **Risk-Based Alerting**: Dynamic "Risk Badge" system (Low/Warning/Critical) based on real-time vital trends and automated clinical alerts.
+- **AI-Predicted Dietary Support**: Gemini-integrated diet adjustments based directly on the patient's current vital trends and recovery progress.
+
+---
+
+## 🔮 3. Predictive Analytics (Machine Learning)
 
 - **Lung Cancer Evaluator**: 23-feature model predicting risk based on dietary, occupational, and lifestyle markers.
 - **Diabetes Risk Engine**: 16-parameter clinical model assessing polyuria, polydipsia, and obesity flags.
@@ -41,7 +56,7 @@ An enterprise-grade, multi-modal healthcare platform integrating Predictive Anal
 
 ---
 
-## 🚨 3. Emergency & Safety Infrastructure
+## 🚨 4. Emergency & Safety Infrastructure
 
 ### ✋ Gesture-Based SOS Trigger
 - **Vision-Aware SOS**: Integrated hand-gesture recognition system to trigger emergency alerts without physical contact.
@@ -54,7 +69,7 @@ An enterprise-grade, multi-modal healthcare platform integrating Predictive Anal
 
 ---
 
-## 📊 4. Data Synchronization Hub
+## 📊 5. Data Synchronization Hub
 
 - **Google Cloud Sync**: Full OAuth 2.0 integration with Google Fit for seamless cloud activity ingestion.
 - **Health Connect API**: Android-layer integration for multi-source data aggregation (Steps, Sleep, Heart Rate).
@@ -62,7 +77,7 @@ An enterprise-grade, multi-modal healthcare platform integrating Predictive Anal
 
 ---
 
-## 📄 5. Professional Reporting & Exports
+## 📄 6. Professional Reporting & Exports
 
 - **Weekly Health Dossier**: Professionally designed PDF summaries including activity charts, weight trends, and wellness scores.
 - **Lab Analysis Protocol**: High-fidelity PDF exports of the AI Clinical Analysis, including parameter tables and protocols.
@@ -70,7 +85,7 @@ An enterprise-grade, multi-modal healthcare platform integrating Predictive Anal
 
 ---
 
-## 🎮 6. Patient Engagement & UI/UX
+## 🎮 7. Patient Engagement & UI/UX
 
 - **Glassmorphic UI**: High-end design system with backdrop blurs, animated gradients, and 3D motion containers.
 - **Gamification Suite**: Health scores, experience points (XP), and a rewards shop to encourage clinical compliance.

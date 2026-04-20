@@ -5,8 +5,16 @@ import {
   ArrowLeft, Activity, Droplets, Heart, Wind, AlertTriangle,
   TrendingUp, TrendingDown, Minus, Clock, Utensils, RefreshCw,
   CheckCircle2, Circle, Sun, CloudSun, Moon, Sparkles, ChefHat,
+  Stethoscope, X
 } from 'lucide-react';
-import { getPatientMonitoring, updatePatientMonitoring, getPatientTimeseries, getAIDietRecommendation } from '../services/api';
+import { 
+  getPatientMonitoring, 
+  updatePatientMonitoring, 
+  getPatientTimeseries, 
+  getAIDietRecommendation,
+  getClinicalCopilotConsult
+} from '../services/api';
+import ReactMarkdown from 'react-markdown';
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, AreaChart, Area,
@@ -166,6 +174,11 @@ export default function PatientMonitoringPage() {
   const [dietPlan, setDietPlan] = useState<any>(null);
   const [dietLoading, setDietLoading] = useState(false);
 
+  // Clinical Co-Pilot
+  const [clinicalConsult, setClinicalConsult] = useState<string | null>(null);
+  const [consultLoading, setConsultLoading] = useState(false);
+  const [showConsultModal, setShowConsultModal] = useState(false);
+
   const toastTimer = useRef<ReturnType<typeof setTimeout>>();
 
   const showToast = (msg: string) => {
@@ -235,6 +248,22 @@ export default function PatientMonitoringPage() {
       showToast('❌ AI diet generation failed');
     } finally {
       setDietLoading(false);
+    }
+  }, [patientId]);
+
+  // Fetch Clinical Co-Pilot Consult
+  const fetchClinicalConsult = useCallback(async () => {
+    if (!patientId) return;
+    setConsultLoading(true);
+    try {
+      const res = await getClinicalCopilotConsult(patientId);
+      setClinicalConsult(res.consultation || null);
+      setShowConsultModal(true);
+    } catch (e) {
+      console.error('Failed to fetch Clinical Co-Pilot consult', e);
+      showToast('❌ Clinical Co-Pilot failed to respond');
+    } finally {
+      setConsultLoading(false);
     }
   }, [patientId]);
 
@@ -594,22 +623,41 @@ export default function PatientMonitoringPage() {
                 <p className="text-xs text-gray-400">Powered by Gemini · Based on vitals trends</p>
               </div>
             </div>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              disabled={dietLoading}
-              onClick={fetchDiet}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold shadow-md transition-all ${dietLoading
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:shadow-lg'
-                }`}
-            >
-              {dietLoading ? (
-                <><RefreshCw className="h-4 w-4 animate-spin" /> Generating...</>
-              ) : (
-                <><Sparkles className="h-4 w-4" /> {dietPlan ? 'Regenerate' : 'Generate Diet Plan'}</>
-              )}
-            </motion.button>
+            <div className="flex flex-wrap items-center gap-3">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                disabled={consultLoading}
+                onClick={fetchClinicalConsult}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold shadow-md transition-all ${consultLoading
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:shadow-lg'
+                  }`}
+              >
+                {consultLoading ? (
+                  <><RefreshCw className="h-4 w-4 animate-spin" /> Analyzing...</>
+                ) : (
+                  <><Stethoscope className="h-4 w-4" /> Clinical Co-Pilot</>
+                )}
+              </motion.button>
+
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                disabled={dietLoading}
+                onClick={fetchDiet}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold shadow-md transition-all ${dietLoading
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:shadow-lg'
+                  }`}
+              >
+                {dietLoading ? (
+                  <><RefreshCw className="h-4 w-4 animate-spin" /> Generating...</>
+                ) : (
+                  <><Sparkles className="h-4 w-4" /> {dietPlan ? 'Regenerate Diet' : 'Generate Diet Plan'}</>
+                )}
+              </motion.button>
+            </div>
           </div>
 
           {dietPlan ? (
@@ -949,6 +997,71 @@ export default function PatientMonitoringPage() {
             </div>
           </motion.div>
         )}
+        {/* ── Clinical Co-Pilot Modal ──────────────────────────────── */}
+        <AnimatePresence>
+          {showConsultModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowConsultModal(false)}
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="relative w-full max-w-4xl max-h-[85vh] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+              >
+                {/* Modal Header */}
+                <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-white/20">
+                      <Stethoscope className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold">Clinical Co-Pilot Consult</h2>
+                      <p className="text-xs text-blue-100 opacity-80">Expert analysis for {patient?.name}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowConsultModal(false)}
+                    className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+
+                {/* Modal Body */}
+                <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                  <div className="prose prose-blue max-w-none prose-headings:font-bold prose-p:text-gray-700 prose-li:text-gray-700">
+                    <ReactMarkdown>{clinicalConsult || ''}</ReactMarkdown>
+                  </div>
+
+                  {/* Warning Box */}
+                  <div className="mt-8 p-4 bg-amber-50 border border-amber-100 rounded-xl flex gap-3 text-amber-800">
+                    <AlertTriangle className="h-5 w-5 flex-shrink-0 text-amber-500" />
+                    <p className="text-xs leading-relaxed">
+                      <strong>Professional Notice:</strong> This analysis is intended to support, not replace, professional clinical judgment. 
+                      Decisions regarding patient care remain the sole responsibility of the medical team.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Modal Footer */}
+                <div className="p-4 border-t border-gray-100 flex justify-end">
+                  <button
+                    onClick={() => setShowConsultModal(false)}
+                    className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold transition-colors"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
