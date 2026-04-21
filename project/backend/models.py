@@ -225,6 +225,9 @@ class Alert(db.Model):
     resolved_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     resolved_by_name = db.Column(db.String(120), nullable=True)
     
+    is_escalated = db.Column(db.Boolean, default=False)
+    escalated_by_name = db.Column(db.String(120), nullable=True)
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
@@ -256,6 +259,8 @@ class Alert(db.Model):
             "acknowledged_by_name": self.acknowledged_by_name,
             "resolved_by_id": self.resolved_by_id,
             "resolved_by_name": self.resolved_by_name,
+            "is_escalated": self.is_escalated,
+            "escalated_by_name": self.escalated_by_name,
             "created_at": self.created_at.isoformat() + "Z"
         }
 

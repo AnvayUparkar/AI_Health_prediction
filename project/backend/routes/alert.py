@@ -114,6 +114,11 @@ def update_alert(alert_id):
             if updates['resolved']:
                 updates['resolved_by_id'] = user_id
                 updates['resolved_by_name'] = user_name
+                
+        if 'escalate' in data:
+            updates['is_escalated'] = bool(data['escalate'])
+            if updates['is_escalated']:
+                updates['escalated_by_name'] = user_name
         
         if not updates:
             return jsonify({"error": "No valid fields to update"}), 400

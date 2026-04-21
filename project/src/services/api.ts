@@ -99,10 +99,11 @@ export const getAlerts = async (filters: { patient_id?: string; status?: string;
     return res.data;
 };
 
-export const updateAlertStatus = async (alertId: number | string, acknowledged?: boolean, resolved?: boolean) => {
+export const updateAlertStatus = async (alertId: number | string, acknowledged?: boolean, resolved?: boolean, escalate?: boolean) => {
     const updates: any = {};
     if (acknowledged !== undefined) updates.acknowledged = acknowledged;
     if (resolved !== undefined) updates.resolved = resolved;
+    if (escalate !== undefined) updates.escalate = escalate;
     const res = await api.patch(`/api/alerts/${alertId}`, updates);
     return res.data;
 };

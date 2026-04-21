@@ -32,6 +32,8 @@ interface Alert {
   acknowledged_by_name?: string;
   resolved_by_id?: number | string;
   resolved_by_name?: string;
+  is_escalated?: boolean;
+  escalated_by_name?: string;
 }
 
 // ── Normalise incoming alert so missing fields never crash the UI ─────────────
@@ -74,6 +76,8 @@ const normaliseAlert = (a: Partial<Alert> & { notified_doctor_ids?: string | (st
     acknowledged_by_name: a.acknowledged_by_name,
     resolved_by_id: a.resolved_by_id,
     resolved_by_name: a.resolved_by_name,
+    is_escalated: a.is_escalated ?? false,
+    escalated_by_name: a.escalated_by_name,
   };
 };
 
@@ -92,6 +96,25 @@ const playAlertBeep = () => {
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.15);
       osc.start(ctx.currentTime + offset);
       osc.stop(ctx.currentTime + offset + 0.15);
+    });
+  } catch { /* AudioContext blocked — silently skip */ }
+};
+
+// ── Urgent Triple-Beep for Escalations (Heard by Doctors) ───────────────────
+const playEscalationBeep = () => {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    [0, 0.15, 0.30].forEach(offset => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 1200; // Higher pitch for urgency
+      osc.type = 'square'; // Harsher sound
+      gain.gain.setValueAtTime(0.5, ctx.currentTime + offset);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.1);
+      osc.start(ctx.currentTime + offset);
+      osc.stop(ctx.currentTime + offset + 0.1);
     });
   } catch { /* AudioContext blocked — silently skip */ }
 };
@@ -232,10 +255,20 @@ const AlertMonitoringCard: React.FC = () => {
       acknowledged_by_name?: string;
       resolved_by_id?: number | string;
       resolved_by_name?: string;
+      is_escalated?: boolean;
+      escalated_by_name?: string;
     }) => {
       console.log('[AlertMonitoringCard] alert_updated received:', data);
-      setAlerts(prev => {
-        if (data.resolved) {
+      
+      const userStr = localStorage.getItem('user');
+      const currentUser = userStr ? JSON.parse(userStr) : null;
+      
+      // Play escalation beep if it's newly escalated and current user is a doctor
+      if (data.is_escalated && currentUser?.role === 'doctor') {
+         playEscalationBeep();
+      }
+
+      setAlerts(prev => {        if (data.resolved) {
           // Remove resolved alerts immediately
           return prev.filter(a => String(a.id) !== String(data.id));
         }
@@ -246,8 +279,10 @@ const AlertMonitoringCard: React.FC = () => {
               ? { 
                   ...a, 
                   acknowledged: true, 
-                  acknowledged_by_id: data.acknowledged_by_id, 
-                  acknowledged_by_name: data.acknowledged_by_name 
+                  acknowledged_by_id: data.acknowledged_by_id !== undefined ? data.acknowledged_by_id : a.acknowledged_by_id, 
+                  acknowledged_by_name: data.acknowledged_by_name !== undefined ? data.acknowledged_by_name : a.acknowledged_by_name,
+                  is_escalated: data.is_escalated !== undefined ? data.is_escalated : a.is_escalated,
+                  escalated_by_name: data.escalated_by_name !== undefined ? data.escalated_by_name : a.escalated_by_name
                 } 
               : a
           );
@@ -278,8 +313,17 @@ const AlertMonitoringCard: React.FC = () => {
     }
   };
 
-  const handleResolve = async (id: number | string) => {
+  const handleEscalate = async (id: number | string) => {
     try {
+      const resp = await updateAlertStatus(id, undefined, undefined, true);
+      const updatedAlert = normaliseAlert(resp);
+      setAlerts(prev => prev.map(a => a.id === id ? updatedAlert : a));
+    } catch (err) {
+      console.error('Failed to escalate alert', err);
+    }
+  };
+
+  const handleResolve = async (id: number | string) => {    try {
       await updateAlertStatus(id, undefined, true);
       setAlerts(prev => prev.filter(a => a.id !== id));
     } catch (err) {
@@ -508,7 +552,15 @@ const AlertMonitoringCard: React.FC = () => {
                             }`}>
                             {isGesture ? 'GESTURE SOS' : alert.status}
                           </span>
-                          {alert.acknowledged && (
+                          
+                          {/* Escalation Badge */}
+                          {alert.is_escalated && (
+                            <span className="text-[9px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold flex items-center gap-1 border border-red-200 animate-pulse">
+                               ESCALATED {alert.escalated_by_name && <span className="opacity-80">by {alert.escalated_by_name}</span>}
+                            </span>
+                          )}
+
+                          {alert.acknowledged && !alert.is_escalated && (
                             <span className="text-[9px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
                               ACK'd {alert.acknowledged_by_name && (
                                 <span className="opacity-70">by {alert.acknowledged_by_name}</span>
@@ -579,15 +631,33 @@ const AlertMonitoringCard: React.FC = () => {
                             Acknowledge
                           </button>
                         ) : (
-                          <button
-                            onClick={() => handleResolve(alert.id)}
-                            className="flex-1 py-1.5 rounded-lg text-[10px] font-bold bg-green-500 text-white hover:bg-green-600 transition-all shadow-md"
-                          >
-                            Resolve Case
-                          </button>
+                          <>
+                            <button
+                              onClick={() => handleResolve(alert.id)}
+                              className="flex-1 py-1.5 rounded-lg text-[10px] font-bold bg-green-500 text-white hover:bg-green-600 transition-all shadow-md"
+                            >
+                              Resolve Case
+                            </button>
+                            
+                            {/* Escalate button only visible if user is a nurse and not yet escalated */}
+                            {(() => {
+                               const userStr = localStorage.getItem('user');
+                               const currentUser = userStr ? JSON.parse(userStr) : null;
+                               if (currentUser?.role === 'nurse' && !alert.is_escalated) {
+                                 return (
+                                   <button
+                                     onClick={() => handleEscalate(alert.id)}
+                                     className="flex-1 py-1.5 rounded-lg text-[10px] font-black bg-red-600 text-white hover:bg-red-700 transition-all shadow-md uppercase tracking-wider border-b-2 border-red-800"
+                                   >
+                                     Escalate to Doc
+                                   </button>
+                                 );
+                               }
+                               return null;
+                            })()}
+                          </>
                         )}
-                      </div>
-                    </motion.div>
+                      </div>                    </motion.div>
                   );
                 })}
               </div>
