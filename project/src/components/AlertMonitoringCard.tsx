@@ -119,6 +119,24 @@ const playEscalationBeep = () => {
   } catch { /* AudioContext blocked — silently skip */ }
 };
 
+// ── Confirmation beep for Nurse after escalating ───────────────────
+const playNurseEscalationConfirmBeep = () => {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 600; // pleasant, confident mid-tone
+    osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.1); // swoops up to signify sending
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.4, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.3);
+  } catch { /* skip if blocked */ }
+};
+
 // ── Toast banner ──────────────────────────────────────────────────────────────
 interface ToastProps { message: string; sub: string; isGesture: boolean; onDismiss: () => void; }
 const AlertToast: React.FC<ToastProps> = ({ message, sub, isGesture, onDismiss }) => (
@@ -318,6 +336,7 @@ const AlertMonitoringCard: React.FC = () => {
       const resp = await updateAlertStatus(id, undefined, undefined, true);
       const updatedAlert = normaliseAlert(resp);
       setAlerts(prev => prev.map(a => a.id === id ? updatedAlert : a));
+      playNurseEscalationConfirmBeep();
     } catch (err) {
       console.error('Failed to escalate alert', err);
     }
