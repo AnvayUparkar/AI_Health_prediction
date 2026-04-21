@@ -220,6 +220,11 @@ class Alert(db.Model):
     notified_doctor_ids = db.Column(db.Text, nullable=True) # JSON list
     ward_number = db.Column(db.String(50), nullable=True)
     
+    acknowledged_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    acknowledged_by_name = db.Column(db.String(120), nullable=True)
+    resolved_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    resolved_by_name = db.Column(db.String(120), nullable=True)
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
@@ -247,6 +252,10 @@ class Alert(db.Model):
             "nearest_hospital": self.nearest_hospital,
             "distance_km": self.distance_km,
             "notified_doctors": json.loads(self.notified_doctor_ids) if self.notified_doctor_ids else [],
+            "acknowledged_by_id": self.acknowledged_by_id,
+            "acknowledged_by_name": self.acknowledged_by_name,
+            "resolved_by_id": self.resolved_by_id,
+            "resolved_by_name": self.resolved_by_name,
             "created_at": self.created_at.isoformat() + "Z"
         }
 

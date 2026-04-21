@@ -346,56 +346,123 @@
   },
   "food_details": {
     "roti": {
-      "tags": ["meal_lunch", "meal_dinner", "fiber", "complex_carbs", "indian_staple"],
-      "benefits": "Whole wheat substrate for steady energy release and glycemic control."
+      "benefits": "Whole wheat based complex carbohydrate for energy",
+      "tags": [
+        "fiber",
+        "meal_lunch",
+        "meal_dinner"
+      ]
     },
     "multigrain roti": {
-      "tags": ["meal_lunch", "meal_dinner", "fiber", "complex_carbs", "iron", "indian_staple"],
-      "benefits": "Enhanced micronutrient density with slow-release carbohydrates."
+      "benefits": "Slow-release carbohydrate profile supporting sustained glycemic stability",
+      "tags": [
+        "fiber",
+        "low_glycemic",
+        "meal_lunch",
+        "meal_dinner"
+      ]
     },
     "jowar roti": {
-      "tags": ["meal_lunch", "meal_dinner", "fiber", "magnesium", "low_glycemic", "indian_staple"],
-      "benefits": "Gluten-free ancient grain supporting heart health and glucose regulation."
+      "benefits": "Sorghum-based energy source with a favorable glycemic load for metabolic disorders",
+      "tags": [
+        "fiber",
+        "low_glycemic",
+        "meal_lunch",
+        "meal_dinner"
+      ]
     },
     "bajra roti": {
-      "tags": ["meal_lunch", "meal_dinner", "fiber", "iron", "phosphorus", "indian_staple"],
-      "benefits": "High-density iron source for improved oxygen carriage and metabolic vigor."
+      "benefits": "Gluten-free pearl millet providing high satiety and stable metabolic energy",
+      "tags": [
+        "fiber",
+        "complex_carbs",
+        "meal_lunch",
+        "meal_dinner"
+      ]
     },
     "poha": {
-      "tags": ["meal_breakfast", "fiber", "iron", "carbohydrates", "indian_staple"],
-      "benefits": "Light, easily digestible iron-rich breakfast cereal."
+      "benefits": "Parboiled rice flakes providing easy digestion and immediate energy",
+      "tags": [
+        "meal_breakfast"
+      ]
     },
     "moong dal khichdi": {
-      "tags": ["meal_lunch", "meal_dinner", "protein", "fiber", "easy_digestion", "indian_staple"],
-      "benefits": "Synergistic amino acid profile for tissue repair and GI comfort."
+      "benefits": "Synergistic protein-carb blend offering complete amino acids with minimal digestive load",
+      "tags": [
+        "protein",
+        "fiber",
+        "meal_dinner"
+      ]
     },
     "lentil dal": {
-      "tags": ["meal_lunch", "meal_dinner", "protein", "fiber", "iron", "indian_staple"],
-      "benefits": "Bioavailable plant-based protein supporting muscle and blood health."
+      "benefits": "Base plant protein supporting broad nutritional goals and satiety",
+      "tags": [
+        "protein",
+        "iron",
+        "fiber",
+        "zinc",
+        "meal_lunch",
+        "meal_dinner"
+      ]
     },
     "vegetable sabzi": {
-      "tags": ["meal_lunch", "meal_dinner", "fiber", "antioxidants", "indian_staple"],
-      "benefits": "Phytonutrient-rich fiber source for microbiome integrity."
+      "benefits": "Fiber-dense micronutrient support for insulin modulation",
+      "tags": [
+        "fiber",
+        "antioxidants",
+        "meal_lunch",
+        "meal_dinner"
+      ]
     },
     "bottle gourd sabzi": {
-      "tags": ["meal_lunch", "meal_dinner", "hydration", "low_sodium", "indian_staple"],
+      "tags": [
+        "meal_lunch",
+        "meal_dinner",
+        "hydration",
+        "low_sodium",
+        "indian_staple"
+      ],
       "benefits": "High hydration index, critical for renal and hepatic support."
     },
     "bitter gourd sabzi": {
-      "tags": ["meal_lunch", "meal_dinner", "low_glycemic", "antioxidants", "indian_staple"],
+      "tags": [
+        "meal_lunch",
+        "meal_dinner",
+        "low_glycemic",
+        "antioxidants",
+        "indian_staple"
+      ],
       "benefits": "Contains polypeptide-p to assist in natural glucose management."
     },
     "roasted makhana": {
-      "tags": ["meal_snack", "magnesium", "protein", "low_calorie", "indian_staple"],
-      "benefits": "Low-GI snack supporting cardiovascular and renal health."
+      "benefits": "Fox nuts rich in magnesium and low-GI carbohydrates for metabolic support",
+      "tags": [
+        "magnesium",
+        "fiber",
+        "low_glycemic",
+        "meal_snack"
+      ]
     },
     "curd": {
-      "tags": ["meal_lunch", "probiotics", "protein", "calcium", "indian_staple"],
-      "benefits": "Natural probiotic source for enhanced digestive absorption."
+      "benefits": "Probiotics support gut-derived Vitamin B12 production",
+      "tags": [
+        "protein",
+        "calcium",
+        "vitamin_b12",
+        "iodine",
+        "meal_breakfast",
+        "meal_lunch"
+      ]
     },
     "lemon water": {
-      "tags": ["meal_breakfast", "vitamin_c", "detox", "hydration", "indian_staple"],
-      "benefits": "Optimizes hepatic detox pathways and iron bioavailability."
+      "benefits": "Promotes systemic alkalinity and assists in uric acid clearance",
+      "tags": [
+        "hydration",
+        "vitamin_c",
+        "purine_neutral",
+        "high_uric_acid",
+        "meal_snack"
+      ]
     },
     "spinach": {
       "benefits": "Supports hematopoietic health via folic acid and non-heme iron",
@@ -511,11 +578,10 @@
       ]
     },
     "brazil nuts": {
-      "benefits": "Single most concentrated source of Selenium, critical for T4 to T3 conversion",
+      "benefits": "Critical selenium source for thyroid hormone conversion",
       "tags": [
         "selenium",
         "healthy_fats",
-        "thyroid_issues",
         "meal_snack"
       ]
     },
@@ -529,14 +595,18 @@
       ]
     },
     "cherries": {
-      "benefits": "Contains anthocyanins that may reduce serum uric acid and inflammation",
       "tags": [
-        "antioxidants",
         "vitamin_c",
-        "purine_neutral",
-        "high_uric_acid",
+        "meal_dinner",
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium",
         "meal_snack"
-      ]
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
     },
     "brown rice": {
       "benefits": "Whole grain bran layer supports metabolic steady-state",
@@ -585,34 +655,31 @@
       ]
     },
     "cauliflower": {
-      "benefits": "Low-potassium cruciferous choice for renal electrolyte management",
       "tags": [
-        "fiber",
         "vitamin_c",
-        "low_potassium",
-        "kidney_strain",
-        "meal_lunch"
-      ]
+        "meal_dinner",
+        "protein",
+        "iron",
+        "fiber",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
     },
     "cabbage": {
-      "benefits": "Phytochemicals support mucosal healing with low electrolyte impact",
       "tags": [
-        "fiber",
         "vitamin_c",
-        "low_potassium",
-        "kidney_strain",
-        "meal_lunch"
-      ]
-    },
-    "lemon water": {
-      "benefits": "Promotes systemic alkalinity and assists in uric acid clearance",
-      "tags": [
-        "hydration",
-        "vitamin_c",
-        "purine_neutral",
-        "high_uric_acid",
-        "meal_snack"
-      ]
+        "meal_dinner",
+        "protein",
+        "iron",
+        "potassium",
+        "magnesium",
+        "meal_lunch",
+        "calcium"
+      ],
+      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
     },
     "sprouts": {
       "benefits": "High enzymatic activity aids in protein assimilation",
@@ -709,17 +776,6 @@
         "selenium",
         "healthy_fats",
         "meal_snack"
-      ]
-    },
-    "curd": {
-      "benefits": "Probiotics support gut-derived Vitamin B12 production",
-      "tags": [
-        "protein",
-        "calcium",
-        "vitamin_b12",
-        "iodine",
-        "meal_breakfast",
-        "meal_lunch"
       ]
     },
     "milk": {
@@ -892,14 +948,6 @@
         "meal_snack"
       ]
     },
-    "brazil nuts": {
-      "benefits": "Critical selenium source for thyroid hormone conversion",
-      "tags": [
-        "selenium",
-        "healthy_fats",
-        "meal_snack"
-      ]
-    },
     "iodized salt": {
       "benefits": "Essential substrate for thyroxine (T4) synthesis",
       "tags": [
@@ -992,89 +1040,11 @@
         "meal_lunch"
       ]
     },
-    "multigrain roti": {
-      "benefits": "Slow-release carbohydrate profile supporting sustained glycemic stability",
-      "tags": [
-        "fiber",
-        "low_glycemic",
-        "meal_lunch",
-        "meal_dinner"
-      ]
-    },
-    "roti": {
-      "benefits": "Whole wheat based complex carbohydrate for energy",
-      "tags": [
-        "fiber",
-        "meal_lunch",
-        "meal_dinner"
-      ]
-    },
-    "poha": {
-      "benefits": "Parboiled rice flakes providing easy digestion and immediate energy",
-      "tags": [
-        "meal_breakfast"
-      ]
-    },
-    "moong dal khichdi": {
-      "benefits": "Synergistic protein-carb blend offering complete amino acids with minimal digestive load",
-      "tags": [
-        "protein",
-        "fiber",
-        "meal_dinner"
-      ]
-    },
-    "roasted makhana": {
-      "benefits": "Fox nuts rich in magnesium and low-GI carbohydrates for metabolic support",
-      "tags": [
-        "magnesium",
-        "fiber",
-        "low_glycemic",
-        "meal_snack"
-      ]
-    },
-    "vegetable sabzi": {
-      "benefits": "Fiber-dense micronutrient support for insulin modulation",
-      "tags": [
-        "fiber",
-        "antioxidants",
-        "meal_lunch",
-        "meal_dinner"
-      ]
-    },
     "green salad": {
       "benefits": "High volume, low-calorie fiber for satiety and glycemic control",
       "tags": [
         "fiber",
         "antioxidants",
-        "meal_lunch",
-        "meal_dinner"
-      ]
-    },
-    "lentil dal": {
-      "benefits": "Base plant protein supporting broad nutritional goals and satiety",
-      "tags": [
-        "protein",
-        "iron",
-        "fiber",
-        "zinc",
-        "meal_lunch",
-        "meal_dinner"
-      ]
-    },
-    "bajra roti": {
-      "benefits": "Gluten-free pearl millet providing high satiety and stable metabolic energy",
-      "tags": [
-        "fiber",
-        "complex_carbs",
-        "meal_lunch",
-        "meal_dinner"
-      ]
-    },
-    "jowar roti": {
-      "benefits": "Sorghum-based energy source with a favorable glycemic load for metabolic disorders",
-      "tags": [
-        "fiber",
-        "low_glycemic",
         "meal_lunch",
         "meal_dinner"
       ]
@@ -1940,20 +1910,6 @@
       ],
       "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
     },
-    "cherries": {
-      "tags": [
-        "vitamin_c",
-        "meal_dinner",
-        "protein",
-        "iron",
-        "potassium",
-        "magnesium",
-        "meal_lunch",
-        "calcium",
-        "meal_snack"
-      ],
-      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
-    },
     "potatoes": {
       "tags": [
         "vitamin_c",
@@ -1982,19 +1938,6 @@
     },
     "celery": {
       "tags": [
-        "meal_dinner",
-        "protein",
-        "iron",
-        "potassium",
-        "magnesium",
-        "meal_lunch",
-        "calcium"
-      ],
-      "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
-    },
-    "cabbage": {
-      "tags": [
-        "vitamin_c",
         "meal_dinner",
         "protein",
         "iron",
@@ -2196,20 +2139,6 @@
         "calcium"
       ],
       "benefits": "Provides essential amino acid substrates for tissue repair and metabolic balance."
-    },
-    "cauliflower": {
-      "tags": [
-        "vitamin_c",
-        "meal_dinner",
-        "protein",
-        "iron",
-        "fiber",
-        "potassium",
-        "magnesium",
-        "meal_lunch",
-        "calcium"
-      ],
-      "benefits": "Enhances glycemic stability and promotes digestive microbiome integrity."
     },
     "collards": {
       "tags": [
@@ -3046,5 +2975,89 @@
       ],
       "protocol": "B6 is a key co-factor in amino acid metabolism and nitrogen balance."
     }
+  },
+  "audit_rules": {
+    "hypocalcemia": {
+      "mandatory_sources": [
+        "milk",
+        "curd",
+        "buttermilk",
+        "ragi",
+        "paneer"
+      ],
+      "min_meals": 2,
+      "fix_food": "Curd",
+      "fix_slot": "lunch"
+    },
+    "vitamin_b12_deficiency": {
+      "mandatory_sources": [
+        "milk",
+        "curd",
+        "paneer",
+        "eggs",
+        "fortified_food"
+      ],
+      "min_meals": 2,
+      "fix_food": "Paneer",
+      "fix_slot": "dinner"
+    },
+    "low_hdl": {
+      "mandatory_sources": [
+        "almonds",
+        "walnuts",
+        "flaxseed",
+        "chia seeds"
+      ],
+      "min_meals": 1,
+      "fix_food": "Walnuts and Flaxseeds",
+      "fix_slot": "evening_snack"
+    },
+    "iron_deficiency_anemia": {
+      "mandatory_sources": [
+        "palak",
+        "spinach",
+        "beetroot",
+        "ragi",
+        "lentils",
+        "bajra"
+      ],
+      "min_meals": 2,
+      "requires": [
+        "vitamin_c"
+      ],
+      "synergy_source": "Lemon / Amla",
+      "fix_food": "Beetroot",
+      "fix_slot": "lunch"
+    }
+  },
+  "dish_library": {
+    "spinach": "Palak Sabzi with Garlic & Cumin",
+    "beetroot": "Roasted Beetroot & Coconut Sabzi",
+    "moringa": "Superfood Moringa Leaf Soup",
+    "broccoli": "Stir-fried Spiced Broccoli Sabzi",
+    "bitter gourd": "Karela Masala (Low Oil)",
+    "bottle gourd": "Lauki Ki Sabzi (Digestive Support)",
+    "cabbage": "Cabbage & Green Pea Poriyal",
+    "carrot": "Gajar-Matar Dry Sabzi",
+    "methi": "Methi-Thepla Style Sabzi",
+    "moong dal": "Yellow Moong Dal Tadka",
+    "masoor dal": "Masoor Protein Curry",
+    "chana dal": "High-Fiber Chana Dal",
+    "paneer": "Soft Paneer Matar Curry",
+    "soy": "Soybean Chunk Curry",
+    "egg": "Spiced Egg Bhurji",
+    "sprouts": "Moong Sprouts Chaat",
+    "poha": "Vegetable Poha with Peanuts",
+    "upma": "Semolina / Oats Upma",
+    "ragi": "Ragi Porridge / Malt",
+    "oats": "Savory Oats with Veggies",
+    "chia seeds": "Chia Seed Pudding",
+    "flaxseeds": "Roasted Seed Mix",
+    "walnuts": "Walnuts",
+    "makhana": "Roasted Masala Makhana",
+    "pomegranate": "Fresh Pomegranate",
+    "apple": "Seasonal Apple",
+    "curd": "Probiotic Fresh Curd",
+    "buttermilk": "Spiced Masala Buttermilk"
   }
 }

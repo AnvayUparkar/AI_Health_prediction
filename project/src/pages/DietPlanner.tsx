@@ -5,21 +5,18 @@ import AnimatedBackground from '../components/AnimatedBackground';
 import GlassCard from '../components/GlassCard';
 import { getProfile } from '../services/api';
 
-interface MealItem {
-  item: string;
-  explanation: string;
-  nutrients?: {
-    p: number;
-    f: number;
-    c: number;
-  };
+interface MealDish {
+  title: string;
+  items: string[];
+  benefit: string;
 }
 
 interface DietPlan {
-  breakfast: MealItem[];
-  lunch: MealItem[];
-  dinner: MealItem[];
-  snacks: MealItem[];
+  breakfast: MealDish;
+  mid_morning: MealDish;
+  lunch: MealDish;
+  evening_snack: MealDish;
+  dinner: MealDish;
 }
 
 const DietPlanner = () => {
@@ -125,80 +122,98 @@ const DietPlanner = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <GlassCard className="p-6">
+              <GlassCard className="p-6 border-l-4 border-yellow-500">
                 <div className="flex items-center mb-4">
                   <Coffee className="h-6 w-6 text-yellow-500 mr-3" />
                   <h3 className="text-2xl font-bold text-gray-800">Breakfast</h3>
                 </div>
-                <ul className="space-y-4">
-                  {dietPlan.breakfast.map((item, idx) => (
-                    <li key={idx}>
-                      <div className="flex items-start">
-                        <span className="text-green-500 mr-2 font-bold">• {item.item}</span>
-                      </div>
-                      <p className="text-sm text-gray-600 ml-4 italic mt-1 border-l-2 border-green-200 pl-3">
-                        {item.explanation}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
+                <div className="mb-4">
+                  <h4 className="text-xl font-bold text-green-700 mb-2">{dietPlan?.breakfast?.title || 'Loading...'}</h4>
+                  <ul className="text-sm text-gray-600 space-y-1 mb-3">
+                    {(dietPlan?.breakfast?.items || []).map((item: string, i: number) => (
+                      <li key={i} className="flex items-center">
+                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-2" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-sm text-gray-600 italic border-t border-gray-100 pt-2 mt-2">
+                    <span className="font-semibold text-green-600 block mb-1">Clinical Benefit:</span>
+                    {dietPlan?.breakfast?.benefit || 'Analyzing nutritional impact...'}
+                  </p>
+                </div>
               </GlassCard>
 
-              <GlassCard className="p-6">
+              <GlassCard className="p-6 border-l-4 border-emerald-500">
+                <div className="flex items-center mb-4">
+                  <Apple className="h-6 w-6 text-emerald-500 mr-3" />
+                  <h3 className="text-2xl font-bold text-gray-800">Mid-Morning</h3>
+                </div>
+                <div className="mb-4">
+                  <h4 className="text-xl font-bold text-emerald-700 mb-2">{dietPlan?.mid_morning?.title || 'Healthy Snack'}</h4>
+                  <p className="text-sm text-gray-600 italic border-t border-gray-100 pt-2 mt-2">
+                    <span className="font-semibold text-emerald-600 block mb-1">Benefit:</span>
+                    {dietPlan?.mid_morning?.benefit || 'General wellness support.'}
+                  </p>
+                </div>
+              </GlassCard>
+
+              <GlassCard className="p-6 border-l-4 border-orange-500">
                 <div className="flex items-center mb-4">
                   <Drumstick className="h-6 w-6 text-orange-500 mr-3" />
                   <h3 className="text-2xl font-bold text-gray-800">Lunch</h3>
                 </div>
-                <ul className="space-y-4">
-                  {dietPlan.lunch.map((item, idx) => (
-                    <li key={idx}>
-                      <div className="flex items-start">
-                        <span className="text-orange-500 mr-2 font-bold">• {item.item}</span>
-                      </div>
-                      <p className="text-sm text-gray-600 ml-4 italic mt-1 border-l-2 border-orange-200 pl-3">
-                        {item.explanation}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
+                <div className="mb-4">
+                  <h4 className="text-xl font-bold text-orange-700 mb-2">{dietPlan?.lunch?.title || 'Nutritious Lunch'}</h4>
+                  <ul className="text-sm text-gray-600 space-y-1 mb-3">
+                    {(dietPlan?.lunch?.items || []).map((item: string, i: number) => (
+                      <li key={i} className="flex items-center">
+                        <span className="w-1.5 h-1.5 bg-orange-500 rounded-full mr-2" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-sm text-gray-600 italic border-t border-gray-100 pt-2 mt-2">
+                    <span className="font-semibold text-orange-600 block mb-1">Clinical Benefit:</span>
+                    {dietPlan?.lunch?.benefit || 'Optimizing glycemic response.'}
+                  </p>
+                </div>
               </GlassCard>
 
-              <GlassCard className="p-6">
+              <GlassCard className="p-6 border-l-4 border-purple-500">
+                <div className="flex items-center mb-4">
+                  <Coffee className="h-6 w-6 text-purple-500 mr-3" />
+                  <h3 className="text-2xl font-bold text-gray-800">Evening Snack</h3>
+                </div>
+                <div className="mb-4">
+                  <h4 className="text-xl font-bold text-purple-700 mb-2">{dietPlan?.evening_snack?.title || 'Light Snack'}</h4>
+                  <p className="text-sm text-gray-600 italic border-t border-gray-100 pt-2 mt-2">
+                    <span className="font-semibold text-purple-600 block mb-1">Benefit:</span>
+                    {dietPlan?.evening_snack?.benefit || 'Sustained energy release.'}
+                  </p>
+                </div>
+              </GlassCard>
+
+              <GlassCard className="p-6 border-l-4 border-red-500">
                 <div className="flex items-center mb-4">
                   <Utensils className="h-6 w-6 text-red-500 mr-3" />
                   <h3 className="text-2xl font-bold text-gray-800">Dinner</h3>
                 </div>
-                <ul className="space-y-4">
-                  {dietPlan.dinner.map((item, idx) => (
-                    <li key={idx}>
-                      <div className="flex items-start">
-                        <span className="text-red-500 mr-2 font-bold">• {item.item}</span>
-                      </div>
-                      <p className="text-sm text-gray-600 ml-4 italic mt-1 border-l-2 border-red-200 pl-3">
-                        {item.explanation}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              </GlassCard>
-
-              <GlassCard className="p-6">
-                <div className="flex items-center mb-4">
-                  <Apple className="h-6 w-6 text-green-500 mr-3" />
-                  <h3 className="text-2xl font-bold text-gray-800">Snacks</h3>
+                <div className="mb-4">
+                  <h4 className="text-xl font-bold text-red-700 mb-2">{dietPlan?.dinner?.title || 'Balanced Dinner'}</h4>
+                  <ul className="text-sm text-gray-600 space-y-1 mb-3">
+                    {(dietPlan?.dinner?.items || []).map((item: string, i: number) => (
+                      <li key={i} className="flex items-center">
+                        <span className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-sm text-gray-600 italic border-t border-gray-100 pt-2 mt-2">
+                    <span className="font-semibold text-red-600 block mb-1">Clinical Benefit:</span>
+                    {dietPlan?.dinner?.benefit || 'Metabolic repair and recovery.'}
+                  </p>
                 </div>
-                <ul className="space-y-4">
-                  {dietPlan.snacks.map((item, idx) => (
-                    <li key={idx}>
-                      <div className="flex items-start">
-                        <span className="text-emerald-500 mr-2 font-bold">• {item.item}</span>
-                      </div>
-                      <p className="text-sm text-gray-600 ml-4 italic mt-1 border-l-2 border-emerald-200 pl-3">
-                        {item.explanation}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
               </GlassCard>
             </div>
 

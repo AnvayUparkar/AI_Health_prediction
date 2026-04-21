@@ -8,6 +8,8 @@ from typing import Dict, List, Any, Optional, Tuple
 
 from backend.report_parser import detect_high_level_conditions, detect_conditions_from_text
 from backend.usda_manager import usda_manager
+from backend.indian_meal_builder import indian_meal_builder
+from backend.clinical_validator import clinical_validator
 
 logger = logging.getLogger(__name__)
 
@@ -75,19 +77,22 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 KNOWLEDGE_PATH = os.path.join(BASE_DIR, "data", "dietary_knowledge.json")
 expert_kb = DietKnowledgeManager(KNOWLEDGE_PATH)
 
+# Scoring Weight Constants
+CUISINE_BIAS = 5.0
+
+
 # ===================================================================
 # HIERARCHICAL SCORING & RECOMMENDATION ENGINE
 # ===================================================================
 
-def score_food_hierarchical(food_name: str, target_nutrients: List[str], avoid_map: Dict[str, str], input_data: Dict[str, Any] = {}) -> Tuple[float, Optional[str]]:
+def score_food_hierarchical(food_name: str, target_nutrients: List[str], avoid_map: Dict[str, str], input_data: Dict[str, Any] = {}, context: Dict[str, Any] = None) -> Tuple[float, Optional[str]]:
     """
-    Advanced scoring utilizing Expert KB + USDA Biochemical Evidence + Lab Context.
+    Advanced scoring utilizing Expert KB + USDA Biochemical Evidence + Lab Context + Clinical Context.
     Returns (score, block_reason)
     """
     score = 0.0
     name_clean = food_name.lower()
     details = expert_kb.get_food_details(name_clean)
-    # Use local-only for the high-frequency scoring loop to prevent timeouts (100+ calls)
     biochem_data = usda_manager.get_food_nutrients_local(name_clean)
     biochem = biochem_data.get("nutrients", {}) if biochem_data else {}
     
@@ -105,7 +110,32 @@ def score_food_hierarchical(food_name: str, target_nutrients: List[str], avoid_m
                 weight = 0.5 if nut in ["fiber", "protein"] else 2.0
                 score += min((amount * weight), 5.0)
 
-        # 3. Clinical Safety Gate (Transparent Filtering)
+    # 3. [NEW] ARCHITECT'S CLINICAL CONTEXT SCORING
+    if context:
+        # A. Recommended Food Boost (+4.0)
+        # Check for keyword matches in the boost set
+        if any(keyword in name_clean for keyword in context.get("boost", [])):
+            score += 4.0
+            
+        # B. Avoid Food Penalty (-10.0)
+        if any(keyword in name_clean for keyword in context.get("avoid", [])):
+            return -100.0, f"Contraindicated by clinical report findings."
+
+        # C. Nutritional Goal Scoring
+        goals = context.get("goals", {})
+        if biochem:
+            # Iron Goal
+            if goals.get("iron") == "high" and biochem.get("iron", 0) > 2.0:
+                score += 2.0
+            # Sugar Goal
+            if goals.get("sugar") == "low" and biochem.get("sugar", 0) > 10:
+                score -= 3.0
+            # Sodium Goal
+            if goals.get("sodium") == "low" and biochem.get("sodium", 0) > 200:
+                score -= 3.0
+
+    # 4. Clinical Safety Gate (Transparent Filtering)
+    if biochem:
         sodium = biochem.get("sodium", 0.0)
         if sodium > 350 and ("hypertension" in target_nutrients or "kidney_strain" in target_nutrients):
             return -100.0, f"High sodium ({sodium}mg) is contraindicated for renal/vascular stress markers."
@@ -114,11 +144,11 @@ def score_food_hierarchical(food_name: str, target_nutrients: List[str], avoid_m
         if sugar > 12 and "prediabetes" in target_nutrients:
             return -100.0, f"High glycemic load ({sugar}g sugar) aggravates detected insulin resistance."
 
-    # 4. Expert Conflict Check (Absolute Safety)
+    # 5. Expert Conflict Check (Absolute Safety)
     if name_clean in avoid_map:
         return -100.0, avoid_map[name_clean]
             
-    # 5. [NEW] Cuisine Preference Bonus (+5.0 for Indian Staples)
+    # 6. Cuisine Preference Bonus (+5.0 for Indian Staples)
     if "indian_staple" in details.get("tags", []):
         score += CUISINE_BIAS
         
@@ -330,10 +360,10 @@ def distribute_meals(top_foods: List[str], target_nutrients: List[str]) -> Dict[
 
     # Fill empty slots with clinical placeholders
     fallbacks = {
-        "breakfast": ["Poha with Vegetables", "Lemon Water"],
-        "mid_morning": ["Roasted Makhana", "Fruit"],
+        "breakfast": ["Poha with Vegetables", "Moong Dal Sprouts"],
+        "mid_morning": ["Walnuts", "Pomegranate"],
         "lunch": ["Multigrain Roti", "Lentil Dal", "Vegetable Sabzi"],
-        "evening_snack": ["Roasted Chana", "Green Tea"],
+        "evening_snack": ["Roasted Makhana", "Green Tea"],
         "dinner": ["Jowar Roti", "Moong Dal", "Bottle Gourd Sabzi"]
     }
     for slot, items in meal_plan.items():
@@ -346,7 +376,7 @@ def distribute_meals(top_foods: List[str], target_nutrients: List[str]) -> Dict[
 # ENGINE LOGIC
 # ===================================================================
 
-def fallback_diet_engine(input_data: Dict[str, Any], raw_text: Optional[str] = None) -> Dict[str, Any]:
+def fallback_diet_engine(input_data: Dict[str, Any], raw_text: Optional[str] = None, context: Dict[str, Any] = None) -> Dict[str, Any]:
     """
     Clinically accurate Expert Engine with dynamic meal planning.
     """
@@ -357,6 +387,19 @@ def fallback_diet_engine(input_data: Dict[str, Any], raw_text: Optional[str] = N
         initial_conditions = list(set(initial_conditions + text_conditions))
     
     conditions = validate_and_deduplicate(initial_conditions, input_data)
+    
+    # [Step 1] Build Clinical Context Profile
+    if not context:
+        primary = conditions[0] if conditions else "general_wellness"
+        context = {
+            "conditions": conditions,
+            "primary_condition": primary,
+            "secondary_conditions": conditions[1:],
+            "goals": [CONDITION_MAP[c]["technical_name"] for c in conditions],
+            "avoid": list(avoid_map.keys()) if 'avoid_map' in locals() else []
+        }
+    
+    logger.info("ENGINE | Clinical Context Initialized: Primary=%s", context.get("primary_condition", "General"))
     
     # 3. Hierarchical Recommendation Logic (Expert + USDA)
     target_nutrients = expert_kb.get_nutrients_for_conditions(conditions)
@@ -379,7 +422,7 @@ def fallback_diet_engine(input_data: Dict[str, Any], raw_text: Optional[str] = N
         safety_registry[food.title()] = reason
 
     for food in list(candidate_foods):
-        score, block_reason = score_food_hierarchical(food, target_nutrients, avoid_map, input_data)
+        score, block_reason = score_food_hierarchical(food, target_nutrients, avoid_map, input_data, context=context)
         if score > 0:
             scored_candidates.append((food, score))
         elif block_reason:
@@ -448,12 +491,15 @@ def fallback_diet_engine(input_data: Dict[str, Any], raw_text: Optional[str] = N
     # Overlay 3: Hypoxia / Anemia (Iron & Oxygen Support)
     if "hypoxia" in conditions or "iron_deficiency_anemia" in conditions:
         plan["breakfast"].append("Pomegranate")
+        plan["mid_morning"].append("Walnuts")
         plan["lunch"].append("Beetroot Salad")
+        plan["evening_snack"].append("Amla Juice")
         plan["dinner"].append("Moringa Soup")
 
     # Overlay 4: Metabolic / Glucose
     if "prediabetes" in conditions or "hyperglycemia" in conditions:
-        plan["breakfast"] = ["Oats with Flaxseeds", "Moong Dal Sprouts"]
+        plan["breakfast"] = ["Savory Oats with Flaxseeds", "Moong Dal Sprouts"]
+        plan["mid_morning"] = ["Almonds", "Soaked Seeds"]
         plan["evening_snack"].append("Cinnamon Tea")
 
     # Overlay 5: Thyroid (Selenium & Iodine)
@@ -462,45 +508,56 @@ def fallback_diet_engine(input_data: Dict[str, Any], raw_text: Optional[str] = N
         plan["lunch"].append("Seaweed (Natural Iodine source)")
 
     # Convert to structured clinical reasoning output
-    def get_reasoning(meal_items):
+    def synthesize_clinical_explanation(meal_items: List[str], current_conditions: List[str]) -> str:
         reasons = []
         for item in meal_items:
-            # Handle common multi-word items or variations
             clean = item.split('(')[0].split(' with ')[0].strip().lower()
-            
-            # Sub-string match or exact match
-            details = {}
-            if clean in expert_kb.data.get("food_details", {}):
-                details = expert_kb.get_food_details(clean)
-            else:
-                # Try simple word match (e.g. "Moong Dal Soup" -> "Moong Dal")
-                for key in expert_kb.data.get("food_details", {}):
-                    if key in clean or clean in key:
-                        details = expert_kb.get_food_details(key)
-                        break
-
+            details = expert_kb.get_food_details(clean)
             if details.get("benefits"):
                 reasons.append(details["benefits"])
+        
+        if not reasons:
+            return "Optimized biochemical synergy for your laboratory profile."
+        
+        # Combine leading benefits into a professional sentence
+        distinct_reasons = []
+        seen = set()
+        for r in reasons:
+            core = r.split(' supporting ')[0].split(' for ')[0].lower()
+            if core not in seen:
+                distinct_reasons.append(r)
+                seen.add(core)
+        
+        explanation = " ".join(distinct_reasons[:2])
+        
+        # Add condition-specific prefix
+        if current_conditions:
+            pref = f"Targeting {', '.join([c.replace('_', ' ').title() for c in current_conditions[:2]])}: "
+            return pref + explanation
             
-            # USDA Biochemical check
-            biochem = usda_manager.get_food_nutrients(clean)
-            if not biochem and " " in clean: # try base word
-                biochem = usda_manager.get_food_nutrients(clean.split()[-1])
-            
-            if biochem:
-                nuts = biochem.get("nutrients", {})
-                if "kidney_strain" in conditions and nuts.get("sodium", 0) < 50:
-                    reasons.append("Low sodium supports renal stability.")
-                if "liver_stress" in conditions and "antioxidants" in details.get("tags", []):
-                    reasons.append("High antioxidants assist hepatic recovery.")
-        return " ".join(list(set(reasons))[:2])
+        return explanation
 
-    meal_plan = {
-        slot: {
-            "items": items,
-            "reasoning": get_reasoning(items)
-        } for slot, items in plan.items()
-    }
+    # Structure the meal plan using the strict Indian Meal Builder [Step 10]
+    meal_plan = {}
+    used_items = {"staples": set(), "dals": set(), "sabzis": set()}
+    
+    # Priority order for generation to ensure Selection Memory flows [Step 5]
+    slots_priority = ["breakfast", "mid_morning", "lunch", "evening_snack", "dinner"]
+    for slot in slots_priority:
+        if slot in plan:
+            # Pass clinical context for primary-condition-based shaping [Step 4]
+            composed = indian_meal_builder.build_meal(
+                plan[slot], 
+                slot, 
+                conditions=conditions, 
+                used_items=used_items,
+                context=context
+            )
+            composed["benefit"] = synthesize_clinical_explanation(plan[slot], conditions)
+            meal_plan[slot] = composed
+
+    # [Step 7] Final Clinical Validation & Auto-Correction Engine
+    meal_plan = clinical_validator.validate_and_fix(meal_plan, conditions)
 
     avoid_with_reason = []
     for food, reason in avoid_map.items():

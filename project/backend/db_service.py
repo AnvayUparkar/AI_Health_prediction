@@ -952,6 +952,10 @@ class DBService:
         if alert:
             if 'acknowledged' in updates: alert.acknowledged = updates['acknowledged']
             if 'resolved' in updates: alert.resolved = updates['resolved']
+            if 'acknowledged_by_id' in updates: alert.acknowledged_by_id = updates['acknowledged_by_id']
+            if 'acknowledged_by_name' in updates: alert.acknowledged_by_name = updates['acknowledged_by_name']
+            if 'resolved_by_id' in updates: alert.resolved_by_id = updates['resolved_by_id']
+            if 'resolved_by_name' in updates: alert.resolved_by_name = updates['resolved_by_name']
             db.session.commit()
         
         # 2. Mongo (Async)

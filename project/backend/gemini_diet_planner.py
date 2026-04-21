@@ -821,6 +821,7 @@ def generate_diet_plan_with_gemini(
     model_name: str = "gemini-3-flash-preview",
     fallback_to_rules: bool = True,
     raw_text: Optional[str] = None,
+    context: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     Full pipeline: report_data → Gemini prompt → API → structured diet plan.
@@ -891,7 +892,7 @@ def generate_diet_plan_with_gemini(
                 from backend.fallback_diet_engine import fallback_diet_engine
                 
                 # Use the full clinical result to satisfy UI requirements
-                diet_plan = fallback_diet_engine(report_data, raw_text=raw_text)
+                diet_plan = fallback_diet_engine(report_data, raw_text=raw_text, context=context)
                 
                 # Add source notification to the summary field
                 diet_plan["summary"] = (

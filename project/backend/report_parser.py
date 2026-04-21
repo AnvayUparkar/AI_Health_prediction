@@ -24,7 +24,7 @@ No ML dependencies — pure regex + rule-based for reliability and speed.
 
 import re
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 
 logger = logging.getLogger(__name__)
 
@@ -1187,6 +1187,59 @@ def detect_high_level_conditions(parameters: Dict[str, dict]) -> List[str]:
         conditions.append("electrolyte_imbalance")
 
     return list(set(conditions))
+
+
+def get_clinical_summary(parameters: Dict[str, dict]) -> Dict[str, Any]:
+    """
+    Standardize the analyzer output into a Clinical Summary.
+    Combines detected conditions with nutritional goals and food lists.
+    """
+    conditions = detect_high_level_conditions(parameters)
+    important_params = {n: i for n, i in parameters.items() if i.get("is_important")}
+    
+    recommended_foods = []
+    avoid_foods = []
+    nutritional_goals = {}
+
+    # Goal Mapping: (Parameter, Status) -> {Nutrient: Target}
+    GOAL_MAP = {
+        ("Hemoglobin", "Low"): {"iron": "high", "vitamin_c": "high"},
+        ("Glucose", "High"): {"sugar": "low", "fiber": "high"},
+        ("Fasting Blood Sugar", "High"): {"sugar": "low", "fiber": "high"},
+        ("HbA1c", "High"): {"sugar": "low", "fiber": "high"},
+        ("Total Cholesterol", "High"): {"fiber": "high", "saturated_fat": "low"},
+        ("LDL Cholesterol", "High"): {"fiber": "high", "saturated_fat": "low"},
+        ("Triglycerides", "High"): {"sugar": "low", "omega_3": "high"},
+        ("Vitamin D", "Low"): {"vitamin_d": "high", "calcium": "high"},
+        ("Vitamin B12", "Low"): {"vitamin_b12": "high"},
+        ("Iron", "Low"): {"iron": "high", "vitamin_c": "high"},
+        ("Uric Acid", "High"): {"hydration": "high", "purine": "low"},
+        ("Creatinine", "High"): {"sodium": "low", "protein": "regulated"},
+        ("SGPT", "High"): {"antioxidants": "high", "sugar": "low"},
+        ("SGOT", "High"): {"antioxidants": "high", "sugar": "low"},
+    }
+
+    # Delayed import to avoid circular dependency
+    from backend.report_diet_engine import DIET_RULES
+
+    for name, info in important_params.items():
+        status = info.get("status")
+        rule = DIET_RULES.get(name, {}).get(status)
+        if rule:
+            recommended_foods.extend(rule.get("foods", []))
+            avoid_foods.extend(rule.get("avoid", []))
+            
+            # Map goals
+            goals = GOAL_MAP.get((name, status), {})
+            for nut, target in goals.items():
+                nutritional_goals[nut] = target
+
+    return {
+        "conditions": conditions,
+        "nutritional_goals": nutritional_goals,
+        "recommended_foods": list(set(recommended_foods)),
+        "avoid_foods": list(set(avoid_foods))
+    }
 
 
 def detect_conditions_from_text(text: str) -> List[str]:

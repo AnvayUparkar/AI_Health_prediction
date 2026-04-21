@@ -22,6 +22,8 @@ import {
   Stethoscope,
   Activity,
   BrainCircuit,
+  Coffee,
+  Drumstick,
 } from 'lucide-react';
 import AnimatedBackground from '../components/AnimatedBackground';
 import GlassCard from '../components/GlassCard';
@@ -38,17 +40,25 @@ interface ParameterInfo {
   is_important: boolean;
 }
 
+interface MealDish {
+  title: string;
+  items?: string[];
+  components?: Record<string, string>;
+  nutrient_tags?: string[];
+  benefit: string;
+}
+
 // Gemini-powered diet plan shape
 interface GeminiDietPlan {
   issues_detected: string[];
   recommended_foods: string[];
   foods_to_avoid: string[];
   meal_plan: {
-    breakfast: string[];
-    mid_morning: string[];
-    lunch: string[];
-    evening_snack: string[];
-    dinner: string[];
+    breakfast: MealDish;
+    mid_morning: MealDish;
+    lunch: MealDish;
+    evening_snack: MealDish;
+    dinner: MealDish;
   };
   hydration_tips: string[];
   lifestyle_tips: string[];
@@ -561,55 +571,214 @@ const ReportAnalyzer = () => {
                   </GlassCard>
                 )}
 
-                {/* Meal Plan */}
-                <GlassCard className="p-6 mb-6">
-                  <div className="flex items-center mb-5">
-                    <Utensils className="h-6 w-6 text-purple-500 mr-3" />
-                    <h2 className="text-2xl font-bold text-gray-800">Daily Meal Plan</h2>
+                {/* Daily Meal Plan - Premium UI (Diet-Planner Sync) */}
+                <GlassCard className="p-8 mb-8 border-t-4 border-t-purple-500 shadow-2xl">
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center">
+                      <div className="p-3 bg-purple-100 rounded-2xl mr-4 shadow-inner">
+                        <Utensils className="h-8 w-8 text-purple-600" />
+                      </div>
+                      <div>
+                        <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Daily Clinical Meal Plan</h2>
+                        <p className="text-sm text-gray-500 font-medium italic">Customized specifically for your biochemical profile</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {([
-                      { key: 'breakfast',     label: 'Breakfast',          emoji: '☕' },
-                      { key: 'mid_morning',   label: 'Mid-Morning Snack',  emoji: '🍌' },
-                      { key: 'lunch',         label: 'Lunch',              emoji: '🍛' },
-                      { key: 'evening_snack', label: 'Evening Snack',      emoji: '🍎' },
-                      { key: 'dinner',        label: 'Dinner',             emoji: '🥗' },
-                    ] as const).map(({ key, label, emoji }) => {
-                      const rawData = mealPlan[key];
-                      if (!rawData) return null;
-                      
-                      // Normalize: handle both array of strings and { items, reasoning } object
-                      const items: string[] = Array.isArray(rawData) 
-                        ? rawData 
-                        : (rawData as any).items ?? [];
-                      const mealReason: string = (rawData as any).reasoning ?? (rawData as any).reason ?? '';
 
-                      if (!items.length) return null;
-                      
-                      return (
-                        <div key={key} className="bg-white/50 rounded-xl p-4 border border-gray-100 flex flex-col h-full shadow-sm">
-                          <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
-                            <span className="mr-2">{emoji}</span>{label}
-                          </h4>
-                          <ul className="space-y-1.5 flex-grow">
-                            {items.map((item, idx) => (
-                              <li key={idx} className="text-sm text-gray-600 flex items-start">
-                                <span className="text-purple-400 mr-1.5 mt-1">•</span>
-                                {item}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+                    {/* Breakfast */}
+                    <GlassCard className="p-6 border-l-4 border-l-yellow-500 bg-gradient-to-br from-yellow-50/30 to-white hover:shadow-xl transition-all duration-300">
+                      <div className="flex items-center mb-4">
+                        <Coffee className="h-6 w-6 text-yellow-500 mr-3" />
+                        <h3 className="text-xl font-bold text-gray-800">Breakfast</h3>
+                      </div>
+                      <div className="mb-4">
+                        <h4 className="text-lg font-bold text-green-700 mb-2 leading-tight">{mealPlan.breakfast.title || 'Healthy Indian Breakfast'}</h4>
+                        
+                        {/* Nutrient Tags */}
+                        {mealPlan.breakfast.nutrient_tags && mealPlan.breakfast.nutrient_tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mb-3">
+                            {mealPlan.breakfast.nutrient_tags.map((tag, idx) => (
+                              <span key={idx} className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-full border border-green-200">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="bg-white/40 rounded-lg p-3 border border-yellow-100/30 mb-3">
+                          <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 mb-2">Meal Components</p>
+                          <ul className="space-y-1.5">
+                            {Object.entries(mealPlan.breakfast.components || {}).map(([key, val], i) => (
+                              <li key={i} className="text-sm text-gray-700 flex justify-between">
+                                <span className="font-semibold text-gray-500">{key}:</span>
+                                <span>{val}</span>
                               </li>
                             ))}
                           </ul>
-                          {mealReason && (
-                            <div className="mt-3 pt-3 border-t border-gray-100">
-                              <p className="text-[10px] leading-relaxed text-purple-600 italic font-medium">
-                                <Activity className="inline h-2.5 w-2.5 mr-1 -mt-0.5" />
-                                {mealReason}
+                        </div>
+                        {mealPlan.breakfast.benefit && (
+                          <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100/50 shadow-sm">
+                            <p className="text-[11px] leading-relaxed text-blue-700 font-medium">
+                              <Lightbulb className="inline h-3.5 w-3.5 mr-2 -mt-0.5" />
+                              <span className="font-bold underline decoration-blue-200 mr-1 italic">Clinical Benefit:</span>
+                              {mealPlan.breakfast.benefit}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </GlassCard>
+
+                    {/* Mid-Morning */}
+                    <GlassCard className="p-6 border-l-4 border-l-emerald-500 bg-gradient-to-br from-emerald-50/30 to-white hover:shadow-xl transition-all duration-300">
+                      <div className="flex items-center mb-4">
+                        <Apple className="h-6 w-6 text-emerald-500 mr-3" />
+                        <h3 className="text-xl font-bold text-gray-800">Mid-Morning Snack</h3>
+                      </div>
+                      <div className="mb-4">
+                        <h4 className="text-lg font-bold text-emerald-700 mb-2 leading-tight">{mealPlan.mid_morning.title || 'Nutritious Snack'}</h4>
+                        
+                        {/* Nutrient Tags */}
+                        {mealPlan.mid_morning.nutrient_tags && mealPlan.mid_morning.nutrient_tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mb-3">
+                            {mealPlan.mid_morning.nutrient_tags.map((tag, idx) => (
+                              <span key={idx} className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-200">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {mealPlan.mid_morning.benefit && (
+                          <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100/50 shadow-sm">
+                            <p className="text-[11px] leading-relaxed text-emerald-700 font-medium">
+                              <Lightbulb className="inline h-3.5 w-3.5 mr-2 -mt-0.5" />
+                              <span className="font-bold underline decoration-emerald-200 mr-1 italic">Benefit:</span>
+                              {mealPlan.mid_morning.benefit}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </GlassCard>
+
+                    {/* Lunch */}
+                    <GlassCard className="p-6 border-l-4 border-l-orange-500 bg-gradient-to-br from-orange-50/30 to-white hover:shadow-xl transition-all duration-300">
+                      <div className="flex items-center mb-4">
+                        <Drumstick className="h-6 w-6 text-orange-500 mr-3" />
+                        <h3 className="text-xl font-bold text-gray-800">Lunch</h3>
+                      </div>
+                      <div className="mb-4">
+                        <h4 className="text-lg font-bold text-orange-700 mb-2 leading-tight">{mealPlan.lunch.title || 'Balanced Indian Thali'}</h4>
+                        
+                        {/* Nutrient Tags */}
+                        {mealPlan.lunch.nutrient_tags && mealPlan.lunch.nutrient_tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mb-3">
+                            {mealPlan.lunch.nutrient_tags.map((tag, idx) => (
+                              <span key={idx} className="px-2 py-0.5 bg-orange-100 text-orange-700 text-[10px] font-bold rounded-full border border-orange-200">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="bg-white/40 rounded-lg p-3 border border-orange-100/30 mb-3">
+                          <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 mb-2">Meal Components</p>
+                          <ul className="space-y-1.5">
+                            {Object.entries(mealPlan.lunch.components || {}).map(([key, val], i) => (
+                              <li key={i} className="text-sm text-gray-700 flex justify-between">
+                                <span className="font-semibold text-gray-500">{key}:</span>
+                                <span>{val}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        {mealPlan.lunch.benefit && (
+                          <div className="bg-orange-50/50 p-4 rounded-xl border border-orange-100/50 shadow-sm">
+                            <p className="text-[11px] leading-relaxed text-orange-800 font-medium">
+                              <Lightbulb className="inline h-3.5 w-3.5 mr-2 -mt-0.5" />
+                              <span className="font-bold underline decoration-orange-200 mr-1 italic">Clinical Benefit:</span>
+                              {mealPlan.lunch.benefit}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </GlassCard>
+
+                    {/* Evening Snack */}
+                    <GlassCard className="p-6 border-l-4 border-l-purple-500 bg-gradient-to-br from-purple-50/30 to-white hover:shadow-xl transition-all duration-300">
+                      <div className="flex items-center mb-4">
+                        <Coffee className="h-6 w-6 text-purple-500 mr-3" />
+                        <h3 className="text-xl font-bold text-gray-800">Evening Snack</h3>
+                      </div>
+                      <div className="mb-4">
+                        <h4 className="text-lg font-bold text-purple-700 mb-2 leading-tight">{mealPlan.evening_snack.title || 'Light Snack'}</h4>
+                        
+                        {/* Nutrient Tags */}
+                        {mealPlan.evening_snack.nutrient_tags && mealPlan.evening_snack.nutrient_tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mb-3">
+                            {mealPlan.evening_snack.nutrient_tags.map((tag, idx) => (
+                              <span key={idx} className="px-2 py-0.5 bg-purple-100 text-purple-700 text-[10px] font-bold rounded-full border border-purple-200">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {mealPlan.evening_snack.benefit && (
+                          <div className="bg-purple-50/50 p-4 rounded-xl border border-purple-100/50 shadow-sm">
+                            <p className="text-[11px] leading-relaxed text-purple-800 font-medium">
+                              <Lightbulb className="inline h-3.5 w-3.5 mr-2 -mt-0.5" />
+                              <span className="font-bold underline decoration-purple-200 mr-1 italic">Benefit:</span>
+                              {mealPlan.evening_snack.benefit}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </GlassCard>
+
+                    {/* Dinner */}
+                    <div className="md:col-span-2">
+                      <GlassCard className="p-6 border-l-4 border-l-red-500 bg-gradient-to-br from-red-50/30 to-white hover:shadow-xl transition-all duration-300">
+                        <div className="flex items-center mb-4">
+                          <Utensils className="h-6 w-6 text-red-500 mr-3" />
+                          <h3 className="text-xl font-bold text-gray-800">Dinner</h3>
+                        </div>
+                        <div className="mb-4">
+                          <h4 className="text-lg font-bold text-red-700 mb-2 leading-tight">{mealPlan.dinner.title || 'Balanced Indian Dinner'}</h4>
+                          
+                          {/* Nutrient Tags */}
+                          {mealPlan.dinner.nutrient_tags && mealPlan.dinner.nutrient_tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mb-3">
+                              {mealPlan.dinner.nutrient_tags.map((tag, idx) => (
+                                <span key={idx} className="px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold rounded-full border border-red-200">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                          <div className="bg-white/40 rounded-lg p-3 border border-red-100/30 mb-4">
+                            <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 mb-2">Meal Components</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1.5">
+                              {Object.entries(mealPlan.dinner.components || {}).map(([key, val], i) => (
+                                <li key={i} className="text-sm text-gray-700 flex justify-between list-none">
+                                  <span className="font-semibold text-gray-500">{key}:</span>
+                                  <span>{val}</span>
+                                </li>
+                              ))}
+                            </div>
+                          </div>
+
+                          {mealPlan.dinner.benefit && (
+                            <div className="bg-red-50/50 p-4 rounded-xl border border-red-100/50 shadow-sm">
+                              <p className="text-[11px] leading-relaxed text-red-800 font-medium">
+                                <Lightbulb className="inline h-3.5 w-3.5 mr-2 -mt-0.5" />
+                                <span className="font-bold underline decoration-red-200 mr-1 italic">Clinical Benefit:</span>
+                                {mealPlan.dinner.benefit}
                               </p>
                             </div>
                           )}
                         </div>
-                      );
-                    })}
+                      </GlassCard>
+                    </div>
                   </div>
                 </GlassCard>
 

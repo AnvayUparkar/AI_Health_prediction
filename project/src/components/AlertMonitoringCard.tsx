@@ -28,6 +28,10 @@ interface Alert {
   nearest_hospital?: string;
   distance_km?: number;
   notified_doctors?: (string | number)[]; // IDs of staff to notify
+  acknowledged_by_id?: number | string;
+  acknowledged_by_name?: string;
+  resolved_by_id?: number | string;
+  resolved_by_name?: string;
 }
 
 // ── Normalise incoming alert so missing fields never crash the UI ─────────────
@@ -66,6 +70,10 @@ const normaliseAlert = (a: Partial<Alert> & { notified_doctor_ids?: string | (st
     nearest_hospital: a.nearest_hospital,
     distance_km: a.distance_km,
     notified_doctors: notifiedDoctors,
+    acknowledged_by_id: a.acknowledged_by_id,
+    acknowledged_by_name: a.acknowledged_by_name,
+    resolved_by_id: a.resolved_by_id,
+    resolved_by_name: a.resolved_by_name,
   };
 };
 
@@ -216,7 +224,15 @@ const AlertMonitoringCard: React.FC = () => {
     });
 
     // Real-time sync: when any staff resolves/acknowledges an alert
-    socket.on('alert_updated', (data: { id: string | number; acknowledged?: boolean; resolved?: boolean }) => {
+    socket.on('alert_updated', (data: { 
+      id: string | number; 
+      acknowledged?: boolean; 
+      resolved?: boolean;
+      acknowledged_by_id?: number | string;
+      acknowledged_by_name?: string;
+      resolved_by_id?: number | string;
+      resolved_by_name?: string;
+    }) => {
       console.log('[AlertMonitoringCard] alert_updated received:', data);
       setAlerts(prev => {
         if (data.resolved) {
@@ -224,9 +240,16 @@ const AlertMonitoringCard: React.FC = () => {
           return prev.filter(a => String(a.id) !== String(data.id));
         }
         if (data.acknowledged) {
-          // Mark as acknowledged
+          // Mark as acknowledged and update person details
           return prev.map(a =>
-            String(a.id) === String(data.id) ? { ...a, acknowledged: true } : a
+            String(a.id) === String(data.id) 
+              ? { 
+                  ...a, 
+                  acknowledged: true, 
+                  acknowledged_by_id: data.acknowledged_by_id, 
+                  acknowledged_by_name: data.acknowledged_by_name 
+                } 
+              : a
           );
         }
         return prev;
@@ -247,8 +270,9 @@ const AlertMonitoringCard: React.FC = () => {
 
   const handleAcknowledge = async (id: number | string) => {
     try {
-      await updateAlertStatus(id, true);
-      setAlerts(prev => prev.map(a => a.id === id ? { ...a, acknowledged: true } : a));
+      const resp = await updateAlertStatus(id, true);
+      const updatedAlert = normaliseAlert(resp);
+      setAlerts(prev => prev.map(a => a.id === id ? updatedAlert : a));
     } catch (err) {
       console.error('Failed to acknowledge alert', err);
     }
@@ -485,8 +509,10 @@ const AlertMonitoringCard: React.FC = () => {
                             {isGesture ? 'GESTURE SOS' : alert.status}
                           </span>
                           {alert.acknowledged && (
-                            <span className="text-[9px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-bold">
-                              ACK'd
+                            <span className="text-[9px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                              ACK'd {alert.acknowledged_by_name && (
+                                <span className="opacity-70">by {alert.acknowledged_by_name}</span>
+                              )}
                             </span>
                           )}
                         </div>

@@ -84,6 +84,7 @@ def get_alerts():
         return jsonify({"error": str(e)}), 500
 
 @alert_bp.route('/alerts/<alert_id>', methods=['PATCH', 'OPTIONS'])
+@jwt_required(optional=True)
 def update_alert(alert_id):
     """Update alert acknowledged or resolved status."""
     if request.method == 'OPTIONS':
@@ -94,9 +95,25 @@ def update_alert(alert_id):
         if not data:
             return jsonify({"error": "Missing JSON data"}), 400
             
+        user_id = get_jwt_identity()
+        user_name = "Unknown Staff"
+        if user_id:
+            user = DBService.get_user_by_id(user_id)
+            if user:
+                user_name = user.get('name') if isinstance(user, dict) else user.name
+
         updates = {}
-        if 'acknowledged' in data: updates['acknowledged'] = bool(data['acknowledged'])
-        if 'resolved' in data: updates['resolved'] = bool(data['resolved'])
+        if 'acknowledged' in data: 
+            updates['acknowledged'] = bool(data['acknowledged'])
+            if updates['acknowledged']:
+                updates['acknowledged_by_id'] = user_id
+                updates['acknowledged_by_name'] = user_name
+                
+        if 'resolved' in data: 
+            updates['resolved'] = bool(data['resolved'])
+            if updates['resolved']:
+                updates['resolved_by_id'] = user_id
+                updates['resolved_by_name'] = user_name
         
         if not updates:
             return jsonify({"error": "No valid fields to update"}), 400
