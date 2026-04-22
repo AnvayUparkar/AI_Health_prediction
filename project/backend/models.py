@@ -130,6 +130,13 @@ class Appointment(db.Model):
     ward_number = db.Column(db.String(50), nullable=True)
     ward_assigned_at = db.Column(db.DateTime, nullable=True)
     hospital_name = db.Column(db.String(120), nullable=True)
+    
+    # Online Consultation Fields
+    mode = db.Column(db.String(20), default="offline")
+    meeting_link = db.Column(db.String(512), nullable=True)
+    meeting_id = db.Column(db.String(256), nullable=True)
+    meeting_password = db.Column(db.String(120), nullable=True)
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

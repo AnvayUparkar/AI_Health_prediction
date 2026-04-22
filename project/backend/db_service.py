@@ -729,7 +729,7 @@ class DBService:
              requested_time=data.get('appointment_time')
         )
         # Assuming legacy generic payload attributes exist dynamically or are safely skipped
-        for key in ['name', 'email', 'phone', 'mode', 'appointment_date', 'appointment_time', 'reason']:
+        for key in ['name', 'email', 'phone', 'mode', 'appointment_date', 'appointment_time', 'reason', 'meeting_link', 'meeting_id', 'meeting_password']:
             if hasattr(appointment, key) or key in data:
                 try: setattr(appointment, key, data[key])
                 except: pass
@@ -751,6 +751,9 @@ class DBService:
                 "status": data.get('status', 'PENDING'),
                 "patient_id": data.get('patient_id'),
                 "doctor_id": data.get('doctor_id'),
+                "meeting_link": data.get('meeting_link'),
+                "meeting_id": data.get('meeting_id'),
+                "meeting_password": data.get('meeting_password'),
                 "created_at": datetime.utcnow()
             }
             DBService._async_mongo_write('appointments', 'insert', mongo_data)

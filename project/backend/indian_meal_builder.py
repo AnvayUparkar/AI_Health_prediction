@@ -209,13 +209,20 @@ class IndianMealBuilder:
         return list(set(tags))
 
     def _find_best_match(self, foods: List[str], keywords: List[str], exclude: Optional[set] = None) -> Optional[str]:
-        """Finds the first food that matches any of the keywords and isn't excluded."""
+        """Finds matches from the USDA list and picks one dynamically using the variation engine."""
         if exclude is None: exclude = set()
+        valid_matches = []
         for f in foods:
             for k in keywords:
                 if k in f and f not in exclude:
-                    return f
-        return None
+                    valid_matches.append(f)
+                    break # Move to next food
+                    
+        if not valid_matches:
+            return None
+            
+        from backend.services.variation_engine import variation_engine
+        return variation_engine.select_meal_option(valid_matches, k=3)
 
 # Singleton
 indian_meal_builder = IndianMealBuilder()

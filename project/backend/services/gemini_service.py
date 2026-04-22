@@ -7,6 +7,7 @@ based on patient vitals trends and monitoring data.
 import os
 import json
 import requests
+from typing import Optional, Dict, List
 from functools import lru_cache
 
 # Ensure env vars loaded
@@ -438,3 +439,39 @@ Here is the current patient data to analyze:
     print("[GEMINI] All models exhausted for Clinical Consult. Using Fallback Engine.")
     from backend.fallback_monitoring_engine import generate_fallback_monitoring_text
     return generate_fallback_monitoring_text(patient_data, trends, alerts)
+
+
+def get_gemini_response(prompt: str) -> Optional[str]:
+    """
+    Generic helper to get a text response from Gemini.
+    Used for inference, reasoning, and non-structured tasks.
+    """
+    api_key = os.environ.get('GEMINI_API_KEY', '')
+    if not api_key:
+        return None
+
+    for model_name in _MODEL_FALLBACK_CHAIN:
+        url = f"{GEMINI_BASE_URL}/{model_name}:generateContent?key={api_key}"
+        try:
+            response = requests.post(
+                url,
+                headers={"Content-Type": "application/json"},
+                json={
+                    "contents": [{"parts": [{"text": prompt}]}],
+                    "generationConfig": {
+                        "temperature": 0.3,
+                        "maxOutputTokens": 500,
+                    }
+                },
+                timeout=15,
+            )
+            if response.status_code != 200:
+                continue
+
+            data = response.json()
+            parts = data['candidates'][0]['content'].get('parts', [])
+            return ''.join(p.get('text', '') for p in parts).strip()
+        except Exception:
+            continue
+    return None
+

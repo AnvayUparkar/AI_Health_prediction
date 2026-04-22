@@ -10,6 +10,8 @@ from backend.report_parser import detect_high_level_conditions, detect_condition
 from backend.usda_manager import usda_manager
 from backend.indian_meal_builder import indian_meal_builder
 from backend.clinical_validator import clinical_validator
+from backend.services.variation_engine import variation_engine
+from backend.nutrient_pipeline import get_enriched_food_profile, filter_unsafe_foods as pipeline_filter
 
 logger = logging.getLogger(__name__)
 
@@ -379,7 +381,12 @@ def distribute_meals(top_foods: List[str], target_nutrients: List[str]) -> Dict[
 def fallback_diet_engine(input_data: Dict[str, Any], raw_text: Optional[str] = None, context: Dict[str, Any] = None) -> Dict[str, Any]:
     """
     Clinically accurate Expert Engine with dynamic meal planning.
+    Includes controlled variability for dynamic outputs.
     """
+    # 0. Set Daily Seed for controlled variability
+    patient_id = input_data.get("patient_id", "generic_patient")
+    variation_engine.set_daily_seed(patient_id)
+
     # 1. Detect & 2. Validate
     initial_conditions = detect_high_level_conditions(input_data)
     if raw_text:
@@ -443,8 +450,10 @@ def fallback_diet_engine(input_data: Dict[str, Any], raw_text: Optional[str] = N
 
     for food in top_foods[:12]: 
         details = expert_kb.get_food_details(food)
-        biochem_data = usda_manager.get_food_nutrients(food)
-        biochem = biochem_data.get("nutrients", {}) if biochem_data else {}
+        
+        # [PIPELINE] Decompose dish -> fetch USDA per ingredient -> aggregate
+        enriched = get_enriched_food_profile(food)
+        biochem = enriched.get("nutrients", {}).get("nutrients", {})
         
         benefit = details.get("benefits", "")
         # Link to lab markers if possible
@@ -454,19 +463,18 @@ def fallback_diet_engine(input_data: Dict[str, Any], raw_text: Optional[str] = N
                 food_nutrients = details.get("tags", []) + list(biochem.keys())
                 target_uts = expert_kb.get_nutrients_for_conditions([cond])
                 if any(tn in food_nutrients for tn in target_uts):
-                    benefit = f"{details.get('benefits', '')} — Supporting your marker ({val})."
+                    benefit = f"{details.get('benefits', '')} -- Supporting your marker ({val})."
                     break
 
         if not benefit and biochem:
             best_nut = max(biochem.items(), key=lambda x: x[1]) if biochem else (None, 0)
             if best_nut[0]:
-                unit = biochem_data.get("units", {}).get(best_nut[0], "units")
-                benefit = f"Biochemical potency: {best_nut[1]} {unit} of {best_nut[0].replace('_', ' ').title()} per 100g."
+                benefit = f"Biochemical potency: {best_nut[1]} of {best_nut[0].replace('_', ' ').title()} per 100g."
                 
         if not benefit:
             benefit = "Clinical-grade substrate for metabolic balance."
             
-        recommended_with_reason.append(f"{food.title()} — {benefit}")
+        recommended_with_reason.append(f"{food.title()} -- {benefit}")
 
     # Conflict Resolution (Pre-flight check)
     recommended_with_reason = resolve_diet_conflicts(recommended_with_reason, avoid_map)
@@ -553,7 +561,9 @@ def fallback_diet_engine(input_data: Dict[str, Any], raw_text: Optional[str] = N
                 used_items=used_items,
                 context=context
             )
-            composed["benefit"] = synthesize_clinical_explanation(plan[slot], conditions)
+            composed["benefit"] = variation_engine.generate_explanation(
+                synthesize_clinical_explanation(plan[slot], conditions)
+            )
             meal_plan[slot] = composed
 
     # [Step 7] Final Clinical Validation & Auto-Correction Engine

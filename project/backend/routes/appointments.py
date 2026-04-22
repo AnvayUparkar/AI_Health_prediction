@@ -1,6 +1,8 @@
 from flask import Blueprint, request, jsonify
 from backend.db_service import DBService
 from datetime import datetime
+from backend.services.zoom_service import ZoomService
+from backend.services.email_service import EmailService
 
 appointments_bp = Blueprint('appointments', __name__)
 
@@ -40,15 +42,27 @@ def create_appointment():
             'doctor_id': data.get('doctor_id')
         }
         
-        appointment = DBService.create_appointment(appointment_data)
+        # 1. Zoom Integration
+        if data['mode'] == 'online':
+            zoom_details = ZoomService.create_zoom_meeting(data['name'], f"{str(appointment_date)}T{data['time']}")
+            if zoom_details:
+                appointment_data.update(zoom_details)
+            else:
+                appointment_data['status'] = 'pending_link'
+                print("[Appointments] Notice: Zoom API failed. Marked missing link.")
         
-        # Determine ID to return (SQL int or Mongo string)
+        # 2. Database Storage
+        appointment = DBService.create_appointment(appointment_data)
         apt_id = appointment['id'] if isinstance(appointment, dict) else appointment.id
         
+        # 3. Brevo Email Notification
+        if data['mode'] == 'online' and appointment_data.get('meeting_link'):
+            EmailService.send_appointment_email(data['email'], appointment_data['meeting_link'])
+
         return jsonify({
             'message': 'Appointment booked successfully',
             'appointment_id': apt_id,
-            'status': 'pending'
+            'status': appointment_data['status']
         }), 201
         
     except Exception as e:

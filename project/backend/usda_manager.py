@@ -52,19 +52,22 @@ class USDAManager:
         
         # 0. Check API Cache (Crucial to avoid 120s timeout)
         if food_name_clean in self.api_cache:
+            print(f"[SMART CACHE] Loaded data for '{food_name}' instantly.")
             return self.api_cache[food_name_clean]
 
         # 1. Live API Path (Shows logs in terminal)
         try:
-            print(f"LIVE_API_HIT | Requesting: {food_name}")
+            print(f"[LIVE USDA API] Fetching real-time data for: '{food_name}'...")
             data = usda_loader.fetch_from_usda_api(food_name)
             if data:
+                print(f"[LIVE USDA API] Successfully fetched & cached '{food_name}'.")
                 self.save_to_local_cache(food_name, data)
                 return data
         except Exception as e:
             logger.error(f"USDA_MANAGER | Live API failed: {e}")
 
         # 2. Fallback to Local
+        print(f"[LOCAL FALLBACK] USDA API failed or offline. Using local database for '{food_name}'.")
         return self.get_food_nutrients_local(food_name)
 
     def get_food_nutrients_local(self, food_name: str) -> dict:
