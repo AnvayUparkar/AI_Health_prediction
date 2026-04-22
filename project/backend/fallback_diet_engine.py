@@ -180,98 +180,154 @@ def resolve_diet_conflicts(recommended: List[str], avoid_map: Dict[str, str]) ->
 CONDITION_MAP = {
     "iron_deficiency_anemia": {
         "technical_name": "Iron-deficiency Anaemia",
-        "explanation": "Low hemoglobin and MCV suggest impaired erythropoiesis due to iron deficiency.",
+        "explanation": {
+            "Low": "Low hemoglobin and MCV suggest impaired erythropoiesis due to iron deficiency.",
+            "High": "Elevated hemoglobin levels; requires clinical correlation to rule out polycythemia.",
+            "default": "Hemoglobin markers deviate from clinical reference ranges."
+        },
         "risk": "reduced oxygen delivery and significant fatigue",
         "solution": "Focus on high bioavailability iron and Vitamin C; Avoid tannins with meals.",
         "markers": ["Hemoglobin", "MCV"]
     },
     "prediabetes": {
-        "technical_name": "Prediabetes / Insulin Sensitivity Indicators",
-        "explanation": "Elevated HbA1c or Fasting Glucose suggests systemic insulin resistance.",
+        "technical_name": "Glycemic Dysregulation Indicators",
+        "explanation": {
+            "High": "Elevated HbA1c or Fasting Glucose suggests systemic insulin resistance or prediabetes.",
+            "Low": "Low glucose levels (hypoglycemia) may indicate metabolic instability or medication impact.",
+            "default": "Glucose metabolism markers deviate from clinical reference ranges."
+        },
         "risk": "metabolic syndrome and vascular inflammation",
         "solution": "Prioritize complex grains and chromium; strictly limit glycemic spikes.",
         "markers": ["HbA1c", "Fasting Blood Sugar", "Glucose"]
     },
     "hypertriglyceridemia": {
         "technical_name": "Hypertriglyceridemia",
-        "explanation": "Elevated triglycerides increase the risk of pancreatitis and heart disease.",
+        "explanation": {
+            "High": "Elevated triglycerides increase the risk of pancreatitis and heart disease.",
+            "Low": "Very low triglycerides; may require evaluation for malabsorption or malnutrition.",
+            "default": "Triglyceride levels deviate from optimal clinical ranges."
+        },
         "risk": "cardiovascular distress and metabolic syndrome",
         "solution": "Minimize simple sugars and alcohol; focus on Omega-3 fatty acids.",
         "markers": ["Triglycerides"]
     },
     "low_hdl": {
-        "technical_name": "Low HDL Cholesterol",
-        "explanation": "Low levels of 'good' cholesterol reduce arterial clearing efficiency.",
+        "technical_name": "Dyslipidemia (Low HDL)",
+        "explanation": {
+            "Low": "Low levels of 'good' cholesterol reduce arterial clearing efficiency.",
+            "High": "Optimally high HDL levels support cardiovascular protection.",
+            "default": "HDL cholesterol levels deviate from optimal clearing efficiency range."
+        },
         "risk": "increased arterial plaque risk",
         "solution": "Increase physical activity and monounsaturated healthy fats.",
         "markers": ["HDL Cholesterol"]
     },
     "hyperlipidemia": {
-        "technical_name": "Hyperlipidemia",
-        "explanation": "High total/LDL cholesterol levels correlate with atherosclerotic risk.",
+        "technical_name": "Hyperlipidemia / Lipid Stress",
+        "explanation": {
+            "High": "High total/LDL cholesterol levels correlate with atherosclerotic risk.",
+            "Low": "Low cholesterol levels; may indicate dietary insufficiency or hyperthyroidism.",
+            "default": "Lipid profile markers deviate from cardiovascular safety ranges."
+        },
         "risk": "cardiovascular disease and plaque accumulation",
         "solution": "Focus on soluble fiber and plant sterols; limit saturated fats.",
         "markers": ["Total Cholesterol", "LDL Cholesterol"]
     },
     "vitamin_b12_deficiency": {
         "technical_name": "Vitamin B12 Deficiency",
-        "explanation": "Deficiency in cobalamin affects neural integrity and RBC maturation.",
+        "explanation": {
+            "Low": "Deficiency in cobalamin affects neural integrity and RBC maturation.",
+            "High": "Elevated B12; often due to supplementation or hepatic release.",
+            "default": "Vitamin B12 levels deviate from neural stability ranges."
+        },
         "risk": "neurological symptoms and megaloblastic fatigue",
         "solution": "Ensure dairy or fortified source intake; optimize gut health.",
         "markers": ["Vitamin B12"]
     },
     "hypocalcemia": {
-        "technical_name": "Hypocalcaemia",
-        "explanation": "Insufficient serum calcium impacts musculoskeletal signaling.",
+        "technical_name": "Calcium Imbalance",
+        "explanation": {
+            "Low": "Insufficient serum calcium impacts musculoskeletal signaling.",
+            "High": "Hypercalcemia; may indicate hyperparathyroidism or excessive intake.",
+            "default": "Serum calcium levels deviate from musculoskeletal signaling ranges."
+        },
         "risk": "bone density loss and muscular cramps",
         "solution": "Calcium-dense foods with Vitamin D support.",
         "markers": ["Calcium"]
     },
     "vitamin_d_deficiency": {
-        "technical_name": "Hypovitaminosis D",
-        "explanation": "Low Vitamin D restricts intestinal mineral absorption.",
+        "technical_name": "Vitamin D Imbalance",
+        "explanation": {
+            "Low": "Low Vitamin D restricts intestinal mineral absorption.",
+            "High": "Elevated Vitamin D; usually due to excessive supplementation.",
+            "default": "Vitamin D levels deviate from optimal mineral absorption ranges."
+        },
         "risk": "impaired immunity and skeletal weakness",
         "solution": "Precursor sources (Sunlight/Mushrooms) and fortified intake.",
         "markers": ["Vitamin D"]
     },
     "high_uric_acid": {
         "technical_name": "Hyperuricaemia",
-        "explanation": "Elevated uric acid levels may lead to monosodium urate crystal deposition.",
+        "explanation": {
+            "High": "Elevated uric acid levels may lead to monosodium urate crystal deposition.",
+            "Low": "Low uric acid; usually clinically insignificant but can indicate molybdenum deficiency.",
+            "default": "Uric acid levels deviate from solubility ranges."
+        },
         "risk": "joint inflammation and gout development",
         "solution": "Systemic hydration (3L+) and purine restriction.",
         "markers": ["Uric Acid"]
     },
     "protein_deficiency": {
-        "technical_name": "Hypoproteinaemia Indicators",
-        "explanation": "Low albumin or total protein suggests net negative nitrogen balance.",
+        "technical_name": "Protein Profile Imbalance",
+        "explanation": {
+            "Low": "Low albumin or total protein suggests net negative nitrogen balance.",
+            "High": "Elevated protein/albumin often suggests dehydration or chronic inflammation.",
+            "default": "Serum protein markers deviate from metabolic stability ranges."
+        },
         "risk": "muscle atrophy and delayed structural repair",
         "solution": "High-quality lean protein titration.",
         "markers": ["Total Protein", "Albumin"]
     },
     "liver_stress": {
         "technical_name": "Hepatic (Liver) Stress",
-        "explanation": "Elevated transaminase or GGT levels indicate hepatocyte strain or biliary congestion.",
+        "explanation": {
+            "High": "Elevated transaminase or GGT levels indicate hepatocyte strain or biliary congestion.",
+            "Low": "Low liver enzymes; generally normal but can rarely indicate vitamin B6 deficiency.",
+            "default": "Hepatic enzyme markers deviate from optimal detoxification ranges."
+        },
         "risk": "impaired detoxification and metabolic toxicity",
         "solution": "Prioritize antioxidant-rich (Curcumin/Fiber) protocol; strictly zero hepatotoxins.",
         "markers": ["SGPT", "SGOT", "GGT", "Bilirubin Total", "Alkaline Phosphatase"]
     },
     "kidney_strain": {
-        "technical_name": "Renal (Kidney) Strain",
-        "explanation": "Increased creatinine or BUN levels suggest reduced glomerular filtering efficiency.",
+        "technical_name": "Renal (Kidney) Markers",
+        "explanation": {
+            "High": "Increased creatinine or BUN levels suggest reduced glomerular filtering efficiency.",
+            "Low": "Low creatinine levels often reflect low muscle mass or high hydration status.",
+            "default": "Renal filtration markers deviate from optimal glomerular ranges."
+        },
         "risk": "fluid imbalance and systemic waste accumulation",
         "solution": "Regulated protein (plant-preferred) and strictly low sodium intake.",
         "markers": ["Creatinine", "BUN", "Urea"]
     },
     "thyroid_issues": {
         "technical_name": "Thyroid Metabolic Imbalance",
-        "explanation": "Abnormal TSH suggests disruption in the systemic metabolic regulation rate.",
+        "explanation": {
+            "High": "Elevated TSH may suggest hypothyroidism (underactive thyroid).",
+            "Low": "Low TSH may suggest hyperthyroidism (overactive thyroid).",
+            "default": "Abnormal TSH suggests disruption in systemic metabolic regulation."
+        },
         "risk": "metabolic instability and chronic fatigue",
         "solution": "Optimized Selenium and Zinc; Iodine balance (if indicated).",
         "markers": ["TSH", "T3", "T4"]
     },
     "electrolyte_imbalance": {
         "technical_name": "Electrolyte Dysregulation",
-        "explanation": "Abnormal Sodium, Potassium, or Chloride levels affect cellular signaling.",
+        "explanation": {
+            "High": "Elevated electrolyte levels (Hypernatremia/Hyperkalemia) impact cardiac conduction.",
+            "Low": "Low electrolyte levels (Hyponatremia/Hypokalemia) affect cellular signaling.",
+            "default": "Abnormal electrolyte levels affect systemic cellular signaling."
+        },
         "risk": "cardiac conduction issues and fluid volume stress",
         "solution": "Mineral-specific titration (e.g., Potassium sources for High Sodium).",
         "markers": ["Sodium", "Potassium", "Chloride"]
@@ -297,7 +353,7 @@ def validate_and_deduplicate(conditions: List[str], input_data: Dict[str, Any]) 
                     # (Fallback monitoring engine now adds status, but this adds robustness)
                     marker_info = input_data[m]
                     status = marker_info.get("status")
-                    if status in ("Low", "High", "Borderline", "Critical") or status is None:
+                    if status in ("Low", "High", "Borderline", "Critical", "Abnormal") or status is None:
                         has_evidence = True
                         break
             if has_evidence:
@@ -403,7 +459,7 @@ def fallback_diet_engine(input_data: Dict[str, Any], raw_text: Optional[str] = N
             "primary_condition": primary,
             "secondary_conditions": conditions[1:],
             "goals": [CONDITION_MAP[c]["technical_name"] for c in conditions],
-            "avoid": list(avoid_map.keys()) if 'avoid_map' in locals() else []
+            "avoid": []
         }
     
     logger.info("ENGINE | Clinical Context Initialized: Primary=%s", context.get("primary_condition", "General"))
@@ -411,7 +467,6 @@ def fallback_diet_engine(input_data: Dict[str, Any], raw_text: Optional[str] = N
     # 3. Hierarchical Recommendation Logic (Expert + USDA)
     target_nutrients = expert_kb.get_nutrients_for_conditions(conditions)
     avoid_map = expert_kb.get_avoid_data(conditions)
-    avoid_set = set(avoid_map.keys())
     
     # Merge Expert KB foods with USDA high-density sources
     candidate_foods = set(expert_kb.get_foods_for_nutrients(target_nutrients))
@@ -569,23 +624,32 @@ def fallback_diet_engine(input_data: Dict[str, Any], raw_text: Optional[str] = N
     # [Step 7] Final Clinical Validation & Auto-Correction Engine
     meal_plan = clinical_validator.validate_and_fix(meal_plan, conditions)
 
-    avoid_with_reason = []
-    for food, reason in avoid_map.items():
-        avoid_with_reason.append(f"{food.title()} — {reason}")
-    avoid_with_reason = list(set(avoid_with_reason))[:10] # limit 10
-
-    # descriptive issues
+    # 6. Final descriptive issues with dynamic explanations
     descriptive_issues = []
     for cond in conditions:
         info = CONDITION_MAP[cond]
         lab_markers = []
+        dominant_status = "Normal"
+        
         for m in info["markers"]:
             if m in input_data:
-                val = input_data[m].get("value", "?")
-                unit = input_data[m].get("unit", "")
-                rng = input_data[m].get("ref_range", "")
+                marker_data = input_data[m]
+                val = marker_data.get("value", "?")
+                unit = marker_data.get("unit", "")
+                rng = marker_data.get("ref_range", "")
+                status = marker_data.get("status", "Normal")
+                
                 lab_markers.append(f"{m} {val}{unit} (Range: {rng})")
-        des_str = f"{info['technical_name']} [Validated via: {', '.join(lab_markers)}] — {info['explanation']}"
+                
+                # Pick the most "abnormal" status as dominant for the explanation
+                if status in ("Critical", "High", "Low"):
+                    dominant_status = status
+        
+        # Select explanation based on dominant status
+        explanation_options = info.get("explanation", {})
+        explanation = explanation_options.get(dominant_status) or explanation_options.get("default", "Marker levels deviate from reference range.")
+        
+        des_str = f"{info['technical_name']} [Validated via: {', '.join(lab_markers)}] — {explanation}"
         descriptive_issues.append(des_str)
 
     detailed_analysis = [CONDITION_MAP[c]["solution"] for c in conditions]
