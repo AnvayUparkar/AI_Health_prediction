@@ -95,6 +95,15 @@ interface AnalysisResult {
   diet_source: 'gemini' | 'rules_fallback' | 'error';
   diet_warning?: string;
   mode?: 'file' | 'manual';
+  meta?: {
+    confidence: number;
+    safety: {
+      status: 'safe' | 'caution' | 'warning';
+      level: string;
+      message: string;
+      action: string;
+    };
+  };
 }
 
 // ---------- Helper components ----------
@@ -281,10 +290,19 @@ const ReportAnalyzer = () => {
 
   // ---- RESULTS VIEW ----
   if (result) {
-    const { all_parameters, important_parameters, diet_recommendation, diet_source, diet_warning } = result;
+    const { all_parameters, important_parameters, diet_recommendation, diet_source, diet_warning, meta } = result;
+    const confidence = meta?.confidence ?? 0.5;
+    const safety = meta?.safety;
+    
     const paramCount = Object.keys(all_parameters).length;
     const importantCount = Object.keys(important_parameters).length;
     const isGemini = diet_source === 'gemini';
+
+    const getSafetyColor = () => {
+      if (safety?.status === 'safe') return 'bg-green-500 shadow-green-200';
+      if (safety?.status === 'caution') return 'bg-amber-500 shadow-amber-200';
+      return 'bg-rose-500 shadow-rose-200';
+    };
 
     // Normalize fields so we handle both Gemini and rule-based fallback
     const dr = diet_recommendation;
@@ -322,7 +340,7 @@ const ReportAnalyzer = () => {
                 <strong className="text-amber-600">{importantCount}</strong> require attention
               </p>
               {/* Diet source badge */}
-              <div className="mt-3 flex justify-center">
+              <div className="mt-3 flex justify-center gap-3">
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${
                   isGemini
                     ? 'bg-violet-50 text-violet-700 border-violet-200'
@@ -330,11 +348,89 @@ const ReportAnalyzer = () => {
                 }`}>
                   {isGemini ? '✦ AI-Powered Clinical Co-Pilot' : '⚙ Data-Grounded Resilience Engine'}
                 </span>
+                
+                {safety && (
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm transition-all ${getSafetyColor()}`}>
+                    {safety.level.replace('_', ' ').toUpperCase()}
+                  </span>
+                )}
               </div>
+
+              {/* Confidence Visualization */}
+              <div className="mt-6 max-w-xs mx-auto">
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Plan Reliability</span>
+                  <span className="text-sm font-black text-gray-900">{(confidence * 100).toFixed(0)}%</span>
+                </div>
+                <div className="w-full bg-gray-100 rounded-full h-2.5 shadow-inner overflow-hidden border border-gray-200">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${confidence * 100}%` }}
+                    transition={{ duration: 1, ease: "easeOut" }}
+                    className={`h-full rounded-full ${
+                      confidence >= 0.75 ? 'bg-gradient-to-r from-emerald-500 to-green-400' :
+                      confidence >= 0.6 ? 'bg-gradient-to-r from-amber-500 to-yellow-400' :
+                      'bg-gradient-to-r from-rose-500 to-pink-400'
+                    }`}
+                  />
+                </div>
+              </div>
+
               {diet_warning && (
-                <p className="mt-2 text-xs text-amber-600">{diet_warning}</p>
+                <p className="mt-4 text-xs text-amber-600">{diet_warning}</p>
               )}
             </div>
+
+            {/* ---- Safety Alerts & Actions ---- */}
+            {safety && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                {/* Status Card */}
+                <GlassCard className={`p-5 border-l-4 ${
+                  safety.status === 'safe' ? 'border-l-green-500 bg-green-50/30' :
+                  safety.status === 'caution' ? 'border-l-amber-500 bg-amber-50/30' :
+                  'border-l-rose-500 bg-rose-50/30'
+                }`}>
+                  <div className="flex items-center mb-2">
+                    {safety.status === 'safe' ? <CheckCircle className="h-5 w-5 text-green-500 mr-2" /> :
+                     safety.status === 'caution' ? <AlertTriangle className="h-5 w-5 text-amber-500 mr-2" /> :
+                     <ShieldAlert className="h-5 w-5 text-rose-500 mr-2" />}
+                    <h3 className="font-bold text-gray-800 uppercase text-xs tracking-tight">Clinical Safety Status</h3>
+                  </div>
+                  <p className="text-sm text-gray-700 font-medium">{safety.message}</p>
+                </GlassCard>
+
+                {/* Action Card */}
+                <GlassCard className="p-5 border-l-4 border-l-blue-500 bg-blue-50/30">
+                  <div className="flex items-center mb-2">
+                    <Lightbulb className="h-5 w-5 text-blue-500 mr-2" />
+                    <h3 className="font-bold text-gray-800 uppercase text-xs tracking-tight">Recommended Action</h3>
+                  </div>
+                  <p className="text-sm text-blue-900 font-bold leading-tight">{safety.action}</p>
+                </GlassCard>
+              </div>
+            )}
+
+            {/* Low Confidence Critical Banner */}
+            {safety?.status === 'warning' && (
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="mb-8 p-4 bg-rose-600 text-white rounded-2xl shadow-xl flex items-center justify-between border-2 border-rose-400"
+              >
+                <div className="flex items-center">
+                  <div className="bg-white/20 p-2 rounded-xl mr-4">
+                    <ShieldAlert className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-black uppercase tracking-tighter">Low Confidence Warning</p>
+                    <p className="text-xs opacity-90 font-medium">This estimation requires immediate manual clinical verification.</p>
+                  </div>
+                </div>
+                <div className="hidden sm:block">
+                  <span className="px-3 py-1 bg-white/10 rounded-lg text-[10px] font-bold border border-white/20">AUDIT REQUIRED</span>
+                </div>
+              </motion.div>
+            )}
             
             {/* ---- Conditions Profile ---- */}
             {profile.length > 0 && (

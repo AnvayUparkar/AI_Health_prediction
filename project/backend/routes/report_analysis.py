@@ -30,16 +30,11 @@ from backend.report_diet_engine import (
     generate_report_diet,
     format_diet_plan_text,
 )
-from backend.report_parser import (
-    extract_parameters,
-    detect_important_parameters,
-    get_important_parameters,
-    summarize_report,
-    get_clinical_summary,
-)
-from backend.clinical_context_builder import build_context
-from backend.fallback_diet_engine import fallback_diet_engine
+from backend.report_parser import extract_parameters, detect_important_parameters, get_important_parameters, summarize_report, get_clinical_summary
 from backend.gemini_diet_planner import generate_diet_plan_with_gemini
+from backend.clinical_context_builder import build_context
+from backend.nutrient_pipeline import calculate_diet_plan_confidence
+from backend.fallback_diet_engine import fallback_diet_engine
 
 logger = logging.getLogger(__name__)
 
@@ -219,6 +214,7 @@ def analyze_report():
         "diet_recommendation": diet_recommendation,
         "diet_plan_text":     diet_text,
         "diet_source":        diet_source,   # tells frontend which engine was used
+        "meta":               calculate_diet_plan_confidence(diet_recommendation["meal_plan"]),
     }
     if diet_error:
         response["diet_warning"] = diet_error
@@ -278,6 +274,7 @@ def _handle_manual_analysis(health_data):
         "diet_recommendation": gemini_result["diet_plan"],
         "diet_plan_text": gemini_result["diet_plan_text"],
         "diet_source": gemini_result["source"],
+        "meta": calculate_diet_plan_confidence(gemini_result["diet_plan"]["meal_plan"]),
         "mode": "manual"
     }
     if gemini_result["error"]:

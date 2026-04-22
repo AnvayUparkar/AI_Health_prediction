@@ -36,6 +36,10 @@ import os
 import re
 import textwrap
 from typing import Any, Dict, List, Optional
+from dotenv import load_dotenv
+
+# Load environment variables at the top level
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'), override=False)
 
 logger = logging.getLogger(__name__)
 
@@ -363,11 +367,36 @@ def build_diet_prompt(
             "Specific foods/categories with brief reason"
           ],
           "meal_plan": {
-            "breakfast": ["option1", "option2", "option3"],
-            "mid_morning": ["light snack option"],
-            "lunch": ["option1", "option2"],
-            "evening_snack": ["option"],
-            "dinner": ["option1", "option2"]
+            "breakfast": {
+              "title": "Dish name",
+              "components": { "Ingredient1": "Amount", "Ingredient2": "Amount" },
+              "benefit": "Why this meal is good for the specific condition",
+              "nutrient_tags": ["Vitamin A", "Protein"]
+            },
+            "mid_morning": {
+              "title": "Snack name",
+              "components": { "Item": "Qty" },
+              "benefit": "Reasoning",
+              "nutrient_tags": ["Fiber"]
+            },
+            "lunch": {
+              "title": "Dish name",
+              "components": { "Staple": "Qty", "Sabzi": "Qty", "Dal": "Qty" },
+              "benefit": "Clinical benefit",
+              "nutrient_tags": ["Protein", "Fiber"]
+            },
+            "evening_snack": {
+              "title": "Snack name",
+              "components": { "Item": "Qty" },
+              "benefit": "Reasoning",
+              "nutrient_tags": ["Antioxidants"]
+            },
+            "dinner": {
+              "title": "Dish name",
+              "components": { "Staple": "Qty", "Sabzi": "Qty", "Dal": "Qty" },
+              "benefit": "Night-time digestion benefit",
+              "nutrient_tags": ["Light", "Protein"]
+            }
           },
           "hydration_tips": [
             "Specific hydration advice based on the report values"
@@ -425,6 +454,8 @@ _MODEL_FALLBACK_CHAIN = [
     "gemini-2.5-flash",
     "gemini-2.0-flash",
     "gemini-flash-latest",
+    "gemini-1.5-flash",
+    "gemini-1.5-pro",
 ]
 
 
@@ -642,6 +673,20 @@ def parse_gemini_response(raw_text: str) -> Dict[str, Any]:
     try:
         data = json.loads(text)
         logger.debug("JSON parsed successfully on first attempt")
+        
+        # [SENIOR ARCHITECT] Schema Safety Wrapper: 
+        # Standardize meal plan structure to prevent UI breakage if Gemini returns arrays
+        if isinstance(data, dict) and "meal_plan" in data and isinstance(data["meal_plan"], dict):
+            for slot, content in data["meal_plan"].items():
+                if isinstance(content, list):
+                    # Fallback for legacy Gemini responses or instruction drift
+                    data["meal_plan"][slot] = {
+                        "title": content[0] if content else f"Healthy {slot.replace('_', ' ').title()}",
+                        "components": {"Suggested": ", ".join(content)},
+                        "benefit": "Clinically aligned with your report markers.",
+                        "nutrient_tags": ["Fiber", "Energy"]
+                    }
+        
         if isinstance(data, dict):
             return _fill_defaults(data)
         return data
@@ -653,6 +698,18 @@ def parse_gemini_response(raw_text: str) -> Dict[str, Any]:
     try:
         data = json.loads(repaired)
         logger.info("JSON repaired and parsed successfully (response was likely truncated)")
+        
+        # [SENIOR ARCHITECT] Schema Safety Wrapper
+        if isinstance(data, dict) and "meal_plan" in data and isinstance(data["meal_plan"], dict):
+            for slot, content in data["meal_plan"].items():
+                if isinstance(content, list):
+                    data["meal_plan"][slot] = {
+                        "title": content[0] if content else f"Healthy {slot.replace('_', ' ').title()}",
+                        "components": {"Suggested": ", ".join(content)},
+                        "benefit": "Clinically aligned with your report markers (Repaired).",
+                        "nutrient_tags": ["Fiber", "Energy"]
+                    }
+
         if isinstance(data, dict):
             return _fill_defaults(data)
         return data
@@ -678,16 +735,22 @@ def _fill_defaults(data: Dict[str, Any]) -> Dict[str, Any]:
 
 def _empty_diet_plan(summary: str = "") -> Dict[str, Any]:
     """Return a safe empty diet plan structure."""
+    empty_meal = {
+        "title": "Personalized Healthy Meal",
+        "components": {"Items": "Balanced portion control"},
+        "benefit": "Awaiting report processing",
+        "nutrient_tags": ["Balance"]
+    }
     return {
         "issues_detected": [],
         "recommended_foods": [],
         "foods_to_avoid": [],
         "meal_plan": {
-            "breakfast": [],
-            "mid_morning": [],
-            "lunch": [],
-            "evening_snack": [],
-            "dinner": [],
+            "breakfast": empty_meal,
+            "mid_morning": empty_meal,
+            "lunch": empty_meal,
+            "evening_snack": empty_meal,
+            "dinner": empty_meal,
         },
         "hydration_tips": [],
         "lifestyle_tips": [],

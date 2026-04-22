@@ -1,21 +1,211 @@
 {
-    "paneer butter masala": [
-        "paneer",
-        "tomato",
-        "onion",
-        "cream",
-        "butter",
-        "ginger",
-        "garlic",
-        "spices"
-    ],
-    "keto avocado salad": [
-        "avocado",
-        "lemon",
-        "olive oil",
-        "cucumber",
-        "tomato",
-        "salt",
-        "pepper"
-    ]
+    "paneer butter masala": {
+        "ingredients": [
+            "spices",
+            "paneer",
+            "oil"
+        ],
+        "timestamp": 1776881512.0406144,
+        "confidence": 0.7
+    },
+    "masala egg curry": {
+        "ingredients": [
+            "egg",
+            "oil",
+            "onion"
+        ],
+        "timestamp": 1776881515.9640403,
+        "confidence": 0.7
+    },
+    "vegetable dalia (broken wheat) with peas and carrots": {
+        "ingredients": [
+            "onion",
+            "garlic",
+            "lentils",
+            "spices"
+        ],
+        "timestamp": 1776882364.2290742,
+        "confidence": 0.7
+    },
+    "clear vegetable soup followed by a small portion of moong dal khichdi": {
+        "ingredients": [
+            "onion",
+            "lentils",
+            "ghee",
+            "garlic",
+            "rice",
+            "spices"
+        ],
+        "timestamp": 1776882365.0704591,
+        "confidence": 0.7
+    },
+    "lauki (bottle gourd) or tinda sabzi with one thin missi roti": {
+        "ingredients": [
+            "wheat"
+        ],
+        "timestamp": 1776882367.0029087,
+        "confidence": 0.7
+    },
+    "brown rice with soya chunks curry and a side of cucumber salad": {
+        "ingredients": [
+            "tomato",
+            "rice",
+            "cucumber",
+            "lemon"
+        ],
+        "timestamp": 1776882372.6359336,
+        "confidence": 0.7
+    },
+    "moong dal chilla with finely chopped spinach and ginger": {
+        "ingredients": [
+            "onion",
+            "lentils",
+            "moong dal",
+            "garlic",
+            "spices",
+            "oil"
+        ],
+        "timestamp": 1776882373.4464264,
+        "confidence": 0.7
+    },
+    "boiled chana (chickpea) salad with lemon dressing and saut\u00e9ed greens": {
+        "ingredients": [
+            "tomato",
+            "lemon",
+            "cucumber"
+        ],
+        "timestamp": 1776882375.4545152,
+        "confidence": 0.7
+    },
+    "multigrain roti (jowar/bajra/wheat) with a large bowl of methi-dal": {
+        "ingredients": [
+            "onion",
+            "lentils",
+            "wheat",
+            "garlic",
+            "spices"
+        ],
+        "timestamp": 1776882376.2925887,
+        "confidence": 0.7
+    },
+    "lentil dal": {
+        "ingredients": [
+            "onion",
+            "spices",
+            "lentils",
+            "garlic"
+        ],
+        "timestamp": 1776882469.963173,
+        "confidence": 0.7
+    },
+    "moong dal khichdi": {
+        "ingredients": [
+            "onion",
+            "spices",
+            "lentils",
+            "ghee",
+            "rice",
+            "garlic"
+        ],
+        "timestamp": 1776882472.40668,
+        "confidence": 0.7
+    },
+    "moong dal khichdi with curd": {
+        "ingredients": [
+            "onion",
+            "spices",
+            "lentils",
+            "ghee",
+            "rice",
+            "garlic"
+        ],
+        "timestamp": 1776882475.2696295,
+        "confidence": 0.7
+    },
+    "bajra roti with beetroot salad and lentil dal curry": {
+        "ingredients": [
+            "cucumber",
+            "onion",
+            "spices",
+            "lentils",
+            "wheat",
+            "tomato",
+            "lemon",
+            "garlic"
+        ],
+        "timestamp": 1776882476.1166692,
+        "confidence": 0.7
+    },
+    "ragi roti with moringa soup and yellow moong dal tadka": {
+        "ingredients": [
+            "onion",
+            "spices",
+            "lentils",
+            "wheat",
+            "garlic"
+        ],
+        "timestamp": 1776882476.4278963,
+        "confidence": 0.7
+    },
+    "multigrain roti (jowar/bajra/wheat) with palak dal and a side of stir-fried lauki": {
+        "ingredients": [
+            "spices",
+            "garlic",
+            "wheat",
+            "onion",
+            "lentils"
+        ],
+        "timestamp": 1776882591.492428,
+        "confidence": 0.7
+    },
+    "methi thepla (minimal oil) with a side of boiled chana salad": {
+        "ingredients": [
+            "cucumber",
+            "lemon",
+            "tomato"
+        ],
+        "timestamp": 1776882592.3387728,
+        "confidence": 0.7
+    },
+    "brown rice with masoor dal, steamed broccoli, and a bowl of low-fat curd": {
+        "ingredients": [
+            "spices",
+            "garlic",
+            "onion",
+            "lentils",
+            "rice"
+        ],
+        "timestamp": 1776882595.2518554,
+        "confidence": 0.7
+    },
+    "dal khichdi (moong dal) with added carrots and peas": {
+        "ingredients": [
+            "spices",
+            "garlic",
+            "onion",
+            "lentils",
+            "rice",
+            "ghee"
+        ],
+        "timestamp": 1776882600.3218834,
+        "confidence": 0.7
+    },
+    "grilled tofu or paneer (low-fat) with saut\u00e9ed bell peppers and beans": {
+        "ingredients": [
+            "spices",
+            "oil",
+            "paneer"
+        ],
+        "timestamp": 1776882605.4971545,
+        "confidence": 0.7
+    },
+    "vegetable oats upma": {
+        "ingredients": [
+            "carrot",
+            "onion",
+            "oats"
+        ],
+        "timestamp": 1776883241.9545522,
+        "confidence": 0.7
+    }
 }

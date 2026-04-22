@@ -58,39 +58,108 @@ def aggregate_nutrients(nutrient_list: List[dict]) -> dict:
     }
 
 
+def aggregate_confidence(ingredient_metadata: List[dict], dish_source_meta: dict) -> float:
+    """
+    Calculates overall dish confidence based on:
+    1. The decomposition source (DishMapper confidence)
+    2. The USDA grounding quality (Ingredient-level confidence)
+    """
+    if not ingredient_metadata:
+        return dish_source_meta.get("confidence", 0.5)
+
+    # Calculate mean ingredient confidence
+    avg_ing_confidence = sum(m["confidence"] for m in ingredient_metadata) / len(ingredient_metadata)
+    
+    # Combined score: 60% decomposition quality, 40% ingredient grounding quality
+    overall = (dish_source_meta.get("confidence", 0.5) * 0.6) + (avg_ing_confidence * 0.4)
+    
+    return round(overall, 2)
+
+
+LOW_CONFIDENCE_THRESHOLD = 0.6
+MODERATE_CONFIDENCE_THRESHOLD = 0.75
+
+def classify_confidence(confidence: float) -> str:
+    """Classifies confidence score into discrete clinical reliability levels."""
+    if confidence >= MODERATE_CONFIDENCE_THRESHOLD:
+        return "high_confidence"
+    elif confidence >= LOW_CONFIDENCE_THRESHOLD:
+        return "moderate_confidence"
+    else:
+        return "low_confidence"
+
+def generate_safety_response(confidence: float) -> dict:
+    """
+    Generates an actionable safety response based on confidence level.
+    Provides proactive clinical guidance for the end-user.
+    """
+    level = classify_confidence(confidence)
+
+    if level == "high_confidence":
+        return {
+            "status": "safe",
+            "level": level,
+            "message": "High confidence in dietary estimation.",
+            "action": "Proceed with recommended meal plan."
+        }
+    elif level == "moderate_confidence":
+        return {
+            "status": "caution",
+            "level": level,
+            "message": "Moderate confidence. Minor uncertainty detected.",
+            "action": "Monitor patient response and re-evaluate if needed."
+        }
+    else:
+        return {
+            "status": "warning",
+            "level": level,
+            "message": "Low confidence in estimation.",
+            "action": "Manual review recommended. Verify ingredients or select a known dish."
+        }
+
+
 def get_enriched_food_profile(food_name: str) -> dict:
     """
     Full pipeline for a single food/dish:
       1. Decompose dish into ingredients (Spoonacular/Static/Inferred)
-      2. Fetch USDA nutrients for each ingredient
-      3. Aggregate into a single profile
-    
-    Returns:
-        {
-            "name": "paneer butter masala",
-            "ingredients": ["paneer", "butter", "tomato", ...],
-            "nutrients": { aggregated USDA data },
-            "source": "spoonacular" | "static" | "inferred" | "raw"
-        }
+      2. Fetch USDA nutrients + Metadata for each ingredient
+      3. Aggregate nutrients and Confidence scores
     """
     # Step 1: Decompose
-    ingredients, source = get_ingredients(food_name)
-    print(f"[PIPELINE] {food_name} -> decomposed via {source.upper()} -> {ingredients}")
+    result = get_ingredients(food_name)
+    ingredients, source = result["ingredients"], result["meta"]["source"]
+    dish_meta = result["meta"]
 
-    # Step 2: Fetch USDA data per ingredient
+    # Step 2: Fetch USDA data + Meta per ingredient
     nutrient_data = []
+    ingredient_meta = []
+    
     for ingredient in ingredients:
-        data = usda_manager.get_food_nutrients(ingredient)
+        data, meta = usda_manager.get_food_nutrients_with_meta(ingredient)
         nutrient_data.append(data)
+        ingredient_meta.append(meta)
 
     # Step 3: Aggregate
-    combined = aggregate_nutrients(nutrient_data)
+    combined_nutrients = aggregate_nutrients(nutrient_data)
+    overall_confidence = aggregate_confidence(ingredient_meta, dish_meta)
+    
+    # Step 4: Safety Check (Multi-Level Classification)
+    safety = generate_safety_response(overall_confidence)
+    
+    # Debug Logging for Clinical Traceability
+    print(f"[PIPELINE] {food_name} | Confidence: {overall_confidence} | Level: {safety['level'].upper()}")
+    print(f"[PIPELINE SAFETY] Action: {safety['action']}")
 
     return {
         "name": food_name,
         "ingredients": ingredients,
-        "nutrients": combined,
-        "source": source
+        "nutrients": combined_nutrients,
+        "meta": {
+            "source": source,
+            "confidence": overall_confidence,
+            "safety": safety,
+            "ingredient_count": len(ingredients)
+        }
     }
 
 
@@ -190,3 +259,41 @@ def get_meal_nutrition_summary(meal_components: Dict[str, str]) -> dict:
           "sugar": p.get("sugar", 0), "nutrients": p.get("nutrients", {})}
          for p in all_profiles]
     )
+
+
+def calculate_diet_plan_confidence(meal_plan: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Calculates the overall confidence score for a complete diet plan.
+    Aggregates confidence from all unique dishes across all meals.
+    """
+    unique_dishes = set()
+    # Handle both list and dict formats of meal plan
+    for slot, dishes in meal_plan.items():
+        if isinstance(dishes, list):
+            for dish in dishes:
+                if isinstance(dish, str):
+                    unique_dishes.add(dish)
+        elif isinstance(dishes, dict):
+            # If dishes is a complex object (like MealDish)
+            title = dishes.get("title")
+            if title:
+                unique_dishes.add(title)
+    
+    if not unique_dishes:
+        return {
+            "confidence": 0.5,
+            "safety": generate_safety_response(0.5)
+        }
+    
+    confidences = []
+    for dish in unique_dishes:
+        profile = get_enriched_food_profile(dish)
+        confidences.append(profile["meta"]["confidence"])
+    
+    overall_confidence = round(sum(confidences) / len(confidences), 2)
+    safety = generate_safety_response(overall_confidence)
+    
+    return {
+        "confidence": overall_confidence,
+        "safety": safety
+    }

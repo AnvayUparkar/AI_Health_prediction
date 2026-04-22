@@ -2,7 +2,7 @@
 import os
 import json
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 from backend.usda_loader import usda_loader
 
 logger = logging.getLogger(__name__)
@@ -100,6 +100,37 @@ class USDAManager:
             },
             "source": "DEFAULT_SAFE"
         }
+
+    def get_food_nutrients_with_meta(self, food_name: str) -> Tuple[dict, dict]:
+        """
+        Extended interface that returns both data and confidence metadata.
+        Confidence levels: API Cache (0.95), Live API (0.9), Local Fallback (0.7), Default (0.5).
+        """
+        food_name_clean = food_name.lower()
+        
+        # 0. Check API Cache
+        if food_name_clean in self.api_cache:
+            return self.api_cache[food_name_clean], {"source": "usda_cache", "confidence": 0.95}
+
+        # 1. Live API Path
+        try:
+            data = usda_loader.fetch_from_usda_api(food_name)
+            if data:
+                self.save_to_local_cache(food_name, data)
+                return data, {"source": "usda_api", "confidence": 0.9}
+        except Exception:
+            pass
+
+        # 2. Fallback to Local
+        try:
+            data = usda_loader.fetch_from_local_json(food_name)
+            if data:
+                return data, {"source": "usda_local", "confidence": 0.7}
+        except Exception:
+            pass
+
+        # 3. Default
+        return self._get_default_nutrient_profile(food_name), {"source": "default", "confidence": 0.5}
 
 # Singleton instance
 usda_manager = USDAManager()
