@@ -200,7 +200,7 @@ def analyze_report():
     # ----------------------------------------------------------------
     # 7. Human-readable report summary
     # ----------------------------------------------------------------
-    report_summary = summarize_report(all_parameters)
+    report_summary = summarize_report(all_parameters, health_data=health_data)
 
     # ----------------------------------------------------------------
     # 8. Build response

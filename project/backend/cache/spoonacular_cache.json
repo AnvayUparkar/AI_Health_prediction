@@ -692,5 +692,25 @@
         ],
         "timestamp": 1776910200.2718167,
         "confidence": 0.7
+    },
+    "bottle gourd sabzi sabzi with jowar & lentil dal": {
+        "ingredients": [
+            "spices",
+            "onion",
+            "lentils",
+            "garlic"
+        ],
+        "timestamp": 1776910898.3600996,
+        "confidence": 0.7
+    },
+    "bottle gourd sabzi sabzi with bajra & lentil dal": {
+        "ingredients": [
+            "spices",
+            "garlic",
+            "lentils",
+            "onion"
+        ],
+        "timestamp": 1776911222.7649934,
+        "confidence": 0.7
     }
 }

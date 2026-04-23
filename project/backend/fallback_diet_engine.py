@@ -338,6 +338,24 @@ CONDITION_MAP = {
         "risk": "cardiac conduction issues and fluid volume stress",
         "solution": "Mineral-specific titration (e.g., Potassium sources for High Sodium).",
         "markers": ["Sodium", "Potassium", "Chloride"]
+    },
+    "obesity": {
+        "technical_name": "Metabolic Overload (Obesity)",
+        "explanation": {
+            "default": "BMI >= 30 indicates significant adipose tissue accumulation and metabolic stress."
+        },
+        "risk": "systemic inflammation, insulin resistance, and joint stress",
+        "solution": "Focus on high-fiber, low-glycemic index foods and sustainable caloric deficit.",
+        "markers": []
+    },
+    "underweight": {
+        "technical_name": "Nutritional Insufficiency (Underweight)",
+        "explanation": {
+            "default": "BMI < 18.5 suggests insufficient caloric/nutrient reserve for optimal physiological function."
+        },
+        "risk": "immune dysfunction, muscle wasting, and bone density loss",
+        "solution": "Focus on nutrient-dense healthy fats and protein-rich frequent small meals.",
+        "markers": []
     }
 }
 
@@ -363,7 +381,7 @@ def validate_and_deduplicate(conditions: List[str], input_data: Dict[str, Any]) 
                     if status in ("Low", "High", "Borderline", "Critical", "Abnormal") or status is None:
                         has_evidence = True
                         break
-            if has_evidence:
+            if not markers or has_evidence:
                 valid_conditions.append(cond)
 
     # De-duplication Logic
@@ -451,7 +469,18 @@ def fallback_diet_engine(input_data: Dict[str, Any], raw_text: Optional[str] = N
     variation_engine.set_daily_seed(patient_id)
 
     # 1. Detect & 2. Validate
-    initial_conditions = detect_high_level_conditions(input_data)
+    health_data = context.get("raw_analysis", {}).get("health_data") if context else None
+    if not health_data and context:
+        # Reconstruct health_data from context if needed
+        health_data = {
+            "age": context.get("age"),
+            "weight": context.get("weight"),
+            "height": context.get("height"),
+            "activityLevel": context.get("activityLevel"),
+            "dietaryPreference": context.get("diet_preference")
+        }
+
+    initial_conditions = detect_high_level_conditions(input_data, health_data=health_data)
     if raw_text:
         text_conditions = detect_conditions_from_text(raw_text)
         initial_conditions = list(set(initial_conditions + text_conditions))

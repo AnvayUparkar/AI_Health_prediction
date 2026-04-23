@@ -559,6 +559,17 @@ def derive_base_ingredients(important_parameters: Dict[str, dict], health_data: 
     elif "high" in activity:
         ingredients += ["quinoa", "sweet potato", "banana", "eggs", "chicken"]
         
+    # 🏥 BMI Context (Metabolic Load)
+    weight = float((health_data or {}).get("weight") or 0)
+    height = float((health_data or {}).get("height") or 0)
+    if weight > 0 and height > 0:
+        h_m = height / 100
+        bmi = weight / (h_m * h_m)
+        if bmi >= 25:
+            ingredients += ["oats", "leafy vegetables", "bitter gourd", "green tea"]
+        elif bmi < 18.5:
+            ingredients += ["walnuts", "avocado", "paneer", "whole milk"]
+
     return list(set(ingredients))
 
 def expand_ingredients_with_mapper(base_ingredients: List[str]) -> List[str]:
@@ -611,6 +622,10 @@ def generate_report_diet(important_parameters: Dict[str, dict], health_data: dic
                 "disclaimer": "..."
             }
     """
+    # Initialize variation seed for non-deterministic meal shuffling
+    from backend.services.variation_engine import variation_engine
+    variation_engine.set_daily_seed("report_engine")
+
     issues: List[str] = []
     foods: List[str] = []
     avoid: List[str] = []
@@ -638,6 +653,38 @@ def generate_report_diet(important_parameters: Dict[str, dict], health_data: dic
                 f"Consult a healthcare provider about your {status.lower()} "
                 f"{param_name} level ({param_info.get('value', '?')} {param_info.get('unit', '')})"
             )
+
+    # 🏥 NEW: Physical Attribute Analysis (Senior Architect Enhancement)
+    if health_data:
+        weight = float(health_data.get("weight") or 0)
+        height = float(health_data.get("height") or 0)
+        age = int(health_data.get("age") or 0)
+        
+        if weight > 0 and height > 0:
+            # BMI Calculation (h in cm -> m)
+            h_m = height / 100
+            bmi = weight / (h_m * h_m)
+            
+            if bmi < 18.5:
+                issues.append("Underweight (Low BMI)")
+                tips.append("Focus on nutrient-dense, calorie-rich foods to reach a healthy weight.")
+                foods.extend(["Peanut butter", "Avocados", "Full-fat dairy", "Nuts", "Seeds"])
+            elif 25 <= bmi < 30:
+                issues.append("Overweight (Elevated BMI)")
+                tips.append("Adopt a slight calorie deficit and focus on high-fiber, filling foods.")
+                avoid.extend(["Refined sugars", "Sugary drinks", "Deep-fried foods"])
+            elif bmi >= 30:
+                issues.append("Obesity (High BMI)")
+                tips.append("Clinical weight management recommended. Focus on low-glycemic index foods.")
+                avoid.extend(["Processed meats", "White bread", "Sweetened beverages", "Trans fats"])
+
+        if age >= 65:
+            issues.append("Senior Nutritional Requirements")
+            tips.append("Prioritize protein and Vitamin B12 for muscle and nerve health.")
+            foods.extend(["Eggs", "Soft-cooked vegetables", "Fortified cereals"])
+        elif age <= 12 and age > 0:
+            issues.append("Child Growth Support")
+            tips.append("Ensure adequate calcium and healthy fats for developmental growth.")
 
     # Deduplicate while preserving order
     issues = _deduplicate(issues)

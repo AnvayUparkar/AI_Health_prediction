@@ -1056,7 +1056,7 @@ def get_important_parameters(parameters: Dict[str, dict]) -> Dict[str, dict]:
     }
 
 
-def summarize_report(parameters: Dict[str, dict]) -> str:
+def summarize_report(parameters: Dict[str, dict], health_data: dict = None) -> str:
     """
     Generate a human-readable summary of the extracted medical parameters.
 
@@ -1083,7 +1083,7 @@ def summarize_report(parameters: Dict[str, dict]) -> str:
         return "All detected parameters are within the normal reference range."
 
     # Identify high-level conditions
-    conditions = detect_high_level_conditions(parameters)
+    conditions = detect_high_level_conditions(parameters, health_data=health_data)
     cond_str = ""
     if conditions:
         cond_str = f" The results suggest indicators of: {', '.join(conditions).replace('_', ' ')}."
@@ -1095,10 +1095,10 @@ def summarize_report(parameters: Dict[str, dict]) -> str:
 # HIGH-LEVEL CONDITION DETECTION
 # ===================================================================
 
-def detect_high_level_conditions(parameters: Dict[str, dict]) -> List[str]:
+def detect_high_level_conditions(parameters: Dict[str, dict], health_data: dict = None) -> List[str]:
     """
-    Detect high-level health conditions based on parsed lab parameters.
-    Returns a list of condition strings (e.g., 'diabetes', 'anemia').
+    Detect high-level health conditions based on parsed lab parameters and patient profile.
+    Returns a list of condition strings (e.g., 'diabetes', 'anemia', 'obesity').
     Uses strict clinical validation rules.
     """
     conditions = []
@@ -1148,10 +1148,21 @@ def detect_high_level_conditions(parameters: Dict[str, dict]) -> List[str]:
         conditions.append("vitamin_d_deficiency")
 
     # 5. Uric Acid
-    uric_acid = parameters.get("Uric Acid", {})
-    if uric_acid.get("status") == "High":
-        conditions.append("high_uric_acid")
+    uric = parameters.get("Uric Acid", {})
+    if uric.get("status") == "High":
+        conditions.append("hyperuricaemia")
 
+    # 🏥 6. Physical Status (Senior Architect Enhancement)
+    if health_data:
+        w = float(health_data.get("weight") or 0)
+        h = float(health_data.get("height") or 0)
+        if w > 0 and h > 0:
+            h_m = h / 100
+            bmi = w / (h_m * h_m)
+            if bmi >= 30:
+                conditions.append("obesity")
+            elif bmi < 18.5:
+                conditions.append("underweight")
     # 6. Optional: Protein (only if markers present)
     albumin = parameters.get("Albumin", {})
     total_protein = parameters.get("Total Protein", {})
