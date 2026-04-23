@@ -118,10 +118,25 @@ def mark_given():
 
     return jsonify({"message": "Medication marked as given"})
 
+from flask_jwt_extended import jwt_required, get_jwt_identity
+
 @nurse_handoff_bp.route('/pending-notifications', methods=['GET'])
+@jwt_required()
 def get_pending_notifications():
-    # In a real app, you might filter by the current nurse's assigned patients
-    # For now, return all pending meds for today that are due or overdue
+    user_id = get_jwt_identity()
+    current_user = User.query.get(user_id)
+    if not current_user:
+        return jsonify({"notifications": []}), 404
+
+    # Determine visibility scope
+    user_hospitals = []
+    try:
+        user_hospitals = json.loads(current_user.hospitals) if current_user.hospitals else []
+    except:
+        user_hospitals = []
+
+    is_medical = current_user.role in ['doctor', 'nurse']
+
     today = datetime.now().strftime('%Y-%m-%d')
     now_time = datetime.now().strftime('%H:%M')
     
@@ -137,19 +152,40 @@ def get_pending_notifications():
 
     result = []
     for log, med in pending:
-        user, _ = _resolve_patient(med.patient_id)
-        user_name = user.name if user else "Patient"
-        result.append({
-            "log_id": log.id,
-            "patient_name": user_name,
-            "patient_id": med.patient_id,
-            "medicine_name": med.name,
-            "dosage": med.dosage,
-            "time": log.scheduled_time,
-            "is_overdue": log.scheduled_time < now_time
-        })
+        # Check permission
+        show = False
+        if str(med.patient_id) == str(user_id):
+            show = True
+        elif is_medical:
+            # Check if patient is in one of the doctor's hospitals
+            patient_user, _ = _resolve_patient(med.patient_id)
+            if patient_user:
+                try:
+                    ph = patient_user.hospitals
+                    patient_hospitals = json.loads(ph) if isinstance(ph, str) else (ph or [])
+                    
+                    # Check for overlap
+                    if any(h in user_hospitals for h in patient_hospitals):
+                        show = True
+                except:
+                    pass
+
+        
+        if show:
+            patient_user, _ = _resolve_patient(med.patient_id)
+            user_name = patient_user.name if patient_user else "Patient"
+            result.append({
+                "log_id": log.id,
+                "patient_name": user_name,
+                "patient_id": med.patient_id,
+                "medicine_name": med.name,
+                "dosage": med.dosage,
+                "time": log.scheduled_time,
+                "is_overdue": log.scheduled_time < now_time
+            })
 
     return jsonify({"notifications": result})
+
 
 @nurse_handoff_bp.route('/delete-medicine/<int:med_id>', methods=['DELETE'])
 def delete_medicine(med_id):

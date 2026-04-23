@@ -22,8 +22,10 @@ class UserAdapter:
         self._data = data
         self.name = data.get('name', 'Unknown')
         self.email = data.get('email')
-        self.age = data.get('age')
-        self.sex = data.get('sex')
+        self.age = data.get('age') or data.get('profile', {}).get('age')
+        self.sex = data.get('sex') or data.get('profile', {}).get('sex')
+        self.hospitals = data.get('hospitals') or data.get('profile', {}).get('hospitals')
+
     
     def to_dict(self):
         return self._data

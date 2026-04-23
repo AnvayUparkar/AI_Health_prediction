@@ -51,6 +51,20 @@ export default function MedicationReminder() {
     
     socket.on('connect', () => {
       console.log('Connected to medication socket');
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          socket.emit('join_medication_rooms', {
+            user_id: user.id,
+            role: user.role,
+            hospitals: user.hospitals || []
+          });
+
+        } catch (e) {
+          console.error('Failed to join medication rooms', e);
+        }
+      }
     });
 
     socket.on('connect_error', (err) => {
@@ -58,6 +72,7 @@ export default function MedicationReminder() {
     });
 
     socket.on('medication_reminder', (data: Reminder) => {
+
       console.log('Received medication reminder:', data);
       setReminders(prev => {
         // Prevent duplicate reminders

@@ -58,7 +58,7 @@ const FloatingNavbar = () => {
         setUserRole('');
       }
     };
-    
+
     checkAuth();
     // Listen for storage changes (e.g., login in another tab)
     window.addEventListener('storage', checkAuth);
@@ -68,11 +68,11 @@ const FloatingNavbar = () => {
   const handleLogout = async () => {
     try {
       // Clear Google token from backend if possible
-      await api.post('/api/auth/google/logout').catch(() => {});
+      await api.post('/api/auth/google/logout').catch(() => { });
     } catch (e) {
       // Silently fail if not authenticated or network error
     }
-    
+
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('access_token');
@@ -91,7 +91,7 @@ const FloatingNavbar = () => {
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       className={`fixed top-4 left-0 right-0 mx-auto z-50 flex justify-center transition-all duration-300`}
-      style={{width: '100%'}}
+      style={{ width: '100%' }}
     >
       <nav className={`
         backdrop-blur-lg bg-white/10 
@@ -105,7 +105,7 @@ const FloatingNavbar = () => {
         <div className="flex justify-between items-center">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2 group">
-            <motion.div 
+            <motion.div
               className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl"
               whileHover={{ scale: 1.1, rotate: 5 }}
               whileTap={{ scale: 0.95 }}
@@ -113,7 +113,7 @@ const FloatingNavbar = () => {
               <Heart className="h-6 w-6 text-white" />
             </motion.div>
             <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              AI Health Predictor
+              NeuroCare AI
             </span>
           </Link>
 
@@ -125,11 +125,10 @@ const FloatingNavbar = () => {
                 to={item.href}
                 className="relative px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 group"
               >
-                <span className={`relative z-10 ${
-                  isActive(item.href) 
-                    ? 'text-white' 
+                <span className={`relative z-10 ${isActive(item.href)
+                    ? 'text-white'
                     : 'text-gray-700 group-hover:text-blue-600'
-                }`}>
+                  }`}>
                   {item.name}
                 </span>
                 {isActive(item.href) && (
@@ -159,7 +158,7 @@ const FloatingNavbar = () => {
                   <User className="h-4 w-4" />
                   <span>{userName}</span>
                 </motion.button>
-                
+
                 <AnimatePresence>
                   {showUserMenu && (
                     <motion.div
@@ -249,16 +248,15 @@ const FloatingNavbar = () => {
                     key={item.name}
                     to={item.href}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-                      isActive(item.href)
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${isActive(item.href)
                         ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
                         : 'text-gray-700 hover:bg-white/20'
-                    }`}
+                      }`}
                   >
                     {item.name}
                   </Link>
                 ))}
-                
+
                 {/* Mobile Auth Section */}
                 <div className="pt-2 border-t border-white/20 space-y-2">
                   {isAuthenticated ? (

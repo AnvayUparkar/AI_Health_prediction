@@ -108,6 +108,22 @@ def create_app(config_overrides: Optional[dict] = None):
     app.register_blueprint(doctor_availability_bp, url_prefix='/api')
     app.register_blueprint(appointment_booking_bp, url_prefix='/api')
 
+    from flask_socketio import join_room, leave_room
+    @socketio.on('join_medication_rooms')
+    def on_join_medication_rooms(data):
+        user_id = data.get('user_id')
+        role = data.get('role')
+        hospitals = data.get('hospitals', []) # List of hospital names
+        
+        if user_id:
+            join_room(f"user_{user_id}")
+            print(f"[SOCKET] User {user_id} joined medication room")
+            
+        if (role == 'doctor' or role == 'nurse') and hospitals:
+            for h in hospitals:
+                join_room(f"hospital_{h}")
+                print(f"[SOCKET] Medical staff joined room: hospital_{h}")
+
 
     @app.route('/health', methods=['GET'])
     def health():
@@ -249,17 +265,32 @@ def run_scheduler(app):
                         user, _ = _resolve_patient(med.patient_id)
                         user_name = user.name if user else "Patient"
                         
-                        print(f"[REMINDER] Medicine {med.name} due for {user_name} at {current_time}")
-                        # Emit socket event for real-time notification
-                        socketio.emit('medication_reminder', {
+                        payload = {
                             "log_id": log.id,
                             "patient_name": user_name,
                             "patient_id": med.patient_id,
                             "medicine_name": med.name,
                             "dosage": med.dosage,
                             "time": log.scheduled_time
-                        })
+                        }
+                        
+                        print(f"[REMINDER] Medicine {med.name} due for {user_name} at {current_time}")
+                        
+                        # 1. Emit to the patient specifically
+                        socketio.emit('medication_reminder', payload, room=f"user_{med.patient_id}")
+                        
+                        # 2. Emit to relevant hospital rooms
+                        if user and user.hospitals:
+                            try:
+                                patient_hospitals = json.loads(user.hospitals) if isinstance(user.hospitals, str) else user.hospitals
+                                if isinstance(patient_hospitals, list):
+                                    for h in patient_hospitals:
+                                        socketio.emit('medication_reminder', payload, room=f"hospital_{h}")
+                            except:
+                                pass
+                                
                         alerted_logs.add(log.id)
+
                 
                 # Check for overdue items once an hour or so, or just rely on the frontend fetching
                 

@@ -25,7 +25,7 @@ const Header = () => {
             <div className="p-2 bg-health-primary rounded-lg group-hover:scale-105 transition-transform duration-200">
               <Heart className="h-6 w-6 text-white" />
             </div>
-            <span className="text-xl font-bold text-health-text">AI Health Predictor</span>
+            <span className="text-xl font-bold text-health-text">NeuroCare AI</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -34,11 +34,10 @@ const Header = () => {
               <Link
                 key={item.name}
                 to={item.href}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  isActive(item.href)
-                    ? 'bg-health-primary text-white shadow-lg'
-                    : 'text-health-text hover:bg-blue-50 hover:text-health-primary'
-                }`}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${isActive(item.href)
+                  ? 'bg-health-primary text-white shadow-lg'
+                  : 'text-health-text hover:bg-blue-50 hover:text-health-primary'
+                  }`}
               >
                 {item.name}
               </Link>
@@ -67,11 +66,10 @@ const Header = () => {
                   key={item.name}
                   to={item.href}
                   onClick={() => setIsMenuOpen(false)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    isActive(item.href)
-                      ? 'bg-health-primary text-white'
-                      : 'text-health-text hover:bg-blue-50 hover:text-health-primary'
-                  }`}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${isActive(item.href)
+                    ? 'bg-health-primary text-white'
+                    : 'text-health-text hover:bg-blue-50 hover:text-health-primary'
+                    }`}
                 >
                   {item.name}
                 </Link>

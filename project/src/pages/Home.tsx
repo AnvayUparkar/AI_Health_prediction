@@ -63,7 +63,8 @@ const Home = () => {
       features: ["Multiple prediction models", "Instant results", "Comprehensive analysis"],
       link: "/predictions",
       ctaText: "Start Prediction",
-      roles: ["doctor", "nurse"], // Restricted to medical staff
+      roles: ["doctor", "nurse", "user"],
+
       glow: "hover:shadow-[0_0_20px_rgba(245,158,11,0.2)]"
     },
     {
@@ -116,11 +117,11 @@ const Home = () => {
               transition={{ duration: 0.8, delay: 0.2 }}
             >
               <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                Proactive Health Insights,
+                NeuroCare AI
               </span>
               <br />
               <span className="bg-gradient-to-r from-indigo-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Powered by AI
+                Proactive Health Insights
               </span>
             </motion.h1>
 
@@ -267,7 +268,8 @@ const Home = () => {
       </section>
 
       {/* Assessment Cards Section - Restricted to Professionals */}
-      {(user?.role?.toLowerCase() === 'doctor' || user?.role?.toLowerCase() === 'nurse') && (
+      {(user?.role?.toLowerCase() === 'doctor' || user?.role?.toLowerCase() === 'nurse' || user?.role?.toLowerCase() === 'user') && (
+
         <section className="relative py-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <motion.div
