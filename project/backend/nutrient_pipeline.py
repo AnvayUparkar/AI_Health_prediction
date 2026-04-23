@@ -265,6 +265,7 @@ def calculate_diet_plan_confidence(meal_plan: Dict[str, Any]) -> Dict[str, Any]:
     """
     Calculates the overall confidence score for a complete diet plan.
     Aggregates confidence from all unique dishes across all meals.
+    Returns both overall stats and granular per-dish profiles.
     """
     unique_dishes = set()
     # Handle both list and dict formats of meal plan
@@ -278,22 +279,38 @@ def calculate_diet_plan_confidence(meal_plan: Dict[str, Any]) -> Dict[str, Any]:
             title = dishes.get("title")
             if title:
                 unique_dishes.add(title)
+            
+            # 🧠 NEW: For deterministic thalis, also track individual components
+            # This ensures "Palak Sabzi" gets a clinical trace even if the meal title is generic.
+            components = dishes.get("components", {})
+            if isinstance(components, dict):
+                for comp_val in components.values():
+                    if isinstance(comp_val, str):
+                        unique_dishes.add(comp_val)
     
     if not unique_dishes:
         return {
             "confidence": 0.5,
-            "safety": generate_safety_response(0.5)
+            "safety": generate_safety_response(0.5),
+            "dish_profiles": {}
         }
     
     confidences = []
+    dish_profiles = {}
     for dish in unique_dishes:
         profile = get_enriched_food_profile(dish)
         confidences.append(profile["meta"]["confidence"])
+        dish_profiles[dish] = {
+            "ingredients": profile["ingredients"],
+            "confidence": profile["meta"]["confidence"],
+            "source": profile["meta"]["source"]
+        }
     
     overall_confidence = round(sum(confidences) / len(confidences), 2)
     safety = generate_safety_response(overall_confidence)
     
     return {
         "confidence": overall_confidence,
-        "safety": safety
+        "safety": safety,
+        "dish_profiles": dish_profiles
     }

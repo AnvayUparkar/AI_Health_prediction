@@ -162,7 +162,7 @@ def analyze_report():
     clinical_analysis = get_clinical_summary(all_parameters)
     
     # B. Build Scoring Context (Standards Step 2)
-    clinical_context = build_context(clinical_analysis)
+    clinical_context = build_context(clinical_analysis, health_data=health_data)
     
     # C. Generate Diet (Gemini Primary, Advanced Engine Fallback)
     diet_preference  = request.form.get("diet_preference") or (health_data.get("dietaryPreference") if health_data else "balanced")

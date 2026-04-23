@@ -193,7 +193,14 @@ def get_ingredients(food_name: str) -> MapperResult:
         if food_name in LOCKED_REQUESTS:
             LOCKED_REQUESTS.remove(food_name)
 
-    # 6. Raw Fallback
+    # 6. Raw Fallback (Senior Architect Enhancement)
+    tokens = food_name.lower().split()
+    cleaned = [t for t in tokens if t in VALID_FOODS]
+    
+    if cleaned:
+        # Boost confidence for successful token extraction
+        return _finalize(cleaned, "raw", confidence_override=0.6)
+        
     return _finalize([food_name], "raw")
 
 def _cache_and_save(name: str, ingredients: list, source: str):

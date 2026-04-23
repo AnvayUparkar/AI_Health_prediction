@@ -1,16 +1,10 @@
 import re
 from typing import Dict, List, Any, Set
 
-def build_context(analysis: Dict[str, Any]) -> Dict[str, Any]:
+def build_context(analysis: Dict[str, Any], health_data: dict = None) -> Dict[str, Any]:
     """
     Transforms standardized analysis summary into a Scoring Context Object.
-    
-    analysis = {
-        "conditions": [...],
-        "nutritional_goals": {"iron": "high", "sugar": "low"},
-        "recommended_foods": ["Spinach and kale", "Red meat"],
-        "avoid_foods": ["Coffee", "Sugar"]
-    }
+    Now supports health_data injection for activity-aware clinical logic.
     """
     
     # 1. Normalize Food Identifiers (Extract keywords for scoring matches)
@@ -32,10 +26,20 @@ def build_context(analysis: Dict[str, Any]) -> Dict[str, Any]:
     # 2. Map Nutritional Goals (Standardized keys for USDA comparison)
     goals = analysis.get("nutritional_goals", {})
     
-    return {
+    context = {
         "conditions": analysis.get("conditions", []),
         "boost": boost_set,
         "avoid": avoid_set,
         "goals": goals,
-        "raw_analysis": analysis # Keep for debugging
+        "raw_analysis": analysis
     }
+
+    # 3. Inject Health Data for clinical grounding
+    if health_data:
+        context["activityLevel"] = health_data.get("activityLevel", "moderate")
+        context["age"] = health_data.get("age")
+        context["weight"] = health_data.get("weight")
+        context["height"] = health_data.get("height")
+        context["healthConditions"] = health_data.get("healthConditions", "")
+
+    return context

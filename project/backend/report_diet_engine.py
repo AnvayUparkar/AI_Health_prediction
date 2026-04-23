@@ -522,10 +522,64 @@ DIET_RULES: Dict[str, Dict[str, dict]] = {
 
 
 # ===================================================================
+# INGREDIENT-FIRST LAYER (Senior Architect Implementation)
+# ===================================================================
+
+def derive_base_ingredients(important_parameters: Dict[str, dict], health_data: dict = None) -> List[str]:
+    """
+    Derive essential biochemical building blocks based on lab abnormalities.
+    """
+    ingredients = []
+    
+    # Blood Sugar / Metabolic
+    glucose = important_parameters.get("Glucose") or important_parameters.get("Fasting Blood Sugar") or important_parameters.get("HbA1c")
+    if glucose and glucose.get("status") == "High":
+        ingredients += ["oats", "lentils", "leafy vegetables", "bitter gourd", "cinnamon", "fenugreek"]
+        
+    # Anemia / Blood
+    hb = important_parameters.get("Hemoglobin") or important_parameters.get("Iron")
+    if hb and hb.get("status") == "Low":
+        ingredients += ["spinach", "beetroot", "pomegranate", "dates", "lean meat", "lentils"]
+        
+    # Kidney Stress
+    creatinine = important_parameters.get("Creatinine")
+    if creatinine and creatinine.get("status") == "High":
+        ingredients += ["cauliflower", "cabbage", "blueberries", "egg whites", "garlic"]
+
+    # Cholesterol
+    chol = important_parameters.get("Total Cholesterol") or important_parameters.get("LDL Cholesterol")
+    if chol and chol.get("status") == "High":
+        ingredients += ["oats", "fatty fish", "almonds", "walnuts", "flaxseeds", "garlic"]
+
+    # Activity Level Context
+    activity = (health_data or {}).get("activityLevel", "moderate").lower()
+    if "low" in activity:
+        ingredients += ["high fiber foods", "light proteins", "cucumber", "lemon"]
+    elif "high" in activity:
+        ingredients += ["quinoa", "sweet potato", "banana", "eggs", "chicken"]
+        
+    return list(set(ingredients))
+
+def expand_ingredients_with_mapper(base_ingredients: List[str]) -> List[str]:
+    """
+    Use the clinical dish_mapper to decompose base needs into constituent ingredients.
+    """
+    from backend.services.dish_mapper import get_ingredients as mapper_get
+    expanded = []
+    
+    for item in base_ingredients:
+        result = mapper_get(item)
+        # Handle MapperResult (dict-like)
+        ing_list = result.get("ingredients", [item])
+        expanded.extend(ing_list)
+        
+    return list(set(expanded))
+
+# ===================================================================
 # MAIN DIET GENERATION
 # ===================================================================
 
-def generate_report_diet(important_parameters: Dict[str, dict]) -> dict:
+def generate_report_diet(important_parameters: Dict[str, dict], health_data: dict = None) -> dict:
     """
     Generate a personalised diet plan based on abnormal medical parameters.
 
@@ -590,8 +644,36 @@ def generate_report_diet(important_parameters: Dict[str, dict]) -> dict:
     avoid = _deduplicate(avoid)
     tips = _deduplicate(tips)
 
-    # Generate meal suggestions based on the recommended foods
-    meal_suggestions = _generate_meals(foods, avoid)
+    # 🧠 NEW INGREDIENT-FIRST FLOW
+    base_ingredients = derive_base_ingredients(important_parameters, health_data)
+    expanded_ingredients = expand_ingredients_with_mapper(base_ingredients)
+
+    # Generate legacy meal suggestions (backward compatibility)
+    meal_suggestions = _generate_meals(foods, avoid, expanded_ingredients)
+
+    # 🧠 NEW: Generate structured meal_plan using IndianMealBuilder + Dynamic Names
+    from backend.indian_meal_builder import indian_meal_builder
+    from backend.report_parser import detect_high_level_conditions
+
+    conditions = detect_high_level_conditions(important_parameters)
+    all_food_inputs = list(set(foods + expanded_ingredients))
+
+    structured_meal_plan = {}
+    used_items = {"staples": set(), "dals": set(), "sabzis": set()}
+    build_context = {
+        "conditions": conditions,
+        "primary_condition": conditions[0] if conditions else "general_wellness",
+    }
+
+    for slot in ["breakfast", "mid_morning", "lunch", "evening_snack", "dinner"]:
+        composed = indian_meal_builder.build_meal(
+            all_food_inputs,
+            slot,
+            conditions=conditions,
+            used_items=used_items,
+            context=build_context,
+        )
+        structured_meal_plan[slot] = composed
 
     # Hydration notes
     hydration = _generate_hydration_notes(important_parameters)
@@ -601,7 +683,8 @@ def generate_report_diet(important_parameters: Dict[str, dict]) -> dict:
         "recommended_foods": foods,
         "foods_to_avoid": avoid,
         "diet_tips": tips,
-        "meal_suggestions": meal_suggestions,
+        "meal_suggestions": meal_suggestions,   # Legacy flat lists
+        "meal_plan": structured_meal_plan,       # Structured daily plan with dynamic names
         "hydration_notes": hydration,
         "disclaimer": (
             "This is an AI-generated diet suggestion based on lab report analysis. "
@@ -719,6 +802,7 @@ def _deduplicate(items: List[str]) -> List[str]:
 def _generate_meals(
     recommended_foods: List[str],
     foods_to_avoid: List[str],
+    expanded_ingredients: List[str] = None
 ) -> dict:
     """
     Generate simple meal suggestions based on recommended and avoided foods.
@@ -746,18 +830,45 @@ def _generate_meals(
         "Greek yogurt with a drizzle of honey",
     ]
 
-    # Enhance based on specific recommended foods
+    # Enhance based on specific recommended foods and expanded ingredients
+    all_inputs = recommended_foods + (expanded_ingredients or [])
     avoid_lower = {f.lower() for f in foods_to_avoid}
-    for food in recommended_foods:
+    
+    for food in all_inputs:
         lower = food.lower()
+        
+        # 1. Breakfast Mapping
+        if any(x in lower for x in ["oats", "milk", "eggs", "poha", "ragi", "banana"]):
+            if "oats" in lower: breakfast.append("Oatmeal with flaxseeds and berries")
+            if "eggs" in lower: breakfast.append("Spinach and mushroom omelette")
+            if "ragi" in lower: breakfast.append("Ragi porridge with nuts")
+            if "poha" in lower: breakfast.append("Vegetable poha with peanuts")
+
+        # 2. Lunch Mapping
+        if any(x in lower for x in ["lentils", "rice", "chicken", "paneer", "vegetables", "dal", "fish"]):
+            if "dal" in lower or "lentils" in lower: lunch.append("Moong dal with brown rice and salad")
+            if "chicken" in lower: lunch.append("Grilled chicken with quinoa and steamed veggies")
+            if "paneer" in lower: lunch.append("Paneer bhurji with whole wheat roti")
+            if "fish" in lower: lunch.append("Steamed fish with lemon and sautéed greens")
+
+        # 3. Snacks Mapping
+        if any(x in lower for x in ["nuts", "seeds", "fruit", "berries", "beetroot", "dates"]):
+            if "nuts" in lower or "almonds" in lower or "walnuts" in lower: snacks.append("Handful of mixed nuts (almonds, walnuts)")
+            if "seeds" in lower: snacks.append("Chia seed pudding or roasted pumpkin seeds")
+            if "beetroot" in lower: snacks.append("Fresh beetroot and carrot juice")
+            if "dates" in lower: snacks.append("Dates and dried figs")
+
+        # 4. Dinner Mapping
+        if any(x in lower for x in ["soup", "khichdi", "light", "daliya", "curd"]):
+            if "khichdi" in lower: dinner.append("Vegetable khichdi with cucumber raita")
+            if "soup" in lower: dinner.append("Mixed vegetable or chicken clear soup")
+            if "daliya" in lower: dinner.append("Vegetable daliya (broken wheat) upma")
+            
+        # Legacy mappings (maintained for compatibility)
         if "spinach" in lower or "leafy green" in lower:
             breakfast.append("Spinach and mushroom omelette")
         if "oats" in lower or "oatmeal" in lower:
             breakfast.append("Overnight oats with nuts and seeds")
-        if "beetroot" in lower:
-            snacks.append("Fresh beetroot juice")
-        if "dates" in lower or "figs" in lower:
-            snacks.append("Dates and dried figs energy bites")
 
     # Deduplicate
     return {

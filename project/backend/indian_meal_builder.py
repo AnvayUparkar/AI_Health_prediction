@@ -2,6 +2,7 @@
 import logging
 from typing import List, Dict, Any, Optional
 from backend.usda_manager import usda_manager
+from backend.services.dish_name_generator import generate_dish_name, generate_component_name, COOKING_STYLE
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +100,7 @@ class IndianMealBuilder:
             # B. Sabzi (Clinical vehicle)
             veggie = self._find_best_match(clean_foods, ["sabzi", "spinach", "beetroot", "broccoli", "moringa", "bitter gourd", "bottle gourd", "cabbage", "carrot", "methi"], exclude=used_items["sabzis"])
             if veggie:
-                components["Sabzi"] = self.DISH_MAP.get(veggie, veggie.title())
+                components["Sabzi"] = generate_component_name(veggie, "Sabzi")
                 used_items["sabzis"].add(veggie)
             else:
                 components["Sabzi"] = "Mixed Vegetable Masala"
@@ -107,7 +108,7 @@ class IndianMealBuilder:
             # C. Dal (Protein)
             protein = self._find_best_match(clean_foods, ["dal", "lentil", "paneer", "soy", "egg", "chickpea"], exclude=used_items["dals"])
             if protein:
-                components["Dal"] = self.DISH_MAP.get(protein, f"{protein.title()} Curry")
+                components["Dal"] = generate_component_name(protein, "Dal")
                 used_items["dals"].add(protein)
             else:
                 components["Dal"] = self._select_best_dal(conditions)
@@ -119,21 +120,34 @@ class IndianMealBuilder:
             # E. Absorption Side (Step 3)
             components["Absorption"] = "Fresh Cucumber & Lemon Salad"
 
-            title = f"{components['Roti']} with {components['Sabzi']} and {components['Dal']}"
+            # 🧠 Dynamic Title from actual ingredients
+            title = generate_dish_name(
+                [staple, veggie or "vegetables", protein or "dal"],
+                meal_type=meal_type
+            )
 
         elif "breakfast" in meal_type:
             # Rule: [Main + Calcium Source + Healthy Fat] [Step 3]
             main_food = self._find_best_match(clean_foods, ["poha", "upma", "chilla", "ragi", "oats", "paratha"])
-            components["Main"] = self.DISH_MAP.get(main_food, self._select_best_breakfast(conditions))
+            if main_food:
+                # 🧠 Dynamic breakfast name from actual ingredients
+                breakfast_ings = [main_food, "milk", "walnuts", "flaxseeds"]
+                components["Main"] = generate_dish_name(breakfast_ings, meal_type="breakfast")
+            else:
+                components["Main"] = self._select_best_breakfast(conditions)
             
             components["Calcium Source"] = "High-Calcium Low-Fat Milk"
             components["Healthy Fat"] = "Walnuts & Flaxseeds"
             
-            title = f"{components['Main']} with {components['Calcium Source']}"
+            title = components["Main"]
 
         elif "snack" in meal_type:
             # Rule: Light Indian Snacks only [Step 3 & 8]
-            if "morning" in meal_type:
+            snack_food = self._find_best_match(clean_foods, ["makhana", "nuts", "sprouts", "fruit", "pomegranate", "apple", "seeds", "almonds", "walnuts", "dates"])
+            if snack_food:
+                snack_ings = [snack_food] + [f for f in clean_foods if f != snack_food][:2]
+                components["Snack"] = generate_dish_name(snack_ings, meal_type="snack")
+            elif "morning" in meal_type:
                 components["Snack"] = "Fresh Seasonal Fruit Bowl"
             else:
                 components["Snack"] = "Roasted Masala Makhana"

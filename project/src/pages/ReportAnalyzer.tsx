@@ -95,18 +95,68 @@ interface AnalysisResult {
   diet_source: 'gemini' | 'rules_fallback' | 'error';
   diet_warning?: string;
   mode?: 'file' | 'manual';
-  meta?: {
+  meta?: ClinicalMeta;
+}
+
+interface ClinicalMeta {
+  confidence: number;
+  dish_profiles?: Record<string, {
+    ingredients: string[];
     confidence: number;
-    safety: {
-      status: 'safe' | 'caution' | 'warning';
-      level: string;
-      message: string;
-      action: string;
-    };
+    source: string;
+  }>;
+  safety: {
+    status: 'safe' | 'caution' | 'warning';
+    level: string;
+    message: string;
+    action: string;
   };
 }
 
 // ---------- Helper components ----------
+
+const ComponentMeta = ({ dishName, profiles }: { dishName?: string, profiles?: ClinicalMeta['dish_profiles'] }) => {
+  if (!dishName || !profiles || !profiles[dishName]) return null;
+  const profile = profiles[dishName];
+  return (
+    <div className="mt-1 flex flex-wrap gap-1 opacity-70">
+      {profile.ingredients.slice(0, 4).map((ing: string, i: number) => (
+        <span key={i} className="text-[9px] bg-gray-50 text-gray-400 px-1.5 py-0 rounded border border-gray-100 italic">
+          {ing}
+        </span>
+      ))}
+      {profile.ingredients.length > 4 && <span className="text-[9px] text-gray-300 font-bold">+{profile.ingredients.length - 4} more</span>}
+    </div>
+  );
+};
+
+const DishMeta = ({ dishName, profiles }: { dishName?: string, profiles?: ClinicalMeta['dish_profiles'] }) => {
+  if (!dishName || !profiles || !profiles[dishName]) return null;
+  const profile = profiles[dishName];
+  
+  return (
+    <div className="mt-4 pt-4 border-t border-gray-100/50">
+      <div className="flex justify-between items-center mb-2">
+        <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400">Clinical Mapper Trace</p>
+        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${
+          profile.confidence >= 0.75 ? 'bg-green-100 text-green-700' :
+          profile.confidence >= 0.6 ? 'bg-amber-100 text-amber-700' :
+          'bg-red-100 text-red-700'
+        }`}>
+          {(profile.confidence * 100).toFixed(0)}% Confidence
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {profile.ingredients.map((ing: string, i: number) => (
+          <span key={i} className="text-[10px] bg-gray-50 text-gray-500 px-2 py-0.5 rounded-md border border-gray-200/50 font-medium italic">
+            {ing}
+          </span>
+        ))}
+      </div>
+      <p className="text-[8px] text-gray-300 mt-2 text-right">Source: {profile.source.toUpperCase()}</p>
+    </div>
+  );
+};
 
 const StatusBadge = ({ status }: { status: string }) => {
   const colors: Record<string, string> = {
@@ -136,6 +186,7 @@ const ReportAnalyzer = () => {
   const [showExtractedText, setShowExtractedText] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
+  const [showAllDishes, setShowAllDishes] = useState(false);
   const [healthData, setHealthData] = useState({
     age: '',
     weight: '',
@@ -722,6 +773,11 @@ const ReportAnalyzer = () => {
                             </p>
                           </div>
                         )}
+
+                        <DishMeta 
+                          dishName={mealPlan.breakfast.title} 
+                          profiles={meta?.dish_profiles} 
+                        />
                       </div>
                     </GlassCard>
 
@@ -753,6 +809,11 @@ const ReportAnalyzer = () => {
                             </p>
                           </div>
                         )}
+
+                        <DishMeta 
+                          dishName={mealPlan.mid_morning.title} 
+                          profiles={meta?.dish_profiles} 
+                        />
                       </div>
                     </GlassCard>
 
@@ -780,9 +841,12 @@ const ReportAnalyzer = () => {
                           <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 mb-2">Meal Components</p>
                           <ul className="space-y-1.5">
                             {Object.entries(mealPlan.lunch.components || {}).map(([key, val], i) => (
-                              <li key={i} className="text-sm text-gray-700 flex justify-between">
-                                <span className="font-semibold text-gray-500">{key}:</span>
-                                <span>{val}</span>
+                              <li key={i} className="group">
+                                <div className="text-sm text-gray-700 flex justify-between">
+                                  <span className="font-semibold text-gray-500">{key}:</span>
+                                  <span>{val}</span>
+                                </div>
+                                <ComponentMeta dishName={val as string} profiles={meta?.dish_profiles} />
                               </li>
                             ))}
                           </ul>
@@ -796,6 +860,11 @@ const ReportAnalyzer = () => {
                             </p>
                           </div>
                         )}
+
+                        <DishMeta 
+                          dishName={mealPlan.lunch.title} 
+                          profiles={meta?.dish_profiles} 
+                        />
                       </div>
                     </GlassCard>
 
@@ -827,6 +896,11 @@ const ReportAnalyzer = () => {
                             </p>
                           </div>
                         )}
+
+                        <DishMeta 
+                          dishName={mealPlan.evening_snack.title} 
+                          profiles={meta?.dish_profiles} 
+                        />
                       </div>
                     </GlassCard>
 
@@ -855,9 +929,12 @@ const ReportAnalyzer = () => {
                             <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 mb-2">Meal Components</p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1.5">
                               {Object.entries(mealPlan.dinner.components || {}).map(([key, val], i) => (
-                                <li key={i} className="text-sm text-gray-700 flex justify-between list-none">
-                                  <span className="font-semibold text-gray-500">{key}:</span>
-                                  <span>{val}</span>
+                                <li key={i} className="list-none group">
+                                  <div className="text-sm text-gray-700 flex justify-between">
+                                    <span className="font-semibold text-gray-500">{key}:</span>
+                                    <span>{val}</span>
+                                  </div>
+                                  <ComponentMeta dishName={val as string} profiles={meta?.dish_profiles} />
                                 </li>
                               ))}
                             </div>
@@ -872,9 +949,91 @@ const ReportAnalyzer = () => {
                               </p>
                             </div>
                           )}
+
+                          <DishMeta 
+                            dishName={mealPlan.dinner.title} 
+                            profiles={meta?.dish_profiles} 
+                          />
                         </div>
                       </GlassCard>
                     </div>
+                  </div>
+
+                  {/* Expandable Food Library Trigger */}
+                  <div className="mt-10 pt-8 border-t border-gray-100 flex flex-col items-center">
+                    <button
+                      onClick={() => setShowAllDishes(!showAllDishes)}
+                      className="group flex flex-col items-center transition-all hover:scale-105"
+                    >
+                      <span className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 group-hover:text-purple-500 transition-colors">
+                        {showAllDishes ? 'Hide Expert Library' : 'View Comprehensive Food Library'}
+                      </span>
+                      <div className={`p-3 rounded-full bg-gray-50 border border-gray-200 text-gray-400 group-hover:bg-purple-50 group-hover:border-purple-200 group-hover:text-purple-600 shadow-sm transition-all duration-500 ${showAllDishes ? 'rotate-180 bg-purple-50 text-purple-600' : ''}`}>
+                        <ChevronDown className="h-5 w-5" />
+                      </div>
+                    </button>
+
+                    <AnimatePresence>
+                      {showAllDishes && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.5, ease: [0.04, 0.62, 0.23, 0.98] }}
+                          className="w-full overflow-hidden"
+                        >
+                          <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {/* Detailed Recommended Foods */}
+                            <div className="bg-green-50/30 rounded-3xl p-8 border border-green-100/50">
+                              <div className="flex items-center mb-6">
+                                <div className="p-2 bg-green-100 rounded-xl mr-4">
+                                  <Apple className="h-6 w-6 text-green-600" />
+                                </div>
+                                <div>
+                                  <h4 className="text-xl font-bold text-gray-900">Recommended Alternatives</h4>
+                                  <p className="text-xs text-gray-500 font-medium">Safe clinical candidates for your profile</p>
+                                </div>
+                              </div>
+                              <div className="space-y-3">
+                                {dr.recommended_foods.map((food, idx) => (
+                                  <div key={idx} className="bg-white p-4 rounded-2xl border border-green-100 shadow-sm flex items-center group hover:border-green-300 transition-colors">
+                                    <div className="h-2 w-2 rounded-full bg-green-500 mr-4 group-hover:scale-150 transition-transform" />
+                                    <span className="text-sm font-bold text-gray-800">{food}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Detailed Foods to Avoid */}
+                            <div className="bg-rose-50/30 rounded-3xl p-8 border border-rose-100/50">
+                              <div className="flex items-center mb-6">
+                                <div className="p-2 bg-rose-100 rounded-xl mr-4">
+                                  <ShieldAlert className="h-6 w-6 text-rose-600" />
+                                </div>
+                                <div>
+                                  <h4 className="text-xl font-bold text-gray-900">Restricted Ingredients</h4>
+                                  <p className="text-xs text-gray-500 font-medium">Strictly avoid to prevent condition escalation</p>
+                                </div>
+                              </div>
+                              <div className="space-y-3">
+                                {dr.foods_to_avoid.map((food, idx) => (
+                                  <div key={idx} className="bg-white p-4 rounded-2xl border border-rose-100 shadow-sm flex items-center group hover:border-rose-300 transition-colors">
+                                    <div className="h-2 w-2 rounded-full bg-rose-500 mr-4 group-hover:scale-150 transition-transform" />
+                                    <span className="text-sm font-bold text-gray-600 line-through decoration-rose-200">{food}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="mt-8 p-6 bg-purple-50/50 rounded-2xl border border-purple-100 text-center">
+                            <p className="text-xs text-purple-700 font-bold tracking-tight">
+                              Expert Insight: The above library is dynamically curated based on your lab parameters. Each food is cross-verified against contraindications detected in your report.
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </GlassCard>
 

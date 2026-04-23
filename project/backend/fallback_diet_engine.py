@@ -12,6 +12,7 @@ from backend.indian_meal_builder import indian_meal_builder
 from backend.clinical_validator import clinical_validator
 from backend.services.variation_engine import variation_engine
 from backend.nutrient_pipeline import get_enriched_food_profile, filter_unsafe_foods as pipeline_filter
+from backend.report_diet_engine import derive_base_ingredients, expand_ingredients_with_mapper
 
 logger = logging.getLogger(__name__)
 
@@ -150,6 +151,12 @@ def score_food_hierarchical(food_name: str, target_nutrients: List[str], avoid_m
     if name_clean in avoid_map:
         return -100.0, avoid_map[name_clean]
             
+    # 5. [NEW] Ingredient-First Bonus (+6.0)
+    # If this food was explicitly derived from the patient's lab markers
+    if context and "derived_ingredients" in context:
+        if any(ing in name_clean for ing in context["derived_ingredients"]):
+            score += 6.0
+
     # 6. Cuisine Preference Bonus (+5.0 for Indian Staples)
     if "indian_staple" in details.get("tags", []):
         score += CUISINE_BIAS
@@ -462,6 +469,10 @@ def fallback_diet_engine(input_data: Dict[str, Any], raw_text: Optional[str] = N
             "avoid": []
         }
     
+    # 🧠 NEW: Store derived ingredients in context for scoring boost
+    activity_level = context.get("activityLevel", "moderate")
+    context["derived_ingredients"] = expand_ingredients_with_mapper(derive_base_ingredients(input_data, {"activityLevel": activity_level}))
+
     logger.info("ENGINE | Clinical Context Initialized: Primary=%s", context.get("primary_condition", "General"))
     
     # 3. Hierarchical Recommendation Logic (Expert + USDA)
@@ -476,6 +487,14 @@ def fallback_diet_engine(input_data: Dict[str, Any], raw_text: Optional[str] = N
         for uf in top_usda:
             candidate_foods.add(uf["name"])
     
+    # 🧠 NEW INGREDIENT-FIRST EXPANSION
+    activity_level = (context or {}).get("activityLevel", "moderate")
+    base_needs = derive_base_ingredients(input_data, {"activityLevel": activity_level})
+    mapper_ingredients = expand_ingredients_with_mapper(base_needs)
+    
+    for ing in mapper_ingredients:
+        candidate_foods.add(ing)
+
     scored_candidates = []
     safety_registry = {} # food -> reason for block
 
