@@ -1,5 +1,8 @@
 import os
 import sys
+import eventlet
+import json
+eventlet.monkey_patch()
 from typing import Optional
 
 # Load .env before any module reads os.environ (e.g. GEMINI_API_KEY)
@@ -47,6 +50,9 @@ from backend.routes.doctor_appointments import doctor_appointments_bp
 from backend.routes.meal_plan import meal_plan_bp
 from backend.routes.monitoring import monitoring_bp
 from backend.routes.admin import admin_bp
+from backend.routes.nurse_handoff import nurse_handoff_bp
+from backend.routes.doctor_availability import doctor_availability_bp
+from backend.routes.appointment_booking import appointment_booking_bp
 from backend.db_service import DBService
 from backend.extensions import socketio
 
@@ -98,6 +104,10 @@ def create_app(config_overrides: Optional[dict] = None):
     app.register_blueprint(meal_plan_bp, url_prefix='/api')
     app.register_blueprint(monitoring_bp, url_prefix='/api')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
+    app.register_blueprint(nurse_handoff_bp, url_prefix='/api')
+    app.register_blueprint(doctor_availability_bp, url_prefix='/api')
+    app.register_blueprint(appointment_booking_bp, url_prefix='/api')
+
 
     @app.route('/health', methods=['GET'])
     def health():
@@ -180,9 +190,92 @@ def create_app(config_overrides: Optional[dict] = None):
 
     return app
 
+def run_scheduler(app):
+    """Background task to check for medication reminders every minute"""
+    import time
+    from datetime import datetime
+    from backend.models import db, Medication, MedicationLog, User
+    
+    with app.app_context():
+        print("[INFO] Medication Scheduler Started")
+        alerted_logs = set()
+        last_minute = ""
+        while True:
+            try:
+                now = datetime.now()
+                current_time = now.strftime("%H:%M")
+                today = now.strftime("%Y-%m-%d")
+
+                if current_time != last_minute:
+                    alerted_logs = set()
+                    last_minute = current_time
+                
+                # 1. Auto-seed logs for today for ALL active medications if they don't exist
+                active_meds = Medication.query.all()
+                for med in active_meds:
+                    # Check if logs exist for this med today
+                    exists = MedicationLog.query.filter_by(medication_id=med.id, date=today).first()
+                    if not exists:
+                        print(f"[SCHEDULER] Seeding daily logs for {med.name} (Patient {med.patient_id})")
+                        try:
+                            times = json.loads(med.times)
+                            for t in times:
+                                log = MedicationLog(
+                                    medication_id=med.id,
+                                    patient_id=med.patient_id,
+                                    scheduled_time=t,
+                                    date=today,
+                                    status='PENDING'
+                                )
+                                db.session.add(log)
+                            db.session.commit()
+                        except Exception as e:
+                            print(f"[SCHEDULER SEED ERROR] {e}")
+                            db.session.rollback()
+
+                # 2. Find pending logs for current time
+                pending_logs = db.session.query(MedicationLog, Medication).join(
+                    Medication, MedicationLog.medication_id == Medication.id
+                ).filter(
+                    MedicationLog.date == today,
+                    MedicationLog.status == 'PENDING',
+                    MedicationLog.scheduled_time == current_time
+                ).all()
+                
+                from backend.routes.monitoring import _resolve_patient
+
+                for log, med in pending_logs:
+                    if log.id not in alerted_logs:
+                        user, _ = _resolve_patient(med.patient_id)
+                        user_name = user.name if user else "Patient"
+                        
+                        print(f"[REMINDER] Medicine {med.name} due for {user_name} at {current_time}")
+                        # Emit socket event for real-time notification
+                        socketio.emit('medication_reminder', {
+                            "log_id": log.id,
+                            "patient_name": user_name,
+                            "patient_id": med.patient_id,
+                            "medicine_name": med.name,
+                            "dosage": med.dosage,
+                            "time": log.scheduled_time
+                        })
+                        alerted_logs.add(log.id)
+                
+                # Check for overdue items once an hour or so, or just rely on the frontend fetching
+                
+            except Exception as e:
+                print(f"[SCHEDULER ERROR] {e}")
+            
+            # Wait 10 seconds to check for "exact" timing
+            time.sleep(10)
 
 if __name__ == '__main__':
     app = create_app()
+    
+    # Start scheduler thread
+    import threading
+    scheduler_thread = threading.Thread(target=run_scheduler, args=(app,), daemon=True)
+    scheduler_thread.start()
     print("=" * 70)
     print("Starting Flask server...")
     print("Health Prediction API Server")

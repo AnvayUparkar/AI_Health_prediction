@@ -115,7 +115,13 @@ class Appointment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     doctor_id = db.Column(db.Integer, db.ForeignKey('doctors.id'), nullable=True)
-    date = db.Column(db.String(60), nullable=True)
+    doctor = db.relationship('Doctor', backref='appointments')
+    date = db.Column(db.String(60), nullable=True) # Legacy generic date
+    name = db.Column(db.String(120), nullable=True) # Patient Name
+    email = db.Column(db.String(120), nullable=True) # Patient Email
+    phone = db.Column(db.String(20), nullable=True) # Patient Phone
+    reason = db.Column(db.Text, nullable=True) # Reason for visit
+
     notes = db.Column(db.Text, nullable=True)
     
     # New Extended Fields
@@ -139,6 +145,7 @@ class Appointment(db.Model):
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 
 class ShopItem(db.Model):
     """Items available for purchase with points"""
@@ -356,6 +363,77 @@ class PatientMonitoring(db.Model):
             "snacks_done": self.snacks_done,
             "dinner_done": self.dinner_done,
             "created_at": self.created_at.isoformat() if self.created_at else None
+        }
+
+class HandoffReport(db.Model):
+    """Nurse Handoff Report model"""
+    __tablename__ = 'handoff_reports'
+    id = db.Column(db.Integer, primary_key=True)
+    patient_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    diagnosis = db.Column(db.String(256), nullable=True)
+    current_condition = db.Column(db.String(256), nullable=True)
+    vitals_summary = db.Column(db.Text, nullable=True)
+    ongoing_treatments = db.Column(db.Text, nullable=True)
+    previous_nurse_notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "patient_id": self.patient_id,
+            "diagnosis": self.diagnosis,
+            "current_condition": self.current_condition,
+            "vitals_summary": self.vitals_summary,
+            "ongoing_treatments": self.ongoing_treatments,
+            "previous_nurse_notes": self.previous_nurse_notes,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat()
+        }
+
+class Medication(db.Model):
+    """Patient Medication model"""
+    __tablename__ = 'medications'
+    id = db.Column(db.Integer, primary_key=True)
+    patient_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    name = db.Column(db.String(128), nullable=False)
+    dosage = db.Column(db.String(64), nullable=False)
+    times = db.Column(db.Text, nullable=False) # JSON list of strings, e.g., ["08:00", "20:00"]
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        try:
+            times_list = json.loads(self.times)
+        except:
+            times_list = []
+        return {
+            "id": self.id,
+            "patient_id": self.patient_id,
+            "name": self.name,
+            "dosage": self.dosage,
+            "times": times_list
+        }
+
+class MedicationLog(db.Model):
+    """Tracking individual medication administrations"""
+    __tablename__ = 'medication_logs'
+    id = db.Column(db.Integer, primary_key=True)
+    medication_id = db.Column(db.Integer, db.ForeignKey('medications.id'), nullable=False)
+    patient_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    scheduled_time = db.Column(db.String(10), nullable=False) # "HH:MM"
+    status = db.Column(db.String(20), default='PENDING') # PENDING, GIVEN, OVERDUE
+    given_at = db.Column(db.DateTime, nullable=True)
+    date = db.Column(db.String(10), nullable=False) # YYYY-MM-DD
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "medication_id": self.medication_id,
+            "patient_id": self.patient_id,
+            "scheduled_time": self.scheduled_time,
+            "status": self.status,
+            "given_at": self.given_at.isoformat() if self.given_at else None,
+            "date": self.date
         }
 
 def init_db(app):

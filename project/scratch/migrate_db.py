@@ -1,32 +1,24 @@
+
 import sqlite3
 import os
 
-db_path = os.path.join('backend', 'app.db')
-if not os.path.exists(db_path):
-    print(f"DB not found at {db_path}")
-    exit(1)
-
+db_path = os.path.join(os.getcwd(), 'app.db')
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 
-columns = [
-    ("age", "INTEGER"),
-    ("sex", "VARCHAR(20)"),
-    ("weight", "FLOAT"),
-    ("height", "FLOAT"),
-    ("hospitals", "TEXT")
+new_cols = [
+    ('name', 'VARCHAR(120)'),
+    ('email', 'VARCHAR(120)'),
+    ('phone', 'VARCHAR(20)'),
+    ('reason', 'TEXT')
 ]
 
-for col_name, col_type in columns:
+for col_name, col_type in new_cols:
     try:
-        cursor.execute(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}")
+        cursor.execute(f"ALTER TABLE appointments ADD COLUMN {col_name} {col_type};")
         print(f"Added column {col_name}")
-    except sqlite3.OperationalError as e:
-        if "duplicate column name" in str(e):
-            print(f"Column {col_name} already exists")
-        else:
-            print(f"Error adding {col_name}: {e}")
+    except sqlite3.OperationalError:
+        print(f"Column {col_name} already exists or error.")
 
 conn.commit()
 conn.close()
-print("Migration complete.")

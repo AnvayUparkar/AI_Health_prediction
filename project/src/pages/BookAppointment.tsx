@@ -1,15 +1,28 @@
 import React, { useState, useEffect } from 'react';
+
+
+
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Video, MapPin, User, Mail, Phone, Clock, CheckCircle, Navigation, Stethoscope, Info, Search, Globe, ChevronRight } from 'lucide-react';
+import { 
+  Calendar, Video, MapPin, User, Mail, Phone, Clock, 
+  CheckCircle, Navigation, Stethoscope, Info, Search, 
+  Globe, ChevronRight, ChevronDown, AlertCircle 
+} from 'lucide-react';
 import AnimatedBackground from '../components/AnimatedBackground';
 import GlassCard from '../components/GlassCard';
 import { getUserLocation, UserLocation } from '../services/geoService';
 import { fetchNearbyHealthcare } from '../services/overpassService';
 import { processFacilities, HealthcareFacility } from '../services/healthcareProcessor';
 import HealthcareMap from '../components/HealthcareMap';
-import { getDoctorsByHospital, searchHospitals } from '../services/api';
+import { getDoctorsByHospital, searchHospitals, bookSubSlot, getDoctorAvailability } from '../services/api';
+import toast from 'react-hot-toast';
+
+
+
+
 
 const BookAppointment = () => {
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -19,7 +32,8 @@ const BookAppointment = () => {
     time: '',
     reason: '',
     facilityId: '',
-    doctorId: ''
+    doctorId: '',
+    subSlot: null as any // Added to store sub-slot info
   });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -42,10 +56,48 @@ const BookAppointment = () => {
   const [addressSearch, setAddressSearch] = useState('');
   const [isSearchingAddress, setIsSearchingAddress] = useState(false);
 
+  // Slot Availability States
+  const [availability, setAvailability] = useState<any[]>([]);
+  const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(false);
+  const [expandedHour, setExpandedHour] = useState<string | null>(null);
+
+
+  // Fetch availability when doctor or date changes
+  useEffect(() => {
+    if (formData.doctorId && formData.date) {
+      fetchAvailability();
+    } else {
+      setAvailability([]);
+      setFormData(prev => ({ ...prev, time: '', subSlot: null }));
+    }
+  }, [formData.doctorId, formData.date]);
+
+  const fetchAvailability = async () => {
+    setIsAvailabilityLoading(true);
+    try {
+      const data = await getDoctorAvailability(formData.doctorId, formData.date);
+      setAvailability(data.slots || []);
+      // Auto-expand first available hour if none expanded
+      if (data.slots && data.slots.length > 0 && !expandedHour) {
+        const firstAvailable = data.slots.find((s: any) => s.remaining > 0);
+        if (firstAvailable) setExpandedHour(firstAvailable.hour);
+      }
+    } catch (error) {
+      console.error('Fetch error:', error);
+      toast.error('Failed to load doctor availability');
+    } finally {
+      setIsAvailabilityLoading(false);
+    }
+  };
+
+
+
   useEffect(() => {
     if (!formData.facilityId) {
       setHospitalDoctors([]);
-      setFormData(prev => ({ ...prev, doctorId: '' }));
+      if (!formData.subSlot) { // Don't clear if we just came from slot picker
+        setFormData(prev => ({ ...prev, doctorId: '' }));
+      }
       return;
     }
 
@@ -176,7 +228,9 @@ const BookAppointment = () => {
     
     // CLEAR OLD DOCTORS before fetching new ones
     setHospitalDoctors([]);
-    setFormData(prev => ({ ...prev, doctorId: '' }));
+    if (!formData.subSlot) {
+      setFormData(prev => ({ ...prev, doctorId: '' }));
+    }
 
     try {
       // Fetch doctors ONLY for the selected hospital by name
@@ -189,7 +243,9 @@ const BookAppointment = () => {
         setSearchError("No doctors available for this hospital");
       } else {
         setSearchError(null);
-        setFormData(prev => ({ ...prev, doctorId: docs[0].id }));
+        if (!formData.doctorId) {
+          setFormData(prev => ({ ...prev, doctorId: docs[0].id }));
+        }
       }
     } catch (err) {
       console.error('Failed to fetch doctors', err);
@@ -216,6 +272,17 @@ const BookAppointment = () => {
     };
 
     try {
+      // IF SUB-SLOT IS SELECTED, use the specialized booking API first
+      if (formData.subSlot && formData.doctorId && currentUser?.id) {
+        await bookSubSlot({
+          doctorId: formData.doctorId,
+          date: formData.date,
+          slot: formData.subSlot,
+          userId: currentUser.id
+        });
+      }
+
+      // Record the appointment in the main SQL database as well
       const response = await fetch('http://localhost:5000/api/appointments', {
         method: 'POST',
         headers: {
@@ -237,17 +304,19 @@ const BookAppointment = () => {
             time: '',
             reason: '',
             facilityId: '',
-            doctorId: ''
+            doctorId: '',
+            subSlot: null
           });
         }, 5000);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error booking appointment:', error);
-      alert('Failed to book appointment. Please try again.');
+      toast.error(error.response?.data?.error || 'Failed to book appointment. Please try again.');
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleFindNearby = async () => {
     setSearching(true);
@@ -633,27 +702,127 @@ const BookAppointment = () => {
                 />
               </div>
 
-              <div>
-                <label className="flex items-center text-gray-700 font-semibold mb-2">
+              <div className="md:col-span-2">
+                <label className="flex items-center text-gray-700 font-semibold mb-3">
                   <Clock className="h-5 w-5 mr-2 text-blue-500" />
-                  Preferred Time
+                  Select Consultation Time
                 </label>
-                <select
-                  name="time"
-                  value={formData.time}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all bg-white/50"
-                >
-                  <option value="">Select time</option>
-                  <option value="09:00">09:00 AM</option>
-                  <option value="10:00">10:00 AM</option>
-                  <option value="11:00">11:00 AM</option>
-                  <option value="14:00">02:00 PM</option>
-                  <option value="15:00">03:00 PM</option>
-                  <option value="16:00">04:00 PM</option>
-                </select>
+                
+                {formData.doctorId && formData.date ? (
+                  <div className="space-y-4">
+                    {isAvailabilityLoading ? (
+                      <div className="flex flex-col items-center justify-center py-10 bg-white/40 rounded-2xl border border-dashed border-gray-200">
+                        <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mb-3" />
+                        <p className="text-xs text-gray-500 font-medium">Checking live availability...</p>
+                      </div>
+                    ) : availability.length > 0 ? (
+                      <div className="grid grid-cols-1 gap-3">
+                        {availability.map((hourSlot) => {
+                          const isFull = hourSlot.remaining === 0;
+                          const isExpanded = expandedHour === hourSlot.hour;
+                          const hasSelectedInThisHour = formData.subSlot && hourSlot.subSlots.some((s: any) => s.start === formData.subSlot.start);
+
+                          return (
+                            <div key={hourSlot.hour} className={`rounded-2xl border transition-all overflow-hidden ${hasSelectedInThisHour ? 'border-blue-500 bg-blue-50/30' : 'border-gray-100 bg-white/50'}`}>
+                              <button
+                                type="button"
+                                onClick={() => !isFull && setExpandedHour(isExpanded ? null : hourSlot.hour)}
+                                disabled={isFull}
+                                className={`w-full p-4 flex items-center justify-between text-left ${isFull ? 'opacity-40 cursor-not-allowed' : 'hover:bg-blue-50/20'}`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className={`p-2 rounded-lg ${isFull ? 'bg-gray-200 text-gray-500' : 'bg-blue-100 text-blue-600'}`}>
+                                    <Clock className="w-4 h-4" />
+                                  </div>
+                                  <div>
+                                    <h4 className="font-bold text-gray-800 text-sm">{hourSlot.hour}</h4>
+                                    <p className={`text-[10px] font-bold ${isFull ? 'text-gray-400' : 'text-blue-500'}`}>
+                                      {isFull ? 'FULLY BOOKED' : `${hourSlot.remaining} / ${hourSlot.total} slots remaining`}
+                                    </p>
+                                  </div>
+                                </div>
+                                {!isFull && (
+                                  <motion.div animate={{ rotate: isExpanded ? 180 : 0 }}>
+                                    <ChevronDown className="w-4 h-4 text-gray-400" />
+                                  </motion.div>
+                                )}
+                              </button>
+
+                              <AnimatePresence>
+                                {isExpanded && (
+                                  <motion.div
+                                    initial={{ height: 0 }}
+                                    animate={{ height: 'auto' }}
+                                    exit={{ height: 0 }}
+                                    className="overflow-hidden bg-white/30 border-t border-gray-100"
+                                  >
+                                    <div className="p-4 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                      {hourSlot.subSlots.map((sub: any, idx: number) => {
+                                        const isSelected = formData.subSlot?.start === sub.start && formData.subSlot?.end === sub.end;
+                                        return (
+                                          <button
+                                            key={idx}
+                                            type="button"
+                                            disabled={sub.isBooked}
+                                            onClick={() => setFormData(prev => ({ 
+                                              ...prev, 
+                                              time: `${sub.start} - ${sub.end}`, 
+                                              subSlot: sub 
+                                            }))}
+                                            className={`p-2.5 rounded-xl border-2 text-xs font-bold transition-all ${
+                                              sub.isBooked
+                                                ? 'bg-gray-50 border-gray-50 text-gray-300 cursor-not-allowed'
+                                                : isSelected
+                                                  ? 'bg-blue-600 border-blue-600 text-white shadow-md'
+                                                  : 'bg-white border-white hover:border-blue-200 text-gray-600 shadow-sm'
+                                            }`}
+                                          >
+                                            {sub.start}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="p-8 text-center bg-amber-50/50 rounded-2xl border border-amber-100">
+                        <AlertCircle className="w-8 h-8 text-amber-400 mx-auto mb-2" />
+                        <p className="text-sm text-amber-800 font-bold">No Slots Set</p>
+                        <p className="text-xs text-amber-600 mt-1">This doctor hasn't configured availability for this date.</p>
+                      </div>
+                    )}
+                    
+                    {formData.subSlot && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3"
+                      >
+                        <div className="p-2 bg-green-500 text-white rounded-lg">
+                          <CheckCircle className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">Selected Appointment</p>
+                          <p className="text-sm font-bold text-green-800">{formData.date} @ {formData.subSlot.start} - {formData.subSlot.end}</p>
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-10 text-center bg-gray-50 rounded-2xl border-2 border-gray-200 border-dashed text-gray-400">
+                    <Clock className="w-8 h-8 mx-auto mb-3 opacity-20" />
+                    <p className="text-sm font-medium">Select a doctor and date above to view available time slots.</p>
+                  </div>
+                )}
               </div>
+
+
+
             </div>
 
             {/* Reason */}

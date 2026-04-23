@@ -5,20 +5,29 @@ import {
   ArrowLeft, Activity, Droplets, Heart, Wind, AlertTriangle,
   TrendingUp, TrendingDown, Minus, Clock, Utensils, RefreshCw,
   CheckCircle2, Circle, Sun, CloudSun, Moon, Sparkles, ChefHat,
-  Stethoscope, X
+  Stethoscope, X, Pill, Plus, ClipboardList, Save, History, Trash2
 } from 'lucide-react';
 import { 
   getPatientMonitoring, 
   updatePatientMonitoring, 
   getPatientTimeseries, 
   getAIDietRecommendation,
-  getClinicalCopilotConsult
+  getClinicalCopilotConsult,
+  getPatientMedicines,
+  addMedicine,
+  markMedicationGiven,
+  deleteMedicine,
+  getHandoffReport,
+  updateHandoffReport
 } from '../services/api';
 import ReactMarkdown from 'react-markdown';
+import { io } from 'socket.io-client';
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, AreaChart, Area,
 } from 'recharts';
+
+const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -180,6 +189,13 @@ export default function PatientMonitoringPage() {
   const [consultLoading, setConsultLoading] = useState(false);
   const [showConsultModal, setShowConsultModal] = useState(false);
 
+  // --- Nurse Handoff & Medication State ---
+  const [activeTab, setActiveTab] = useState<'vitals' | 'medications' | 'handoff'>('vitals');
+  const [medicines, setMedicines] = useState<any[]>([]);
+  const [handoffReport, setHandoffReport] = useState<any>({});
+  const [showAddMedicine, setShowAddMedicine] = useState(false);
+  const [newMed, setNewMed] = useState({ name: '', dosage: '', times: '' });
+
   const toastTimer = useRef<ReturnType<typeof setTimeout>>();
 
   const showToast = (msg: string) => {
@@ -269,10 +285,56 @@ export default function PatientMonitoringPage() {
     }
   }, [patientId]);
 
+  const fetchMedicines = useCallback(async () => {
+    if (!patientId) return;
+    try {
+      const res = await getPatientMedicines(patientId);
+      setMedicines(res.medicines || []);
+    } catch (e) {
+      console.error('Failed to fetch medicines', e);
+    }
+  }, [patientId]);
+
+  const fetchHandoff = useCallback(async () => {
+    if (!patientId) return;
+    try {
+      const res = await getHandoffReport(patientId);
+      setHandoffReport(res.report || {});
+    } catch (e) {
+      console.error('Failed to fetch handoff report', e);
+    }
+  }, [patientId]);
+
   useEffect(() => {
     fetchData();
     fetchTimeseries();
-  }, [fetchData, fetchTimeseries]);
+    fetchMedicines();
+    fetchHandoff();
+  }, [fetchData, fetchTimeseries, fetchMedicines, fetchHandoff]);
+
+  // Real-time sync for medication status
+  useEffect(() => {
+    const socket = io(API_URL, {
+      transports: ['polling', 'websocket']
+    });
+
+    socket.on('medicine_updated', (data) => {
+      console.log('Real-time med update received:', data);
+      // Only sync if it belongs to this patient
+      if (data.patient_id === patientId || String(data.patient_id) === String(patientId)) {
+        setMedicines(prev => prev.map(med => ({
+          ...med,
+          daily_status: med.daily_status?.map((s: any) => 
+            s.log_id === data.log_id ? { ...s, status: data.status } : s
+          )
+        })));
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [patientId]);
 
   // ── Submit Vitals ──────────────────────────────────────────────────────
 
@@ -311,6 +373,105 @@ export default function PatientMonitoringPage() {
     } catch (e: any) {
       console.error('Failed to save vitals', e);
       showToast('❌ Failed to save vitals');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddMedicine = async () => {
+    if (!patientId || !newMed.name || !newMed.dosage || !newMed.times) return;
+    setSaving(true);
+    
+    const timesArray = newMed.times.split(',').map(t => t.trim());
+    
+    // Create optimistic medication object
+    const optimisticMed = {
+      id: Date.now(), // Temporary ID
+      name: newMed.name,
+      dosage: newMed.dosage,
+      times: timesArray,
+      daily_status: timesArray.map(t => ({
+        time: t,
+        status: 'PENDING',
+        log_id: null // Will be synced after fetch
+      }))
+    };
+
+    // Update UI instantly
+    setMedicines(prev => [...prev, optimisticMed]);
+    setShowAddMedicine(false);
+    setNewMed({ name: '', dosage: '', times: '' });
+
+    try {
+      await addMedicine({
+        patient_id: patientId,
+        name: optimisticMed.name,
+        dosage: optimisticMed.dosage,
+        times: optimisticMed.times
+      });
+      showToast('💊 Medicine added successfully');
+      // Re-fetch in background to get real DB IDs
+      fetchMedicines();
+    } catch (e) {
+      console.error('Failed to add medicine', e);
+      showToast('❌ Failed to add medicine');
+      // Rollback on error
+      setMedicines(prev => prev.filter(m => m.id !== optimisticMed.id));
+      setShowAddMedicine(true);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleMarkMedicineGiven = async (logId: number) => {
+    // Optimistic update
+    setMedicines(prev => prev.map(med => ({
+      ...med,
+      daily_status: med.daily_status?.map((s: any) => 
+        s.log_id === logId ? { ...s, status: 'GIVEN' } : s
+      )
+    })));
+
+    try {
+      await markMedicationGiven(logId);
+      showToast('✅ Medication marked as given');
+    } catch (e) {
+      console.error('Failed to mark medication given', e);
+      showToast('❌ Failed to update medication status');
+      fetchMedicines(); // Rollback/Sync on error
+    }
+  };
+
+  const handleDeleteMedicine = async (medId: number) => {
+    if (!window.confirm('Are you sure you want to delete this medication and all its logs?')) return;
+    
+    // Optimistic update
+    const previousMeds = [...medicines];
+    setMedicines(prev => prev.filter(m => m.id !== medId));
+    
+    try {
+      showToast('🗑️ Medication deleted');
+      await deleteMedicine(medId);
+    } catch (error) {
+      console.error('Failed to delete medicine:', error);
+      showToast('❌ Failed to delete medication');
+      setMedicines(previousMeds); // Rollback on error
+    }
+  };
+
+  const handleUpdateHandoff = async () => {
+    if (!patientId) return;
+    setSaving(true);
+    try {
+      await updateHandoffReport({
+        patient_id: patientId,
+        ...handoffReport
+      });
+      showToast('📝 Handoff report updated');
+      fetchHandoff();
+    } catch (e) {
+      console.error('Failed to update handoff report', e);
+      showToast('❌ Failed to update report');
     } finally {
       setSaving(false);
     }
@@ -414,6 +575,28 @@ export default function PatientMonitoringPage() {
                 {' · '}Patient #{patient?.patient_id}
               </p>
             </div>
+            
+            <div className="flex items-center gap-2 bg-white/40 backdrop-blur-md p-1 rounded-2xl border border-white/30 shadow-sm">
+              {[
+                { id: 'vitals', label: 'Vitals', icon: Activity },
+                { id: 'medications', label: 'Medicines', icon: Pill },
+                { id: 'handoff', label: 'Handoff', icon: Stethoscope },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                    activeTab === tab.id
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md'
+                      : 'text-gray-500 hover:text-purple-600 hover:bg-white/50'
+                  }`}
+                >
+                  <tab.icon className="h-4 w-4" />
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -426,7 +609,9 @@ export default function PatientMonitoringPage() {
           </div>
         </motion.div>
 
-        {/* ── Predictive Insight ────────────────────────────────────── */}
+        {activeTab === 'vitals' && (
+          <>
+            {/* ── Predictive Insight ────────────────────────────────────── */}
         <AnimatePresence>
           {prediction && (
             <motion.div
@@ -1132,6 +1317,225 @@ export default function PatientMonitoringPage() {
             </div>
           )}
         </AnimatePresence>
+          </>
+        )}
+
+        {activeTab === 'medications' && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <Pill className="h-6 w-6 text-purple-500" />
+                Medication Schedule
+              </h2>
+              <button 
+                onClick={() => setShowAddMedicine(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 text-white text-sm font-bold shadow-lg hover:bg-purple-700 transition-all"
+              >
+                <Plus className="h-4 w-4" />
+                Add Medication
+              </button>
+            </div>
+
+            {showAddMedicine && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="p-6 rounded-2xl bg-white/60 backdrop-blur-lg border border-white/30 shadow-xl overflow-hidden">
+                <h3 className="text-sm font-bold text-gray-700 mb-4">Add New Medication</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 mb-1 block">Medicine Name</label>
+                    <input 
+                      type="text" value={newMed.name} 
+                      onChange={e => setNewMed({...newMed, name: e.target.value})}
+                      placeholder="e.g. Paracetamol"
+                      className="w-full px-4 py-2 rounded-xl bg-white border border-gray-200 text-sm focus:ring-2 focus:ring-purple-400 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 mb-1 block">Dosage</label>
+                    <input 
+                      type="text" value={newMed.dosage} 
+                      onChange={e => setNewMed({...newMed, dosage: e.target.value})}
+                      placeholder="e.g. 500mg"
+                      className="w-full px-4 py-2 rounded-xl bg-white border border-gray-200 text-sm focus:ring-2 focus:ring-purple-400 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 mb-1 block">Times (comma separated)</label>
+                    <input 
+                      type="text" value={newMed.times} 
+                      onChange={e => setNewMed({...newMed, times: e.target.value})}
+                      placeholder="e.g. 08:00, 20:00"
+                      className="w-full px-4 py-2 rounded-xl bg-white border border-gray-200 text-sm focus:ring-2 focus:ring-purple-400 outline-none"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <button onClick={() => setShowAddMedicine(false)} className="px-4 py-2 text-sm text-gray-500 font-bold">Cancel</button>
+                  <button onClick={handleAddMedicine} className="px-6 py-2 bg-purple-600 text-white rounded-xl text-sm font-bold">Save Medication</button>
+                </div>
+              </motion.div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {medicines.map((med) => (
+                <div key={med.id} className="p-5 rounded-2xl bg-white/60 backdrop-blur-lg border border-white/30 shadow-lg group hover:shadow-xl transition-all">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-xl bg-purple-50 group-hover:bg-purple-100 transition-colors">
+                        <Pill className="h-6 w-6 text-purple-600" />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-sm font-bold text-gray-800">{med.name}</p>
+                        <p className="text-xs text-gray-500">{med.dosage}</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => handleDeleteMedicine(med.id)}
+                      className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                      title="Delete Medication"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="space-y-3">
+                    {med.daily_status?.map((status: any, idx: number) => (
+                      <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-white/40 border border-white/20">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-blue-500" />
+                          <span className="text-sm font-medium text-gray-700">{status.time}</span>
+                        </div>
+                        <button 
+                          onClick={() => status.status === 'PENDING' && handleMarkMedicineGiven(status.log_id)}
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                            status.status === 'GIVEN'
+                              ? 'bg-emerald-100 text-emerald-600 cursor-default'
+                              : 'bg-amber-100 text-amber-600 hover:bg-emerald-100 hover:text-emerald-600'
+                          }`}
+                        >
+                          {status.status === 'GIVEN' ? <><CheckCircle2 className="h-3.5 w-3.5" /> Given</> : <><Circle className="h-3.5 w-3.5" /> Pending</>}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === 'handoff' && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <ClipboardList className="h-6 w-6 text-blue-500" />
+                Nurse Handoff Report
+              </h2>
+              <button 
+                onClick={handleUpdateHandoff}
+                disabled={saving}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
+              >
+                <Save className="h-4 w-4" />
+                {saving ? 'Saving...' : 'Save Report'}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="p-6 rounded-2xl bg-white/60 backdrop-blur-lg border border-white/30 shadow-lg">
+                  <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-red-500" />
+                    Clinical Context
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 mb-1.5 block">Diagnosis</label>
+                      <textarea 
+                        value={handoffReport.diagnosis || ''} 
+                        onChange={e => setHandoffReport({...handoffReport, diagnosis: e.target.value})}
+                        className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 text-sm focus:ring-2 focus:ring-blue-400 outline-none min-h-[80px]"
+                        placeholder="Primary diagnosis and comorbidities..."
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 mb-1.5 block">Current Condition</label>
+                      <input 
+                        type="text" value={handoffReport.current_condition || ''} 
+                        onChange={e => setHandoffReport({...handoffReport, current_condition: e.target.value})}
+                        className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 text-sm focus:ring-2 focus:ring-blue-400 outline-none"
+                        placeholder="Stable, Guarded, Critical..."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 rounded-2xl bg-white/60 backdrop-blur-lg border border-white/30 shadow-lg">
+                  <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+                    <History className="h-4 w-4 text-amber-500" />
+                    Treatments & Notes
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 mb-1.5 block">Ongoing Treatments</label>
+                      <textarea 
+                        value={handoffReport.ongoing_treatments || ''} 
+                        onChange={e => setHandoffReport({...handoffReport, ongoing_treatments: e.target.value})}
+                        className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 text-sm focus:ring-2 focus:ring-blue-400 outline-none min-h-[100px]"
+                        placeholder="IV fluids, Oxygen therapy, Physio..."
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 mb-1.5 block">Previous Nurse Notes</label>
+                      <textarea 
+                        value={handoffReport.previous_nurse_notes || ''} 
+                        onChange={e => setHandoffReport({...handoffReport, previous_nurse_notes: e.target.value})}
+                        className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 text-sm focus:ring-2 focus:ring-blue-400 outline-none min-h-[120px]"
+                        placeholder="Specific observations, family concerns, upcoming tasks..."
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-xl">
+                <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                  <Heart className="h-5 w-5" />
+                  Vitals Summary (Automated)
+                </h3>
+                <div className="space-y-6">
+                  {Object.entries(METRIC_CONFIG).map(([key, cfg]) => {
+                    const values = getMetricValues(key);
+                    const latest = values[values.length - 1];
+                    const avg = values.length > 0 ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1) : '—';
+                    
+                    return (
+                      <div key={key} className="flex items-center justify-between bg-white/10 p-4 rounded-2xl border border-white/20">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-white/20">
+                            <cfg.icon className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium opacity-70">{cfg.label}</p>
+                            <p className="text-xl font-bold">{latest || '—'} <span className="text-xs font-normal opacity-70">{cfg.unit}</span></p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">7-Day Avg</p>
+                          <p className="text-lg font-bold">{avg}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-8 p-4 bg-white/10 rounded-2xl border border-white/10">
+                  <p className="text-xs opacity-80 leading-relaxed italic">
+                    "This summary is generated from the last 7 days of clinical observations. 
+                    Please cross-verify with the Vitals tab for detailed trends before making critical decisions."
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   );

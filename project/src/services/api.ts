@@ -23,6 +23,43 @@ api.interceptors.request.use((cfg) => {
 
 export default api;
 
+// --- Nurse Handoff & Medication APIs ---
+
+export const addMedicine = async (data: any) => {
+    const res = await api.post('/api/add-medicine', data);
+    return res.data;
+};
+
+export const deleteMedicine = async (medId: string | number) => {
+    const res = await api.delete(`/api/delete-medicine/${medId}`);
+    return res.data;
+};
+
+export const getPatientMedicines = async (patientId: any) => {
+    const res = await api.get(`/api/patient-medicines`, { params: { patient_id: patientId } });
+    return res.data;
+};
+
+export const markMedicationGiven = async (logId: any) => {
+    const res = await api.patch('/api/mark-given', { log_id: logId });
+    return res.data;
+};
+
+export const getPendingNotifications = async () => {
+    const res = await api.get('/api/pending-notifications');
+    return res.data;
+};
+
+export const getHandoffReport = async (patientId: any) => {
+    const res = await api.get(`/api/handoff-report`, { params: { patient_id: patientId } });
+    return res.data;
+};
+
+export const updateHandoffReport = async (data: any) => {
+    const res = await api.post('/api/handoff-report', data);
+    return res.data;
+};
+
 export const signup = async (name: string, email: string, password: string, role: string = 'user', certificate?: File) => {
     if (role === 'doctor' && certificate) {
         const fd = new FormData();
@@ -305,5 +342,37 @@ export const getClinicalCopilotConsult = async (patientId: number | string) => {
 
 export const seedMonitoringData = async () => {
     const res = await api.post('/api/monitoring/seed');
+    return res.data;
+};
+
+// --- Doctor Availability & Sub-slot Booking ---
+
+export const getDoctorAvailability = async (doctorId: string, date: string) => {
+    const res = await api.get(`/api/doctor/availability/${doctorId}`, { params: { date } });
+    return res.data;
+};
+
+export const saveDoctorAvailability = async (data: {
+    doctorId: string;
+    date: string;
+    hours: string[];
+    avgConsultationTime: number;
+}) => {
+    const res = await api.post('/api/doctor/availability', data);
+    return res.data;
+};
+
+export const bookSubSlot = async (data: {
+    doctorId: string;
+    date: string;
+    slot: { start: string; end: string };
+    userId: string;
+}) => {
+    const res = await api.post('/api/appointment/book', data);
+    return res.data;
+};
+
+export const getAppointments = async (filters: any = {}) => {
+    const res = await api.get('/api/appointments', { params: filters });
     return res.data;
 };

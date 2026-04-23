@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Shield, Search, Hospital, Save, Plus, X, HeartPulse, Stethoscope, Activity, Heart, Edit, Upload, Clock, ShieldCheck, AlertCircle, FileText, ExternalLink, Check, ChevronRight, Info, Utensils } from 'lucide-react';
+import { User, Mail, Shield, Search, Hospital, Save, Plus, X, HeartPulse, Stethoscope, Activity, Heart, Edit, Upload, Clock, CalendarClock, ShieldCheck, AlertCircle, FileText, ExternalLink, Check, ChevronRight, Info, Utensils } from 'lucide-react';
+
 import GlassCard from '../components/GlassCard';
 import AnimatedBackground from '../components/AnimatedBackground';
-import { getProfile, updateProfile, searchUsers, updatePatientProfile, uploadDoctorCertificate } from '../services/api';
+import { getProfile, updateProfile, searchUsers, updatePatientProfile, uploadDoctorCertificate, getAppointments } from '../services/api';
+
 import toast from 'react-hot-toast';
 
 const Profile = () => {
+  const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -30,6 +35,9 @@ const Profile = () => {
   const [searching, setSearching] = useState(false);
   const [newHospital, setNewHospital] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [loadingAppointments, setLoadingAppointments] = useState(false);
+
 
   useEffect(() => {
     fetchProfile();
@@ -53,6 +61,7 @@ const Profile = () => {
         const parsed = JSON.parse(storedUser);
         localStorage.setItem('user', JSON.stringify({ ...parsed, ...data }));
       }
+      fetchAppointments(data.id);
     } catch (error) {
       console.error("Failed to fetch profile", error);
       toast.error("Failed to load profile");
@@ -60,6 +69,20 @@ const Profile = () => {
       setLoading(false);
     }
   };
+
+
+  const fetchAppointments = async (userId: string | number) => {
+    setLoadingAppointments(true);
+    try {
+      const data = await getAppointments({ patient_id: userId });
+      setAppointments(data.appointments || []);
+    } catch (error) {
+      console.error("Failed to fetch appointments", error);
+    } finally {
+      setLoadingAppointments(false);
+    }
+  };
+
 
   const handleCertificateUpload = async (file: File) => {
     setIsUploading(true);
@@ -235,9 +258,42 @@ const Profile = () => {
 
           {/* Health & Clinical Data Card */}
           <div className="lg:col-span-2 space-y-8">
+
+            {/* NEW: Appointment Availability Section for Doctors */}
+            {userRole === 'doctor' && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="relative overflow-hidden"
+              >
+                <GlassCard className="p-8 border-none bg-gradient-to-br from-blue-600/10 to-indigo-600/10 border-blue-200">
+                  <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="flex items-center gap-4">
+                      <div className="p-4 bg-blue-100 rounded-2xl text-blue-600 shadow-inner">
+                        <CalendarClock className="w-8 h-8" />
+                      </div>
+                      <div>
+                        <h3 className="text-2xl font-bold text-gray-800">Clinic Availability</h3>
+                        <p className="text-gray-600">Set your working hours and consultation intervals.</p>
+                      </div>
+                    </div>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => navigate('/doctor/availability')}
+                      className="px-8 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-200 hover:shadow-blue-300 transition-all flex items-center gap-2 whitespace-nowrap"
+                    >
+                      <Plus className="w-5 h-5" />
+                      Add Slots
+                    </motion.button>
+                  </div>
+                </GlassCard>
+              </motion.div>
+            )}
             
             {/* Doctor Verification Section */}
             {userRole === 'doctor' && (
+
               <GlassCard className="p-8 border-l-4 border-l-blue-500">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center">
@@ -705,7 +761,100 @@ const Profile = () => {
               )}
             </AnimatePresence>
 
+            {/* Booked Appointments - Patient Only */}
+            {!isProfessional && (
+              <GlassCard className="p-8 mb-8">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center">
+                    <CalendarClock className="w-6 h-6 mr-2 text-rose-500" />
+                    <h3 className="text-2xl font-bold text-gray-800">My Booked Appointments</h3>
+                  </div>
+                  <button 
+                    onClick={() => navigate('/book-appointment')}
+                    className="text-sm font-bold text-rose-600 hover:text-rose-700 flex items-center bg-rose-50 px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Book New
+                  </button>
+                </div>
+
+                {loadingAppointments ? (
+                  <div className="flex justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-rose-500"></div>
+                  </div>
+                ) : appointments.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {appointments.map((apt) => (
+                      <motion.div
+                        key={apt.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="p-5 rounded-2xl bg-white/40 border border-white/20 hover:border-rose-200 transition-all group"
+                      >
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600">
+                              <CalendarClock className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-gray-800">{apt.reason}</h4>
+                              <p className="text-xs text-blue-600 font-semibold flex items-center mb-1">
+                                <Stethoscope className="w-3 h-3 mr-1" />
+                                {apt.doctor_name}
+                              </p>
+                              <p className="text-xs text-gray-500 flex items-center">
+                                <Clock className="w-3 h-3 mr-1" />
+                                {apt.date} at {apt.time}
+                              </p>
+                            </div>
+
+                          </div>
+                          <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                            apt.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                            apt.status === 'pending' ? 'bg-orange-100 text-orange-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {apt.status}
+                          </span>
+                        </div>
+                        
+                        {apt.mode === 'online' && apt.meeting_link && apt.status === 'confirmed' && (
+                          <a
+                            href={apt.meeting_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-4 w-full py-2 bg-rose-500 text-white rounded-xl text-xs font-bold flex items-center justify-center hover:bg-rose-600 transition-all shadow-md group-hover:shadow-rose-200"
+                          >
+                            <ExternalLink className="w-3 h-3 mr-2" />
+                            Join Zoom Meeting
+                          </a>
+                        )}
+                        
+                        {apt.mode === 'online' && !apt.meeting_link && apt.status === 'confirmed' && (
+                          <div className="mt-4 w-full py-2 bg-gray-100 text-gray-500 rounded-xl text-[10px] font-medium text-center border border-dashed border-gray-300">
+                            Waiting for meeting link...
+                          </div>
+                        )}
+                      </motion.div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 bg-gray-50/50 rounded-3xl border-2 border-dashed border-gray-200">
+                    <CalendarClock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500 font-medium">No appointments booked yet.</p>
+                    <button 
+                      onClick={() => navigate('/book-appointment')}
+                      className="mt-4 text-blue-600 font-bold hover:underline"
+                    >
+                      Book your first consultation
+                    </button>
+                  </div>
+                )}
+              </GlassCard>
+            )}
+
             {/* Associated Hospitals - Shared Visibility */}
+
             <GlassCard className="p-8">
               <div className="flex items-center mb-6">
                 <Hospital className="w-6 h-6 mr-2 text-blue-500" />

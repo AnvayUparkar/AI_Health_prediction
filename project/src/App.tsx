@@ -68,6 +68,9 @@ const AdminRoute = ({ children }: { children: JSX.Element }) => {
   return <Navigate to="/admin-login" replace />;
 };
 
+import DoctorAvailability from './pages/DoctorAvailability';
+import PatientBooking from './pages/PatientBooking';
+
 function App() {
   return (
     <Router>
@@ -132,6 +135,22 @@ function App() {
             } 
           />
           <Route 
+            path="/book-appointment/slots/:doctorId" 
+            element={
+              <ProtectedRoute>
+                <PatientBooking />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/doctor/availability" 
+            element={
+              <MedicalRoute>
+                <DoctorAvailability />
+              </MedicalRoute>
+            } 
+          />
+          <Route 
             path="/manage-appointments" 
             element={
               <MedicalRoute>
@@ -139,6 +158,7 @@ function App() {
               </MedicalRoute>
             } 
           />
+
           <Route 
             path="/predictions" 
             element={

@@ -119,8 +119,10 @@ def list_appointments():
         filters = {
             'status': request.args.get('status'),
             'mode': request.args.get('mode'),
-            'date': request.args.get('date')
+            'date': request.args.get('date'),
+            'patient_id': request.args.get('patient_id')
         }
+
         
         appointments = DBService.list_appointments(filters)
         
@@ -134,21 +136,35 @@ def list_appointments():
             ca = gv(apt, 'created_at')
             if ca and not isinstance(ca, str): ca = ca.isoformat()
             
-            ad = gv(apt, 'appointment_date')
+            ad = gv(apt, 'requested_date')
+            tm = gv(apt, 'requested_time')
+            
+            # Fallbacks for legacy data
+            if not ad: ad = gv(apt, 'appointment_date') or gv(apt, 'date')
+            if not tm: tm = gv(apt, 'appointment_time')
+
             if ad and not isinstance(ad, str): ad = ad.strftime('%Y-%m-%d')
+
+            d_id = gv(apt, 'doctor_id')
+            doctor_name = DBService.get_doctor_name(d_id)
+
+            # Prioritize 'name' field if it exists, otherwise use 'name' from gv (which might be the generic name)
+            display_name = gv(apt, 'name')
 
             result_list.append({
                 'id': gv(apt, 'id'),
-                'name': gv(apt, 'name'),
+                'name': display_name,
+                'doctor_name': doctor_name,
                 'email': gv(apt, 'email'),
                 'phone': gv(apt, 'phone'),
                 'mode': gv(apt, 'mode'),
                 'date': ad,
-                'time': gv(apt, 'appointment_time'),
+                'time': tm,
                 'reason': gv(apt, 'reason'),
                 'status': gv(apt, 'status'),
                 'created_at': ca
             })
+
 
         return jsonify({
             'appointments': result_list

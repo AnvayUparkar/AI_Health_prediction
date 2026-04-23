@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Activity, AlertCircle, CheckCircle, Clock, ChevronDown, Activity as Pulse } from 'lucide-react';
+import { Activity, AlertCircle, Clock, ChevronDown, Activity as Pulse } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { predict } from '../services/api';
 import AnimatedBackground from '../components/AnimatedBackground';
@@ -7,13 +7,13 @@ import AnimatedBackground from '../components/AnimatedBackground';
 const Diabetes = () => {
   /* === Diabetes UI Integration Start: Logic & State === */
   const [formData, setFormData] = useState<Record<string, any>>({
-    HighBP: null, HighChol: null, CholCheck: null, BMI: 25, Smoker: null, Stroke: null, 
-    HeartDiseaseorAttack: null, PhysActivity: null, Fruits: null, Veggies: null, 
+    HighBP: null, HighChol: null, CholCheck: null, BMI: 25, Smoker: null, Stroke: null,
+    HeartDiseaseorAttack: null, PhysActivity: null, Fruits: null, Veggies: null,
     HvyAlcoholConsump: null, AnyHealthcare: null, DiffWalk: null, Sex: null, Age: '',
     GenHlth: null, MentHlth: '', PhysHlth: ''
   });
-  
-  const [result, setResult] = useState<{prediction: string, confidence: number | null, probability?: number} | null>(null);
+
+  const [result, setResult] = useState<{ prediction: string, confidence: number | null, probability?: number } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
@@ -32,12 +32,12 @@ const Diabetes = () => {
   };
 
   const featureLabels: Record<string, string> = {
-    'GenHlth':'General health', 'BMI':'BMI', 'Age':'Age group',
-    'HighBP':'High blood pressure', 'PhysHlth':'Physical health days',
-    'DiffWalk':'Difficulty walking', 'HighChol':'High cholesterol',
-    'HeartDiseaseorAttack':'Heart disease', 'Stroke':'Stroke history',
-    'Smoker':'Smoker', 'PhysActivity':'Physical activity',
-    'HvyAlcoholConsump':'Heavy alcohol'
+    'GenHlth': 'General health', 'BMI': 'BMI', 'Age': 'Age group',
+    'HighBP': 'High blood pressure', 'PhysHlth': 'Physical health days',
+    'DiffWalk': 'Difficulty walking', 'HighChol': 'High cholesterol',
+    'HeartDiseaseorAttack': 'Heart disease', 'Stroke': 'Stroke history',
+    'Smoker': 'Smoker', 'PhysActivity': 'Physical activity',
+    'HvyAlcoholConsump': 'Heavy alcohol'
   };
 
   const handleInputChange = (field: string, value: any) => {
@@ -48,11 +48,11 @@ const Diabetes = () => {
     let filled = 0;
     filled += 1; // BMI
     const fieldsToCheck = [
-      'HighBP', 'HighChol', 'CholCheck', 'Smoker', 'PhysActivity', 'Fruits', 'Veggies', 
-      'HvyAlcoholConsump', 'Stroke', 'HeartDiseaseorAttack', 'AnyHealthcare', 'DiffWalk', 
+      'HighBP', 'HighChol', 'CholCheck', 'Smoker', 'PhysActivity', 'Fruits', 'Veggies',
+      'HvyAlcoholConsump', 'Stroke', 'HeartDiseaseorAttack', 'AnyHealthcare', 'DiffWalk',
       'Sex', 'Age', 'GenHlth', 'MentHlth', 'PhysHlth'
     ];
-    
+
     fieldsToCheck.forEach(f => {
       if (formData[f] !== null && formData[f] !== '') filled++;
     });
@@ -72,7 +72,7 @@ const Diabetes = () => {
     setIsLoading(true);
     setErrorMessage(null);
     setResult(null);
-    
+
     try {
       const data = await predict('diabetes', formData);
       setResult({
@@ -80,7 +80,7 @@ const Diabetes = () => {
         confidence: data.confidence,
         probability: data.probability
       });
-      
+
       setTimeout(() => {
         resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 300);
@@ -157,7 +157,7 @@ const Diabetes = () => {
 
       {/* Header (Integrated with app theme) */}
       <header className="relative pt-32 pb-12 px-8 text-center overflow-hidden">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="max-w-5xl mx-auto relative z-10"
@@ -169,16 +169,16 @@ const Diabetes = () => {
             Diabetes Risk Assessment
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto text-lg leading-relaxed">
-            Harnessing Machine Learning to evaluate 18 specific indicators 
+            Harnessing Machine Learning to evaluate 18 specific indicators
             based on CDC health surveillance data.
           </p>
-          
+
           <div className="flex justify-center gap-3 mt-8">
             {[...Array(5)].map((_, i) => (
-              <motion.div 
-                key={i} 
-                animate={{ scale: progress >= (i+1)*20 ? 1.2 : 1 }}
-                className={`w-3 h-3 rounded-full transition-colors duration-500 ${progress >= (i+1)*20 ? 'bg-indigo-500' : 'bg-gray-300'}`}
+              <motion.div
+                key={i}
+                animate={{ scale: progress >= (i + 1) * 20 ? 1.2 : 1 }}
+                className={`w-3 h-3 rounded-full transition-colors duration-500 ${progress >= (i + 1) * 20 ? 'bg-indigo-500' : 'bg-gray-300'}`}
               />
             ))}
           </div>
@@ -187,8 +187,8 @@ const Diabetes = () => {
 
       {/* Sticky Progress Bar */}
       <div className="sticky top-0 z-50 h-1.5 bg-gray-200/50 backdrop-blur-sm overflow-hidden">
-        <motion.div 
-          className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" 
+        <motion.div
+          className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.5 }}
         />
@@ -196,7 +196,7 @@ const Diabetes = () => {
 
       <main className="max-w-4xl mx-auto px-6 pt-12 diabetes-container relative z-10">
         {/* Section 1: Blood & Cholesterol */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
@@ -215,7 +215,7 @@ const Diabetes = () => {
               <div key={f.id} className="flex flex-col gap-3">
                 <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500">{f.label}</label>
                 <div className="flex gap-2">
-                  {[ {l: 'No', v: 0}, {l: 'Yes', v: 1} ].map(opt => (
+                  {[{ l: 'No', v: 0 }, { l: 'Yes', v: 1 }].map(opt => (
                     <div key={opt.v} className="toggle-chip flex-1">
                       <input type="radio" id={`${f.id}-${opt.v}`} name={f.id} className="hidden" checked={formData[f.id] === opt.v} onChange={() => handleInputChange(f.id, opt.v)} />
                       <label htmlFor={`${f.id}-${opt.v}`} className="block text-center py-2.5 px-4 border border-white/60 rounded-xl text-xs cursor-pointer transition-all hover:bg-white/40 text-gray-700">{opt.l}</label>
@@ -229,7 +229,7 @@ const Diabetes = () => {
         </motion.div>
 
         {/* Section 2: Body & Lifestyle */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
@@ -254,7 +254,7 @@ const Diabetes = () => {
               <div className="flex flex-col gap-3">
                 <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500">Smoking Status</label>
                 <div className="flex gap-2">
-                  {[ {l: 'Non-Smoker', v: 0}, {l: 'Smoker (100+ lifetime)', v: 1} ].map(opt => (
+                  {[{ l: 'Non-Smoker', v: 0 }, { l: 'Smoker (100+ lifetime)', v: 1 }].map(opt => (
                     <div key={opt.v} className="toggle-chip flex-1">
                       <input type="radio" id={`Smoker-${opt.v}`} name="Smoker" className="hidden" checked={formData.Smoker === opt.v} onChange={() => handleInputChange('Smoker', opt.v)} />
                       <label htmlFor={`Smoker-${opt.v}`} className="block text-center py-2.5 px-4 border border-white/60 rounded-xl text-xs cursor-pointer transition-all hover:bg-white/40 text-gray-700 leading-tight">{opt.l}</label>
@@ -273,7 +273,7 @@ const Diabetes = () => {
                 <div key={f.id} className="flex flex-col gap-2">
                   <label className="text-[9px] uppercase tracking-widest font-bold text-gray-500 text-center">{f.label}</label>
                   <div className="flex gap-1">
-                    {[ {l: 'N', v: 0}, {l: 'Y', v: 1} ].map(opt => (
+                    {[{ l: 'N', v: 0 }, { l: 'Y', v: 1 }].map(opt => (
                       <div key={opt.v} className="toggle-chip flex-1">
                         <input type="radio" id={`${f.id}-${opt.v}`} name={f.id} className="hidden" checked={formData[f.id] === opt.v} onChange={() => handleInputChange(f.id, opt.v)} />
                         <label htmlFor={`${f.id}-${opt.v}`} className="block text-center py-2 border border-white/60 rounded-lg text-[10px] cursor-pointer transition-all text-gray-600">{opt.l}</label>
@@ -287,7 +287,7 @@ const Diabetes = () => {
         </motion.div>
 
         {/* Section 3: Medical History */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
@@ -307,7 +307,7 @@ const Diabetes = () => {
               <div key={f.id} className="flex flex-col gap-3">
                 <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500">{f.label}</label>
                 <div className="flex gap-2">
-                  {[ {l: 'No', v: 0}, {l: 'Yes', v: 1} ].map(opt => (
+                  {[{ l: 'No', v: 0 }, { l: 'Yes', v: 1 }].map(opt => (
                     <div key={opt.v} className="toggle-chip flex-1">
                       <input type="radio" id={`${f.id}-${opt.v}`} name={f.id} className="hidden" checked={formData[f.id] === opt.v} onChange={() => handleInputChange(f.id, opt.v)} />
                       <label htmlFor={`${f.id}-${opt.v}`} className="block text-center py-2.5 px-4 border border-white/60 rounded-xl text-xs cursor-pointer transition-all hover:bg-white/40 text-gray-700">{opt.l}</label>
@@ -321,7 +321,7 @@ const Diabetes = () => {
         </motion.div>
 
         {/* Section 4: Health Status */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
@@ -368,7 +368,7 @@ const Diabetes = () => {
         </motion.div>
 
         {/* Section 5: Demographics */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
@@ -382,7 +382,7 @@ const Diabetes = () => {
             <div className="flex flex-col gap-3">
               <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500">Sex Assigned at Birth</label>
               <div className="flex gap-2">
-                {[ {l: 'Female', v: 0}, {l: 'Male', v: 1} ].map(opt => (
+                {[{ l: 'Female', v: 0 }, { l: 'Male', v: 1 }].map(opt => (
                   <div key={opt.v} className="toggle-chip flex-1">
                     <input type="radio" id={`Sex-${opt.v}`} name="Sex" className="hidden" checked={formData.Sex === opt.v} onChange={() => handleInputChange('Sex', opt.v)} />
                     <label htmlFor={`Sex-${opt.v}`} className="block text-center py-3 px-4 border border-white/60 rounded-xl text-xs cursor-pointer transition-all hover:bg-white/40 text-gray-700">{opt.l}</label>
@@ -407,20 +407,20 @@ const Diabetes = () => {
 
         {/* Submit Area */}
         <div className="text-center mb-24">
-          <motion.button 
+          <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => handleSubmit()} 
-            disabled={isLoading} 
+            onClick={() => handleSubmit()}
+            disabled={isLoading}
             className={`inline-flex items-center gap-3 px-12 py-5 bg-indigo-600 text-white rounded-2xl font-bold text-lg transition-all shadow-xl shadow-indigo-200 hover:shadow-indigo-300 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
             {isLoading ? <Clock className="w-6 h-6 animate-spin" /> : <Pulse className="w-6 h-6" />}
             {isLoading ? 'Processing Health Matrix...' : 'Generate Risk Analysis'}
           </motion.button>
-          
+
           <AnimatePresence>
             {errorMessage && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
@@ -437,7 +437,7 @@ const Diabetes = () => {
         <div ref={resultRef}>
           <AnimatePresence>
             {result && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="section-glass border-none shadow-2xl overflow-hidden mb-20"
@@ -453,7 +453,7 @@ const Diabetes = () => {
                     <p className="text-gray-600 font-medium">Predictive analysis complete based on clinical surveillance patterns.</p>
                   </div>
                 </div>
-                
+
                 <div className="p-12">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
                     <div className="text-center md:text-left">
@@ -461,13 +461,13 @@ const Diabetes = () => {
                         {Math.round(result.probability!)}<span className="text-3xl text-gray-400 ml-2">%</span>
                       </div>
                       <p className="text-[11px] uppercase tracking-[0.3em] text-gray-400 mt-4 font-black">Computed Probability Score</p>
-                      
+
                       <div className="mt-12 p-8 bg-indigo-50/40 rounded-3xl border-l-8 border-indigo-500 text-gray-700 leading-relaxed font-medium italic">
-                        {result.probability! < 40 ? 
+                        {result.probability! < 40 ?
                           "Your metrics align with low-risk statistical clusters. Consistent physical activity and glycemic monitoring are advised for long-term maintenance." :
-                          result.probability! < 70 ? 
-                          "Moderate risk detected. We recommend a clinical consultation for a Fasting Plasma Glucose (FPG) test and metabolic review." :
-                          "High risk detected. Immediate medical consultation for HbA1c testing is strongly advised to rule out clinical diabetes or pre-diabetes."
+                          result.probability! < 70 ?
+                            "Moderate risk detected. We recommend a clinical consultation for a Fasting Plasma Glucose (FPG) test and metabolic review." :
+                            "High risk detected. Immediate medical consultation for HbA1c testing is strongly advised to rule out clinical diabetes or pre-diabetes."
                         }
                       </div>
                     </div>
@@ -479,8 +479,8 @@ const Diabetes = () => {
                           <span>Alert Zone</span>
                         </div>
                         <div className="h-4 bg-gray-100 rounded-full overflow-hidden p-1 shadow-inner">
-                          <motion.div 
-                            className="h-full gauge-fill rounded-full" 
+                          <motion.div
+                            className="h-full gauge-fill rounded-full"
                             initial={{ width: 0 }}
                             animate={{ width: `${result.probability}%` }}
                             transition={{ duration: 1.5, ease: "easeOut" }}
@@ -510,7 +510,7 @@ const Diabetes = () => {
                                     <span className="text-[10px] font-black text-indigo-400">{Math.round(contribution)}%</span>
                                   </div>
                                   <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                    <motion.div 
+                                    <motion.div
                                       className="h-full bg-indigo-400"
                                       initial={{ width: 0 }}
                                       whileInView={{ width: `${contribution}%` }}

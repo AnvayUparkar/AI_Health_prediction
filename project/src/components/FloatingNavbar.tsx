@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Menu, X, User, LogOut } from 'lucide-react';
+import { Heart, Menu, X, User, LogOut, Calendar } from 'lucide-react';
+
 import api from '../services/api';
 import SOSNavbarWidget from './SOSNavbarWidget';
+import MedicationReminder from './MedicationReminder';
 
 const FloatingNavbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -22,10 +24,11 @@ const FloatingNavbar = () => {
     { name: 'Home', href: '/' },
     { name: 'About', href: '/about' },
     { name: 'What We Do', href: '/what-we-do' },
-    // { name: 'Report Analyzer', href: '/report-analyzer' },
+
     ...(isMedicalStaff ? [{ name: 'Monitoring', href: '/admitted-patients' }] : []),
     ...(isAdmin ? [{ name: 'Manage Doctors', href: '/manage-doctors' }] : []),
   ];
+
 
   useEffect(() => {
     const handleScroll = () => {
@@ -143,6 +146,7 @@ const FloatingNavbar = () => {
 
           {/* Auth Section */}
           <div className="hidden md:flex items-center space-x-2">
+            <MedicationReminder />
             <SOSNavbarWidget />
             {isAuthenticated ? (
               <div className="relative">
@@ -172,6 +176,15 @@ const FloatingNavbar = () => {
                         <User className="h-4 w-4" />
                         <span>Profile</span>
                       </Link>
+                      <Link
+                        to={isMedicalStaff ? "/manage-appointments" : "/profile"}
+                        onClick={() => setShowUserMenu(false)}
+                        className="w-full px-4 py-3 text-left text-gray-700 hover:bg-blue-50 transition-colors duration-200 flex items-center space-x-2"
+                      >
+                        <Calendar className="h-4 w-4" />
+                        <span>{isMedicalStaff ? "Manage Appts" : "My Appointments"}</span>
+                      </Link>
+
                       <button
                         onClick={handleLogout}
                         className="w-full px-4 py-3 text-left text-gray-700 hover:bg-red-50 transition-colors duration-200 border-t border-gray-100 flex items-center space-x-2"
@@ -261,6 +274,15 @@ const FloatingNavbar = () => {
                         <User className="h-4 w-4" />
                         <span>Profile</span>
                       </Link>
+                      <Link
+                        to={isMedicalStaff ? "/manage-appointments" : "/profile"}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="w-full px-4 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-white/20 transition-all duration-200 flex items-center space-x-2"
+                      >
+                        <Calendar className="h-4 w-4" />
+                        <span>{isMedicalStaff ? "Manage Appts" : "My Appointments"}</span>
+                      </Link>
+
                       <button
                         onClick={() => {
                           handleLogout();

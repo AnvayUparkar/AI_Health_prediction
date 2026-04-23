@@ -725,9 +725,16 @@ class DBService:
              patient_id=data.get('patient_id'),
              doctor_id=data.get('doctor_id'),
              status=data.get('status', 'PENDING'),
-             requested_date=str(data.get('appointment_date')),
-             requested_time=data.get('appointment_time')
+             requested_date=str(data.get('appointment_date') or data.get('date', '')),
+             requested_time=data.get('appointment_time') or data.get('time', ''),
+             name=data.get('name'),
+             email=data.get('email'),
+             phone=data.get('phone'),
+             reason=data.get('reason'),
+             mode=data.get('mode', 'offline'),
+             hospital_name=data.get('hospital_name')
         )
+
         # Assuming legacy generic payload attributes exist dynamically or are safely skipped
         for key in ['name', 'email', 'phone', 'mode', 'appointment_date', 'appointment_time', 'reason', 'meeting_link', 'meeting_id', 'meeting_password']:
             if hasattr(appointment, key) or key in data:
@@ -788,6 +795,7 @@ class DBService:
                 if filters.get('status'): mongo_query['status'] = filters['status']
                 if filters.get('mode'): mongo_query['mode'] = filters['mode']
                 if filters.get('date'): mongo_query['appointment_date'] = filters['date']
+                if filters.get('patient_id'): mongo_query['patient_id'] = str(filters['patient_id'])
                 
                 cursor = mongodb.appointments.find(mongo_query).sort("created_at", -1)
                 results = list(cursor)
@@ -799,11 +807,19 @@ class DBService:
         query = Appointment.query
         if filters.get('status'): query = query.filter_by(status=filters['status'])
         if filters.get('mode'): query = query.filter_by(mode=filters['mode'])
+        if filters.get('patient_id'): 
+            pid = filters['patient_id']
+            try: pid = int(pid)
+            except: pass
+            query = query.filter(db.or_(Appointment.patient_id == pid, Appointment.patient_id == str(pid)))
+            
         if filters.get('date'): 
-            date_obj = datetime.strptime(filters['date'], '%Y-%m-%d').date()
-            query = query.filter_by(appointment_date=date_obj)
+            # Match against requested_date
+            query = query.filter_by(requested_date=filters['date'])
         
         return query.order_by(Appointment.created_at.desc()).all()
+
+
 
     @staticmethod
     def update_appointment_status(appointment_id: Any, status: str):
@@ -857,6 +873,38 @@ class DBService:
         except:
             pass
         return None
+
+    @staticmethod
+    def get_doctor_name(doctor_id: Any):
+        if not doctor_id: return "Unknown Doctor"
+        try:
+            from backend.models import Doctor, User
+            # 1. Check SQL Doctors table
+            try:
+                doc = Doctor.query.get(int(doctor_id))
+                if doc: return doc.name
+            except: pass
+            
+            # 2. Check SQL Users table
+            try:
+                user = User.query.get(int(doctor_id))
+                if user: return user.name
+            except: pass
+            
+            # 3. Check Mongo if hybrid
+            if os.environ.get('DB_MODE') in ['hybrid', 'mongo']:
+                mongodb = DBService.get_mongo_db()
+                if mongodb is not None:
+                    oid = DBService.get_mongo_obj_id(doctor_id)
+                    # Try doctors collection
+                    doc = mongodb.doctors.find_one({"_id": oid}) if oid else None
+                    if doc: return doc.get('name')
+                    # Try users collection
+                    doc = mongodb.users.find_one({"_id": oid} if oid else {"id": doctor_id})
+                    if doc: return doc.get('name')
+        except:
+            pass
+        return "Unknown Doctor"
 
     @staticmethod
     def delete_appointment(appointment_id: Any):
