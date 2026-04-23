@@ -56,8 +56,12 @@ def create_appointment():
         apt_id = appointment['id'] if isinstance(appointment, dict) else appointment.id
         
         # 3. Brevo Email Notification
+        print(f"[Appointments] Checking email trigger: mode={data['mode']}, has_link={'meeting_link' in appointment_data}")
         if data['mode'] == 'online' and appointment_data.get('meeting_link'):
+            print(f"[Appointments] Triggering email to {data['email']}")
             EmailService.send_appointment_email(data['email'], appointment_data['meeting_link'])
+        else:
+            print("[Appointments] Email trigger skipped")
 
         return jsonify({
             'message': 'Appointment booked successfully',
