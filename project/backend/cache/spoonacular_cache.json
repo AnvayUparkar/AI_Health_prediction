@@ -529,5 +529,122 @@
         ],
         "timestamp": 1776907346.5455503,
         "confidence": 0.7
+    },
+    "beetroot salad dal tadka with bajra & lentil dal": {
+        "ingredients": [
+            "lentils",
+            "lemon",
+            "cucumber",
+            "onion",
+            "tomato",
+            "spices",
+            "garlic"
+        ],
+        "timestamp": 1776908360.3876665,
+        "confidence": 0.7
+    },
+    "lentil dal tadka": {
+        "ingredients": [
+            "spices",
+            "garlic",
+            "lentils",
+            "onion"
+        ],
+        "timestamp": 1776908361.2128344,
+        "confidence": 0.7
+    },
+    "spinach chilla with ragi & lentils": {
+        "ingredients": [
+            "oil",
+            "moong dal",
+            "onion"
+        ],
+        "timestamp": 1776908362.010072,
+        "confidence": 0.7
+    },
+    "beetroot salad sabzi": {
+        "ingredients": [
+            "tomato",
+            "lemon",
+            "cucumber"
+        ],
+        "timestamp": 1776908365.9206815,
+        "confidence": 0.7
+    },
+    "whole wheat roti": {
+        "ingredients": [
+            "wheat"
+        ],
+        "timestamp": 1776908905.7489612,
+        "confidence": 0.7
+    },
+    "beetroot salad dal tadka with ragi & lentil dal": {
+        "ingredients": [
+            "lemon",
+            "tomato",
+            "lentils",
+            "garlic",
+            "onion",
+            "cucumber",
+            "spices"
+        ],
+        "timestamp": 1776908912.8612723,
+        "confidence": 0.7
+    },
+    "bottle gourd sabzi sabzi with ragi & lentil dal": {
+        "ingredients": [
+            "onion",
+            "spices",
+            "lentils",
+            "garlic"
+        ],
+        "timestamp": 1776908956.823118,
+        "confidence": 0.7
+    },
+    "spinach chilla with bajra & lentils": {
+        "ingredients": [
+            "onion",
+            "moong dal",
+            "oil"
+        ],
+        "timestamp": 1776908963.9418976,
+        "confidence": 0.7
+    },
+    "vegetable poha with vegetables & dal": {
+        "ingredients": [
+            "onion",
+            "spices",
+            "lentils",
+            "garlic"
+        ],
+        "timestamp": 1776908997.9824066,
+        "confidence": 0.7
+    },
+    "jowar roti": {
+        "ingredients": [
+            "wheat"
+        ],
+        "timestamp": 1776908998.8170748,
+        "confidence": 0.7
+    },
+    "dalia tadka": {
+        "ingredients": [
+            "onion",
+            "spices",
+            "lentils",
+            "garlic"
+        ],
+        "timestamp": 1776909004.4510999,
+        "confidence": 0.7
+    },
+    "masoor dal curry": {
+        "ingredients": [
+            "onion",
+            "spices",
+            "lentils",
+            "garlic"
+        ],
+        "timestamp": 1776909004.757035,
+        "confidence": 0.7
     }
 }

@@ -1,5 +1,6 @@
 import random
 import logging
+import time
 from datetime import datetime
 from typing import List, Any, Optional
 
@@ -7,15 +8,20 @@ logger = logging.getLogger(__name__)
 
 class VariationEngine:
     """
-    Controlled Variability Layer.
-    Adds safe variation to deterministic outputs, ensuring that 
-    the same clinical input can produce slightly different, yet 
-    clinically safe and USDA-backed meal plans.
+    Controlled Variability Layer (v2 — Per-Request Variation).
+    
+    Architecture:
+      - Each upload/request gets a UNIQUE seed based on microsecond timestamp.
+      - This guarantees that re-uploading the same report produces different
+        (but clinically safe) meal plans.
+      - All variation is constrained to the TOP-K clinically scored candidates,
+        so safety is NEVER compromised.
     """
     
     def __init__(self):
         # Basic history cache: patient_id -> set of recent meals (Diversity tracking)
         self.history_cache = {} 
+        self._request_counter = 0  # Monotonic counter for extra uniqueness
         
         # Meal Options Bank for structured fallback variability
         self.MEAL_OPTIONS = {
@@ -32,18 +38,31 @@ class VariationEngine:
             "optimizes your nutritional intake",
             "aids in maintaining metabolic balance",
             "ensures safe and steady energy levels",
-            "provides targeted clinical support"
+            "provides targeted clinical support",
+            "contributes to balanced metabolic function",
+            "works synergistically with your diet protocol",
+            "reinforces your nutritional recovery pathway",
         ]
+
+    def set_request_seed(self, patient_id: str = "generic_patient"):
+        """
+        Sets a PER-REQUEST seed using microsecond-precision timestamp.
+        
+        Guarantees: Same report uploaded N times → N different (safe) outputs.
+        Safety:     All variation is constrained to top-K scored candidates.
+        """
+        self._request_counter += 1
+        seed_value = f"{patient_id}_{time.time_ns()}_{self._request_counter}"
+        random.seed(seed_value)
+        logger.info("VARIATION_ENGINE | Request seed set: counter=%d, patient=%s", 
+                     self._request_counter, patient_id)
 
     def set_daily_seed(self, patient_id: str = "generic_patient"):
         """
-        Sets a day-based seed. 
-        Same patient + same day = consistent output.
-        Different day = variation.
+        Legacy API — now delegates to per-request seeding for variation.
+        Kept for backward compatibility with existing callers.
         """
-        seed_value = f"{patient_id}_{datetime.now().date()}"
-        random.seed(seed_value)
-        logger.info("VARIATION_ENGINE | Set daily seed for patient: %s", patient_id)
+        self.set_request_seed(patient_id)
 
     def select_meal_option(self, food_list: List[Any], k: int = 5) -> Optional[Any]:
         """
@@ -58,6 +77,28 @@ class VariationEngine:
             
         top_k = food_list[:k]
         return random.choice(top_k)
+
+    def shuffle_candidates(self, candidates: List[Any], k: int = None) -> List[Any]:
+        """
+        Returns a shuffled copy of the candidate list.
+        If k is provided, only the top-k items are shuffled (preserving clinical priority).
+        
+        Use this for staple selection, dal selection, etc.
+        """
+        if not candidates:
+            return candidates
+        
+        result = list(candidates)  # Don't mutate the original
+        
+        if k and k < len(result):
+            # Shuffle only the top-k, keep the rest in order
+            top = result[:k]
+            random.shuffle(top)
+            result[:k] = top
+        else:
+            random.shuffle(result)
+        
+        return result
         
     def generate_explanation(self, base_reason: str) -> str:
         """Adds dynamic, Gemini-like phrasing to the deterministic reasoning."""

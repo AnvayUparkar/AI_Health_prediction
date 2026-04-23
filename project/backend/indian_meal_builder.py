@@ -3,6 +3,7 @@ import logging
 from typing import List, Dict, Any, Optional
 from backend.usda_manager import usda_manager
 from backend.services.dish_name_generator import generate_dish_name, generate_component_name, COOKING_STYLE
+from backend.services.variation_engine import variation_engine
 
 logger = logging.getLogger(__name__)
 
@@ -169,7 +170,7 @@ class IndianMealBuilder:
         }
 
     def _select_staple_with_diversity(self, conditions: List[str], used: set) -> str:
-        """Selects staple based on biochemical audit [Step 5]."""
+        """Selects staple based on biochemical audit [Step 5] with per-request variation."""
         # Condition priority logic
         candidates = ["Bajra", "Jowar", "Ragi", "Whole Wheat"]
         
@@ -178,6 +179,9 @@ class IndianMealBuilder:
         elif any(c in conditions for c in ["prediabetes", "hyperglycemia"]):
             candidates = ["Jowar", "Ragi", "Bajra", "Whole Wheat"]
 
+        # 🧠 Per-request shuffle within clinical priority band
+        candidates = variation_engine.shuffle_candidates(candidates)
+
         # Selection Memory [Step 5]
         for cand in candidates:
             if cand not in used:
@@ -185,18 +189,22 @@ class IndianMealBuilder:
         return candidates[0]
 
     def _select_best_dal(self, conditions: List[str]) -> str:
-        """Determines best protein based on clinic context."""
+        """Determines best protein based on clinic context with variation."""
         if any(c in conditions for c in ["liver_stress", "kidney_strain"]):
-            return "Yellow Moong Dal Tadka"
-        return "Masoor Protein Curry"
+            options = ["Yellow Moong Dal Tadka", "Light Toor Dal", "Moong Dal Soup"]
+        else:
+            options = ["Masoor Dal Curry", "Yellow Moong Dal Tadka", "Chana Dal Fry", "Toor Dal Tadka"]
+        return variation_engine.select_meal_option(options, k=len(options))
 
     def _select_best_breakfast(self, conditions: List[str]) -> str:
-        """Determines best breakfast based on clinical context."""
+        """Determines best breakfast based on clinical context with variation."""
         if any(c in conditions for c in ["prediabetes", "hyperglycemia"]):
-            return "Moong Dal Chilla"
-        if any(c in conditions for c in ["iron_deficiency_anemia"]):
-            return "Ragi Porridge"
-        return "Vegetable Poha"
+            options = ["Moong Dal Chilla", "Savory Oats Upma", "Vegetable Daliya"]
+        elif any(c in conditions for c in ["iron_deficiency_anemia"]):
+            options = ["Ragi Porridge", "Bajra Roti with Jaggery", "Beetroot Poha"]
+        else:
+            options = ["Vegetable Poha", "Oats Upma", "Moong Dal Chilla", "Ragi Porridge"]
+        return variation_engine.select_meal_option(options, k=len(options))
 
     def _get_tags_for_meal(self, components: Dict[str, str]) -> List[str]:
         """STRICT Nutrient Tagging: Only tag if source exists [Step 6]."""

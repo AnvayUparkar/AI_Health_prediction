@@ -16,6 +16,7 @@ Output: structured diet recommendation dict
 """
 
 import logging
+import random
 from typing import Dict, List
 
 logger = logging.getLogger(__name__)
@@ -654,9 +655,13 @@ def generate_report_diet(important_parameters: Dict[str, dict], health_data: dic
     # 🧠 NEW: Generate structured meal_plan using IndianMealBuilder + Dynamic Names
     from backend.indian_meal_builder import indian_meal_builder
     from backend.report_parser import detect_high_level_conditions
+    from backend.services.variation_engine import variation_engine
+
+    # 🎲 Per-request seed — ensures different output on every upload
+    variation_engine.set_request_seed()
 
     conditions = detect_high_level_conditions(important_parameters)
-    all_food_inputs = list(set(foods + expanded_ingredients))
+    all_food_inputs = variation_engine.shuffle_candidates(list(set(foods + expanded_ingredients)))
 
     structured_meal_plan = {}
     used_items = {"staples": set(), "dals": set(), "sabzis": set()}
@@ -870,12 +875,16 @@ def _generate_meals(
         if "oats" in lower or "oatmeal" in lower:
             breakfast.append("Overnight oats with nuts and seeds")
 
-    # Deduplicate
+    # Deduplicate, then shuffle for per-request variation
+    b = _deduplicate(breakfast); random.shuffle(b)
+    l = _deduplicate(lunch); random.shuffle(l)
+    d = _deduplicate(dinner); random.shuffle(d)
+    s = _deduplicate(snacks); random.shuffle(s)
     return {
-        "breakfast": _deduplicate(breakfast)[:4],
-        "lunch": _deduplicate(lunch)[:3],
-        "dinner": _deduplicate(dinner)[:3],
-        "snacks": _deduplicate(snacks)[:4],
+        "breakfast": b[:4],
+        "lunch": l[:3],
+        "dinner": d[:3],
+        "snacks": s[:4],
     }
 
 

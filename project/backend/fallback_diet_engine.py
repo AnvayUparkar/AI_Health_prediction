@@ -627,9 +627,11 @@ def fallback_diet_engine(input_data: Dict[str, Any], raw_text: Optional[str] = N
     slots_priority = ["breakfast", "mid_morning", "lunch", "evening_snack", "dinner"]
     for slot in slots_priority:
         if slot in plan:
+            # 🎲 Shuffle food inputs per-request for variation
+            slot_foods = variation_engine.shuffle_candidates(plan[slot])
             # Pass clinical context for primary-condition-based shaping [Step 4]
             composed = indian_meal_builder.build_meal(
-                plan[slot], 
+                slot_foods, 
                 slot, 
                 conditions=conditions, 
                 used_items=used_items,
