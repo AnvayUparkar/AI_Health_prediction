@@ -193,6 +193,8 @@ const ReportAnalyzer = () => {
     height: '',
     activityLevel: 'moderate',
     dietaryPreference: 'none',
+    nonVegPreferences: [] as string[],
+    allergies: [] as string[],
     healthConditions: ''
   });
 
@@ -207,6 +209,8 @@ const ReportAnalyzer = () => {
             weight: data.profile.weight?.toString() || prev.weight,
             height: data.profile.height?.toString() || prev.height,
             dietaryPreference: data.profile.diet_preference || prev.dietaryPreference,
+            nonVegPreferences: data.profile.non_veg_preferences || prev.nonVegPreferences,
+            allergies: data.profile.allergies || prev.allergies,
             healthConditions: data.profile.allergies?.join(', ') || prev.healthConditions
           }));
         }
@@ -270,7 +274,7 @@ const ReportAnalyzer = () => {
     try {
       const data = await analyzeReport(file, (ev) => {
         if (ev.total) setProgress(Math.round((ev.loaded * 100) / ev.total));
-      }, !file ? healthData : undefined);
+      }, healthData);  // Always send profile data (dietary preferences, allergies)
 
       if (data.success) {
         setResult(data);
@@ -304,6 +308,8 @@ const ReportAnalyzer = () => {
       height: '',
       activityLevel: 'moderate',
       dietaryPreference: 'none',
+      nonVegPreferences: [],
+      allergies: [],
       healthConditions: ''
     });
   };

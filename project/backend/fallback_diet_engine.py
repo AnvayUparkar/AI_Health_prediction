@@ -510,7 +510,11 @@ def fallback_diet_engine(input_data: Dict[str, Any], raw_text: Optional[str] = N
             safety_registry[food.title()] = block_reason
             
     scored_candidates.sort(key=lambda x: x[1], reverse=True)
-    top_foods = [f[0] for f in scored_candidates[:25]] 
+    all_candidates = [f[0] for f in scored_candidates]
+    
+    # 🍽️ DIETARY PREFERENCE FILTERING (Safety-First)
+    from backend.indian_meal_builder import indian_meal_builder
+    top_foods = indian_meal_builder._filter_by_dietary_preference(all_candidates, context)[:25]
 
     # 4. Final Output Formatting (Lab-Linked Justifications)
     recommended_with_reason = []

@@ -27,6 +27,8 @@ const DietPlanner = () => {
     height: '',
     activityLevel: 'moderate',
     dietaryPreference: 'none',
+    nonVegPreferences: [] as string[],
+    allergies: [] as string[],
     healthConditions: ''
   });
 
@@ -41,6 +43,8 @@ const DietPlanner = () => {
             weight: data.profile.weight?.toString() || prev.weight,
             height: data.profile.height?.toString() || prev.height,
             dietaryPreference: data.profile.diet_preference || prev.dietaryPreference,
+            nonVegPreferences: data.profile.non_veg_preferences || prev.nonVegPreferences,
+            allergies: data.profile.allergies || prev.allergies,
             healthConditions: data.profile.allergies?.join(', ') || prev.healthConditions
           }));
         }

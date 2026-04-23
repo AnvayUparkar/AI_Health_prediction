@@ -649,8 +649,23 @@ def generate_report_diet(important_parameters: Dict[str, dict], health_data: dic
     base_ingredients = derive_base_ingredients(important_parameters, health_data)
     expanded_ingredients = expand_ingredients_with_mapper(base_ingredients)
 
+    # 🍽️ Dietary Preferences — drive food filtering
+    diet_pref = "balanced"
+    non_veg_prefs = []
+    allergies = []
+    if health_data:
+        diet_pref = health_data.get("dietaryPreference", health_data.get("diet_preference", "balanced"))
+        non_veg_prefs = health_data.get("nonVegPreferences", health_data.get("non_veg_preferences", []))
+        allergies = health_data.get("allergies", [])
+
     # Generate legacy meal suggestions (backward compatibility)
-    meal_suggestions = _generate_meals(foods, avoid, expanded_ingredients)
+    meal_suggestions = _generate_meals(
+        foods, 
+        avoid, 
+        expanded_ingredients, 
+        diet_preference=diet_pref, 
+        allergies=allergies
+    )
 
     # 🧠 NEW: Generate structured meal_plan using IndianMealBuilder + Dynamic Names
     from backend.indian_meal_builder import indian_meal_builder
@@ -665,9 +680,13 @@ def generate_report_diet(important_parameters: Dict[str, dict], health_data: dic
 
     structured_meal_plan = {}
     used_items = {"staples": set(), "dals": set(), "sabzis": set()}
+    
     build_context = {
         "conditions": conditions,
         "primary_condition": conditions[0] if conditions else "general_wellness",
+        "diet_preference": diet_pref,
+        "non_veg_preferences": non_veg_prefs,
+        "allergies": allergies
     }
 
     for slot in ["breakfast", "mid_morning", "lunch", "evening_snack", "dinner"]:
@@ -807,7 +826,9 @@ def _deduplicate(items: List[str]) -> List[str]:
 def _generate_meals(
     recommended_foods: List[str],
     foods_to_avoid: List[str],
-    expanded_ingredients: List[str] = None
+    expanded_ingredients: List[str] = None,
+    diet_preference: str = "balanced",
+    allergies: List[str] = None
 ) -> dict:
     """
     Generate simple meal suggestions based on recommended and avoided foods.
@@ -835,46 +856,110 @@ def _generate_meals(
         "Greek yogurt with a drizzle of honey",
     ]
 
+    # Safety-First Architecture: Define restricted items for filtering
+    NON_VEG_ITEMS = {
+        "chicken", "fish", "egg", "eggs", "mutton", "lamb", "pork", "beef",
+        "prawn", "shrimp", "crab", "lobster", "salmon", "tuna", "sardine",
+        "mackerel", "turkey", "bacon", "sausage", "ham", "lean meat",
+        "chicken breast", "chicken broth", "fish sauce", "egg whites",
+    }
+    DAIRY_ITEMS = {
+        "milk", "curd", "paneer", "cheese", "cream", "butter", "ghee",
+        "buttermilk", "yogurt", "greek yogurt", "whey", "casein", "raita",
+    }
+
+    def is_safe(meal_text: str) -> bool:
+        meal_lower = meal_text.lower()
+        
+        # 1. Allergy gate
+        if allergies:
+            for allergen in allergies:
+                if allergen.lower() in meal_lower:
+                    return False
+        
+        # 2. Vegetarian gate
+        if diet_preference in ("veg", "vegetarian"):
+            if any(nv in meal_lower for nv in NON_VEG_ITEMS):
+                return False
+                
+        # 3. Vegan gate
+        elif diet_preference == "vegan":
+            if any(nv in meal_lower for nv in NON_VEG_ITEMS):
+                return False
+            if any(d in meal_lower for d in DAIRY_ITEMS):
+                return False
+                
+        return True
+
+    # Filter out initial defaults that violate preferences
+    breakfast = [m for m in breakfast if is_safe(m)]
+    lunch = [m for m in lunch if is_safe(m)]
+    dinner = [m for m in dinner if is_safe(m)]
+    snacks = [m for m in snacks if is_safe(m)]
+
     # Enhance based on specific recommended foods and expanded ingredients
     all_inputs = recommended_foods + (expanded_ingredients or [])
-    avoid_lower = {f.lower() for f in foods_to_avoid}
     
     for food in all_inputs:
         lower = food.lower()
         
         # 1. Breakfast Mapping
         if any(x in lower for x in ["oats", "milk", "eggs", "poha", "ragi", "banana"]):
-            if "oats" in lower: breakfast.append("Oatmeal with flaxseeds and berries")
-            if "eggs" in lower: breakfast.append("Spinach and mushroom omelette")
-            if "ragi" in lower: breakfast.append("Ragi porridge with nuts")
-            if "poha" in lower: breakfast.append("Vegetable poha with peanuts")
+            if "oats" in lower: 
+                m = "Oatmeal with flaxseeds and berries"
+                if is_safe(m): breakfast.append(m)
+            if "eggs" in lower: 
+                m = "Spinach and mushroom omelette"
+                if is_safe(m): breakfast.append(m)
+            if "ragi" in lower: 
+                m = "Ragi porridge with nuts"
+                if is_safe(m): breakfast.append(m)
+            if "poha" in lower: 
+                m = "Vegetable poha with peanuts"
+                if is_safe(m): breakfast.append(m)
 
         # 2. Lunch Mapping
         if any(x in lower for x in ["lentils", "rice", "chicken", "paneer", "vegetables", "dal", "fish"]):
-            if "dal" in lower or "lentils" in lower: lunch.append("Moong dal with brown rice and salad")
-            if "chicken" in lower: lunch.append("Grilled chicken with quinoa and steamed veggies")
-            if "paneer" in lower: lunch.append("Paneer bhurji with whole wheat roti")
-            if "fish" in lower: lunch.append("Steamed fish with lemon and sautéed greens")
+            if "dal" in lower or "lentils" in lower: 
+                m = "Moong dal with brown rice and salad"
+                if is_safe(m): lunch.append(m)
+            if "chicken" in lower: 
+                m = "Grilled chicken with quinoa and steamed veggies"
+                if is_safe(m): lunch.append(m)
+            if "paneer" in lower: 
+                m = "Paneer bhurji with whole wheat roti"
+                if is_safe(m): lunch.append(m)
+            if "fish" in lower: 
+                m = "Steamed fish with lemon and sautéed greens"
+                if is_safe(m): lunch.append(m)
 
         # 3. Snacks Mapping
         if any(x in lower for x in ["nuts", "seeds", "fruit", "berries", "beetroot", "dates"]):
-            if "nuts" in lower or "almonds" in lower or "walnuts" in lower: snacks.append("Handful of mixed nuts (almonds, walnuts)")
-            if "seeds" in lower: snacks.append("Chia seed pudding or roasted pumpkin seeds")
-            if "beetroot" in lower: snacks.append("Fresh beetroot and carrot juice")
-            if "dates" in lower: snacks.append("Dates and dried figs")
+            if "nuts" in lower or "almonds" in lower or "walnuts" in lower: 
+                m = "Handful of mixed nuts (almonds, walnuts)"
+                if is_safe(m): snacks.append(m)
+            if "seeds" in lower: 
+                m = "Chia seed pudding or roasted pumpkin seeds"
+                if is_safe(m): snacks.append(m)
+            if "beetroot" in lower: 
+                m = "Fresh beetroot and carrot juice"
+                if is_safe(m): snacks.append(m)
+            if "dates" in lower: 
+                m = "Dates and dried figs"
+                if is_safe(m): snacks.append(m)
 
         # 4. Dinner Mapping
         if any(x in lower for x in ["soup", "khichdi", "light", "daliya", "curd"]):
-            if "khichdi" in lower: dinner.append("Vegetable khichdi with cucumber raita")
-            if "soup" in lower: dinner.append("Mixed vegetable or chicken clear soup")
-            if "daliya" in lower: dinner.append("Vegetable daliya (broken wheat) upma")
+            if "khichdi" in lower: 
+                m = "Vegetable khichdi with cucumber raita"
+                if is_safe(m): dinner.append(m)
+            if "soup" in lower: 
+                m = "Mixed vegetable clear soup"
+                if is_safe(m): dinner.append(m)
+            if "daliya" in lower: 
+                m = "Vegetable daliya (broken wheat) upma"
+                if is_safe(m): dinner.append(m)
             
-        # Legacy mappings (maintained for compatibility)
-        if "spinach" in lower or "leafy green" in lower:
-            breakfast.append("Spinach and mushroom omelette")
-        if "oats" in lower or "oatmeal" in lower:
-            breakfast.append("Overnight oats with nuts and seeds")
-
     # Deduplicate, then shuffle for per-request variation
     b = _deduplicate(breakfast); random.shuffle(b)
     l = _deduplicate(lunch); random.shuffle(l)

@@ -59,10 +59,78 @@ class IndianMealBuilder:
         "quinoa": "dalia"
     }
 
+    # ===================================================================
+    # DIETARY PREFERENCE FILTERING (Safety-First Architecture)
+    # ===================================================================
+
+    # Non-vegetarian items (must be filtered for veg/vegan users)
+    NON_VEG_ITEMS = {
+        "chicken", "fish", "egg", "eggs", "mutton", "lamb", "pork", "beef",
+        "prawn", "shrimp", "crab", "lobster", "salmon", "tuna", "sardine",
+        "mackerel", "turkey", "bacon", "sausage", "ham", "lean meat",
+        "chicken breast", "chicken broth", "fish sauce", "egg whites",
+    }
+
+    # Dairy items (must be filtered for vegan users)
+    DAIRY_ITEMS = {
+        "milk", "curd", "paneer", "cheese", "cream", "butter", "ghee",
+        "buttermilk", "yogurt", "greek yogurt", "whey", "casein",
+    }
+
+    # Veg protein substitutes (used when non-veg is filtered out)
+    VEG_PROTEIN_SUBS = ["paneer", "soy", "sprouts", "chickpea", "rajma", "moong dal", "chana dal"]
+    VEGAN_PROTEIN_SUBS = ["soy", "sprouts", "chickpea", "rajma", "moong dal", "chana dal", "tofu"]
+
+    def _filter_by_dietary_preference(self, foods: List[str], context: Optional[Dict[str, Any]] = None) -> List[str]:
+        """
+        Filters food list based on dietary preferences from the patient profile.
+        
+        Preference values: 'veg'/'vegetarian', 'vegan', 'non_veg'/'non-vegetarian', 'both', 'balanced', 'none'
+        """
+        if not context:
+            return foods
+
+        pref = (context.get("diet_preference") or "balanced").lower().strip()
+        allergies = [a.lower().strip() for a in (context.get("allergies") or [])]
+        non_veg_prefs = [p.lower().strip() for p in (context.get("non_veg_preferences") or [])]
+
+        filtered = []
+
+        for food in foods:
+            food_lower = food.lower().strip()
+
+            # 1. Allergy gate (absolute safety — always applies)
+            if any(allergen in food_lower for allergen in allergies):
+                logger.info("DIET_FILTER | Removed '%s' — allergy match: %s", food, allergies)
+                continue
+
+            # 2. Vegetarian filter
+            if pref in ("veg", "vegetarian"):
+                if any(nv in food_lower for nv in self.NON_VEG_ITEMS):
+                    logger.info("DIET_FILTER | Removed '%s' — non-veg (user is vegetarian)", food)
+                    continue
+
+            # 3. Vegan filter (stricter — no dairy either)
+            elif pref == "vegan":
+                if any(nv in food_lower for nv in self.NON_VEG_ITEMS):
+                    logger.info("DIET_FILTER | Removed '%s' — non-veg (user is vegan)", food)
+                    continue
+                if any(d in food_lower for d in self.DAIRY_ITEMS):
+                    logger.info("DIET_FILTER | Removed '%s' — dairy (user is vegan)", food)
+                    continue
+
+            # 4. Non-veg / Both — allow everything, but prefer stated preferences
+            # (No filtering, but could boost preferred proteins later)
+
+            filtered.append(food)
+
+        return filtered
+
     def build_meal(self, top_foods: List[str], meal_type: str, conditions: List[str], used_items: Optional[Dict[str, set]] = None, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Builds a meal following NON-NEGOTIABLE structural templates [Step 3].
         Includes Step 4 personalization based on primary condition.
+        Now respects dietary preferences from patient profile.
         """
         meal_type = meal_type.lower()
         if used_items is None: used_items = {"staples": set(), "dals": set(), "sabzis": set()}
@@ -77,16 +145,31 @@ class IndianMealBuilder:
                     f_clean = f_clean.replace(western, indian)
             clean_foods.append(f_clean)
 
+        # 🍽️ DIETARY PREFERENCE FILTER (Safety-First — runs before any meal logic)
+        clean_foods = self._filter_by_dietary_preference(clean_foods, context)
+
         # [Step 4] Personalization - Inject Mandatory Clinical Ingredients
+        # (Respect dietary preference: use veg/vegan protein subs if needed)
+        pref = (context.get("diet_preference") or "balanced").lower().strip() if context else "balanced"
+
         if primary == "iron_deficiency_anemia":
             # Force high-iron candidates into top of search
             clean_foods = ["palak", "beetroot", "moringa"] + clean_foods
         elif primary == "low_hdl":
             clean_foods = ["walnuts", "flaxseeds", "chia seeds"] + clean_foods
         elif primary == "vitamin_d_deficiency":
-            clean_foods = ["milk", "mushrooms"] + clean_foods
+            if pref not in ("vegan",):
+                clean_foods = ["milk", "mushrooms"] + clean_foods
+            else:
+                clean_foods = ["mushrooms", "fortified cereals"] + clean_foods
         elif primary == "hypocalcemia":
-            clean_foods = ["milk", "curd", "paneer", "ragi"] + clean_foods
+            if pref in ("veg", "vegetarian", "balanced", "both", "none"):
+                clean_foods = ["milk", "curd", "paneer", "ragi"] + clean_foods
+            elif pref == "vegan":
+                clean_foods = ["ragi", "sesame", "fortified plant milk"] + clean_foods
+            else:
+                clean_foods = ["milk", "curd", "paneer", "ragi"] + clean_foods
+
         
         components = {}
         
@@ -115,8 +198,11 @@ class IndianMealBuilder:
                 components["Dal"] = self._select_best_dal(conditions)
                 used_items["dals"].add(components["Dal"].lower())
 
-            # D. Mandatory Probiotic (Curd)
-            components["Probiotic"] = "Fresh Probiotic Curd"
+            # D. Mandatory Probiotic (Curd / Vegan alternative)
+            if pref == "vegan":
+                components["Probiotic"] = "Fermented Plant Probiotic"
+            else:
+                components["Probiotic"] = "Fresh Probiotic Curd"
             
             # E. Absorption Side (Step 3)
             components["Absorption"] = "Fresh Cucumber & Lemon Salad"
@@ -137,7 +223,10 @@ class IndianMealBuilder:
             else:
                 components["Main"] = self._select_best_breakfast(conditions)
             
-            components["Calcium Source"] = "High-Calcium Low-Fat Milk"
+            if pref == "vegan":
+                components["Calcium Source"] = "Fortified Almond Milk"
+            else:
+                components["Calcium Source"] = "High-Calcium Low-Fat Milk"
             components["Healthy Fat"] = "Walnuts & Flaxseeds"
             
             title = components["Main"]
@@ -156,8 +245,12 @@ class IndianMealBuilder:
 
         else:
             # NO PLACEHOLDERS ALLOWED.
-            components = {"Main": "Moong Dal Khichdi", "Side": "Fresh Curd"}
-            title = "Moong Dal Khichdi with Curd"
+            if pref == "vegan":
+                components = {"Main": "Moong Dal Khichdi", "Side": "Fermented Plant Probiotic"}
+                title = "Moong Dal Khichdi with Plant Probiotic"
+            else:
+                components = {"Main": "Moong Dal Khichdi", "Side": "Fresh Curd"}
+                title = "Moong Dal Khichdi with Curd"
 
         # Step 6: Strict Nutrient Tagging
         tags = self._get_tags_for_meal(components)

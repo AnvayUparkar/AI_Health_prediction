@@ -41,5 +41,12 @@ def build_context(analysis: Dict[str, Any], health_data: dict = None) -> Dict[st
         context["weight"] = health_data.get("weight")
         context["height"] = health_data.get("height")
         context["healthConditions"] = health_data.get("healthConditions", "")
+        
+        # 🍽️ Dietary Preferences — drives food filtering in IndianMealBuilder
+        context["diet_preference"] = health_data.get("dietaryPreference",
+                                         health_data.get("diet_preference", "balanced"))
+        context["non_veg_preferences"] = health_data.get("nonVegPreferences",
+                                             health_data.get("non_veg_preferences", []))
+        context["allergies"] = health_data.get("allergies", [])
 
     return context

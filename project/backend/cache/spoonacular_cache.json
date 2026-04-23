@@ -646,5 +646,51 @@
         ],
         "timestamp": 1776909004.757035,
         "confidence": 0.7
+    },
+    "bajra roti with jaggery": {
+        "ingredients": [
+            "wheat"
+        ],
+        "timestamp": 1776909987.6414564,
+        "confidence": 0.7
+    },
+    "carrots sabzi with whole wheat & dal": {
+        "ingredients": [
+            "spices",
+            "onion",
+            "garlic",
+            "lentils"
+        ],
+        "timestamp": 1776910029.7563264,
+        "confidence": 0.7
+    },
+    "toor dal tadka": {
+        "ingredients": [
+            "spices",
+            "onion",
+            "garlic",
+            "lentils"
+        ],
+        "timestamp": 1776910030.570695,
+        "confidence": 0.7
+    },
+    "spinach chilla with jowar & lentils": {
+        "ingredients": [
+            "oil",
+            "onion",
+            "moong dal"
+        ],
+        "timestamp": 1776910030.8961387,
+        "confidence": 0.7
+    },
+    "warm ragi porridge with vegetables & dalia": {
+        "ingredients": [
+            "onion",
+            "lentils",
+            "garlic",
+            "spices"
+        ],
+        "timestamp": 1776910200.2718167,
+        "confidence": 0.7
     }
 }
