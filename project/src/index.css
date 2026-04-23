@@ -28,20 +28,32 @@
   --bg-icon-purple: #EDE9FE;
   --bg-icon-orange: #FFEDD5;
   --bg-icon-yellow: #FEF9C3;
+  
+  /* Shared Gradients */
+  --text-hero-gradient: linear-gradient(90deg, #1E3A8A 0%, #6D28D9 100%);
+  --main-mesh: linear-gradient(135deg, #e0f2fe 0%, #f8fafc 50%, #faf5ff 100%);
 }
+
 
 @layer base {
   body {
-    @apply bg-main-mesh text-body min-h-screen;
+    background-image: var(--main-mesh);
+    color: var(--text-body);
+    min-height: 100vh;
     background-attachment: fixed;
   }
 }
 
+
 @layer utilities {
   .text-hero-gradient {
-    @apply bg-text-hero bg-clip-text text-transparent;
+    background-image: var(--text-hero-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 }
+
 
 /* Smooth scrolling */
 html {
@@ -126,8 +138,12 @@ html {
 
 /* Gradient text utilities */
 .gradient-text {
-  @apply bg-text-hero bg-clip-text text-transparent;
+  background-image: var(--text-hero-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
+
 
 /* Custom animations */
 @keyframes float {
