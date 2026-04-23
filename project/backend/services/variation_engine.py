@@ -2,26 +2,21 @@ import random
 import logging
 import time
 from datetime import datetime
-from typing import List, Any, Optional
+from typing import List, Any, Optional, Dict
 
 logger = logging.getLogger(__name__)
 
 class VariationEngine:
     """
-    Controlled Variability Layer (v2 — Per-Request Variation).
-    
-    Architecture:
-      - Each upload/request gets a UNIQUE seed based on microsecond timestamp.
-      - This guarantees that re-uploading the same report produces different
-        (but clinically safe) meal plans.
-      - All variation is constrained to the TOP-K clinically scored candidates,
-        so safety is NEVER compromised.
+    Handles clinical variation and non-deterministic meal generation.
+    Ensures that regenerating a plan provides new options within clinical safety bands.
     """
-    
     def __init__(self):
+        self._request_counter = 0
+        self._selection_history: Dict[str, List[str]] = {} # patient_id -> [last_5_foods]
+        self._history_limit = 10
         # Basic history cache: patient_id -> set of recent meals (Diversity tracking)
         self.history_cache = {} 
-        self._request_counter = 0  # Monotonic counter for extra uniqueness
         
         # Meal Options Bank for structured fallback variability
         self.MEAL_OPTIONS = {
@@ -109,6 +104,36 @@ class VariationEngine:
             clean_reason = clean_reason[:-1]
             
         return f"{clean_reason}, which {phrase}."
+
+    def track_selection(self, patient_id: str, food: str):
+        """Records a food selection to avoid immediate repetition in the next request."""
+        if patient_id not in self._selection_history:
+            self._selection_history[patient_id] = []
+        
+        # Add to start of list
+        self._selection_history[patient_id].insert(0, food.lower())
+        # Trim history
+        self._selection_history[patient_id] = self._selection_history[patient_id][:self._history_limit]
+
+    def filter_by_history(self, patient_id: str, candidates: List[str]) -> List[str]:
+        """Removes items that were recently suggested to maximize diversity."""
+        history = self._selection_history.get(patient_id, [])
+        if not history:
+            return candidates
+            
+        # Robust comparison: check if any historical item is a substring or vice versa
+        # This handles cases where history stores "Spinach Sabzi" and candidate is "Spinach"
+        def is_recent(cand):
+            c_low = cand.lower()
+            return any(c_low in h or h in c_low for h in history)
+
+        fresh = [c for c in candidates if not is_recent(c)]
+        
+        if len(fresh) >= 2:
+            return fresh
+            
+        # If too few alternatives, return all (allow repeat as last resort)
+        return candidates
 
 # Singleton instance
 variation_engine = VariationEngine()

@@ -456,6 +456,10 @@ def distribute_meals(top_foods: List[str], target_nutrients: List[str]) -> Dict[
         if "protein" in tags or "iron" in tags: categories["protein"].append(food)
         if "fiber" in tags or "antioxidants" in tags: categories["veggie"].append(food)
 
+    # 🧠 NEW: Shuffle categories to ensure dynamic selection in fill_slot
+    for key in categories:
+        categories[key] = variation_engine.shuffle_candidates(categories[key])
+
     def fill_slot(slot, type_keys, limit=3):
         for type_key in type_keys:
             for food in categories[type_key]:
@@ -599,7 +603,12 @@ def fallback_diet_engine(input_data: Dict[str, Any], raw_text: Optional[str] = N
     
     # 🍽️ DIETARY PREFERENCE FILTERING (Safety-First)
     from backend.indian_meal_builder import indian_meal_builder
-    top_foods = indian_meal_builder._filter_by_dietary_preference(all_candidates, context)[:25]
+    top_foods = indian_meal_builder._filter_by_dietary_preference(all_candidates, context)
+
+    # 🧠 NEW: Cross-Request Variation Memory [Step 11]
+    # Filter out recently suggested foods for this patient to maximize diversity on regeneration
+    patient_id = input_data.get("patient_id", "generic_patient")
+    top_foods = variation_engine.filter_by_history(patient_id, top_foods)[:25]
 
     # 4. Final Output Formatting (Lab-Linked Justifications)
     recommended_with_reason = []
@@ -730,6 +739,9 @@ def fallback_diet_engine(input_data: Dict[str, Any], raw_text: Optional[str] = N
                 synthesize_clinical_explanation(plan[slot], conditions)
             )
             meal_plan[slot] = composed
+            # 🧠 Track selection to avoid repetition in next regeneration
+            for item in composed.get("items", []):
+                variation_engine.track_selection(patient_id, item)
 
     # [Step 7] Final Clinical Validation & Auto-Correction Engine
     meal_plan = clinical_validator.validate_and_fix(meal_plan, conditions)

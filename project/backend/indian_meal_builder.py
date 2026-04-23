@@ -186,26 +186,36 @@ class IndianMealBuilder:
             if veggie:
                 components["Sabzi"] = generate_component_name(veggie, "Sabzi")
                 used_items["sabzis"].add(veggie)
+                # 🧠 Track raw ingredient for diversity
+                variation_engine.track_selection(context.get("patient_id", "generic"), veggie)
             else:
-                components["Sabzi"] = "Mixed Vegetable Masala"
+                # 🧠 Dynamic fallback for Sabzi variety
+                sabzi_options = ["Bottle Gourd Masala", "Ridge Gourd Sabzi", "Ivy Gourd (Kundru) Fry", "Cabbage with Peas"]
+                components["Sabzi"] = variation_engine.select_meal_option(sabzi_options, k=len(sabzi_options))
+                used_items["sabzis"].add(components["Sabzi"].lower())
+                variation_engine.track_selection(context.get("patient_id", "generic"), components["Sabzi"])
 
             # C. Dal (Protein)
             protein = self._find_best_match(clean_foods, ["dal", "lentil", "paneer", "soy", "egg", "chickpea"], exclude=used_items["dals"])
             if protein:
                 components["Dal"] = generate_component_name(protein, "Dal")
                 used_items["dals"].add(protein)
+                variation_engine.track_selection(context.get("patient_id", "generic"), protein)
             else:
                 components["Dal"] = self._select_best_dal(conditions)
                 used_items["dals"].add(components["Dal"].lower())
+                variation_engine.track_selection(context.get("patient_id", "generic"), components["Dal"])
 
             # D. Mandatory Probiotic (Curd / Vegan alternative)
             if pref == "vegan":
                 components["Probiotic"] = "Fermented Plant Probiotic"
             else:
-                components["Probiotic"] = "Fresh Probiotic Curd"
+                probiotic_options = ["Fresh Probiotic Curd", "Spiced Masala Buttermilk", "Mint & Cumin Raita"]
+                components["Probiotic"] = variation_engine.select_meal_option(probiotic_options, k=len(probiotic_options))
             
             # E. Absorption Side (Step 3)
-            components["Absorption"] = "Fresh Cucumber & Lemon Salad"
+            side_options = ["Fresh Cucumber & Lemon Salad", "Garden Fresh Kachumber Salad", "Beetroot & Carrot Juliennes"]
+            components["Absorption"] = variation_engine.select_meal_option(side_options, k=len(side_options))
 
             # 🧠 Dynamic Title from actual ingredients
             title = generate_dish_name(

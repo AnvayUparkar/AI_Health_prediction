@@ -293,8 +293,8 @@ export const getPatientTimeseries = async (patientId: number | string, days: num
     return res.data;
 };
 
-export const getAIDietRecommendation = async (patientId: number | string) => {
-    const res = await api.post(`/api/patient/${patientId}/diet-ai`);
+export const getAIDietRecommendation = async (patientId: number | string, refresh: boolean = false) => {
+    const res = await api.post(`/api/patient/${patientId}/diet-ai`, { refresh });
     return res.data;
 };
 

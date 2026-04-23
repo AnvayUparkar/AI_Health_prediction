@@ -239,11 +239,11 @@ export default function PatientMonitoringPage() {
   }, [patientId]);
 
   // Fetch AI diet recommendation
-  const fetchDiet = useCallback(async () => {
+  const fetchDiet = useCallback(async (refresh: boolean = false) => {
     if (!patientId) return;
     setDietLoading(true);
     try {
-      const res = await getAIDietRecommendation(patientId);
+      const res = await getAIDietRecommendation(patientId, refresh);
       setDietPlan(res.diet || null);
     } catch (e) {
       console.error('Failed to fetch AI diet', e);
@@ -715,7 +715,7 @@ export default function PatientMonitoringPage() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 disabled={dietLoading}
-                onClick={fetchDiet}
+                onClick={() => fetchDiet(true)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold shadow-md transition-all ${dietLoading
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:shadow-lg'

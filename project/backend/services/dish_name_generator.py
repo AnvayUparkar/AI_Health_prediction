@@ -502,6 +502,8 @@ def generate_component_name(ingredient: str, slot: str = "") -> str:
 
     if "sabzi" in slot_lower or "vegetable" in slot_lower:
         base = f"{adjective} {ing_clean.title()}" if adjective else ing_clean.title()
+        if "sabzi" in base.lower():
+            return base
         return f"{base} Sabzi"
 
     if "dal" in slot_lower or "protein" in slot_lower:

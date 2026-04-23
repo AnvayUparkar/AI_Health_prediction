@@ -471,6 +471,10 @@ def get_diet_ai(patient_id):
         from backend.services.gemini_service import generate_diet_recommendation
 
         user, canonical_pid = _resolve_patient(patient_id)
+        
+        # Check if this is a refresh/regeneration request
+        req_data = request.get_json() or {}
+        refresh = req_data.get('refresh', False)
 
         # Fetch all monitoring records
         records = (
@@ -509,8 +513,14 @@ def get_diet_ai(patient_id):
             "activity_level": profile.get('activity_level', 'moderate')
         }
 
-        # Call Gemini
-        diet = generate_diet_recommendation(patient_data, analysis["trends"], analysis["alerts"], trend_raw=trend_raw)
+        # Call Gemini (bypass cache if refresh requested)
+        diet = generate_diet_recommendation(
+            patient_data, 
+            analysis["trends"], 
+            analysis["alerts"], 
+            trend_raw=trend_raw,
+            bypass_cache=refresh
+        )
 
         return jsonify({
             "diet": diet,

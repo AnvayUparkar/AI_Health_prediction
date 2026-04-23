@@ -21,13 +21,11 @@ GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
 # Model fallback chain — try each until one works
 _MODEL_FALLBACK_CHAIN = [
-    "gemini-3-pro-preview",
-    # "gemini-3-pro-preview-09-2026",
-    # "gemini-2.5-pro",
-    # "gemini-2.5-flash-lite",
-    # "gemini-2.5-flash",
-    # "gemini-2.0-flash",
-    # "gemini-flash-latest",
+    "gemini-1.5-pro",
+    "gemini-1.5-flash",
+    "gemini-1.5-flash-8b",
+    "gemini-1.5-pro-latest",
+    "gemini-1.5-flash-latest",
 ]
 
 # In-memory cache: patient_id -> { result, timestamp }
@@ -35,7 +33,7 @@ _diet_cache: dict = {}
 CACHE_TTL_SECONDS = 3600  # 1 hour
 
 
-def generate_diet_recommendation(patient_data: dict, trends: dict, alerts: list, trend_raw: dict = None) -> dict:
+def generate_diet_recommendation(patient_data: dict, trends: dict, alerts: list, trend_raw: dict = None, bypass_cache: bool = False) -> dict:
     """
     Call Gemini API to generate a personalized diet recommendation.
     Tries multiple models in fallback chain if quota is exceeded.
@@ -64,7 +62,7 @@ def generate_diet_recommendation(patient_data: dict, trends: dict, alerts: list,
     # Check cache
     pid = str(patient_data.get('patient_id', ''))
     cached = _diet_cache.get(pid)
-    if cached:
+    if cached and not bypass_cache:
         import time
         if time.time() - cached['timestamp'] < CACHE_TTL_SECONDS:
             print(f"[GEMINI] Returning cached diet for patient {pid}")
@@ -152,10 +150,21 @@ def generate_diet_recommendation(patient_data: dict, trends: dict, alerts: list,
                 result['source'] = 'gemini'
                 result['model'] = model_name
 
-                # Cache it
+                # Cache and return
                 import time
-                _diet_cache[pid] = {'result': result, 'timestamp': time.time()}
-
+                _diet_cache[pid] = {
+                    'result': result,
+                    'timestamp': time.time()
+                }
+                
+                # 🧠 Track selections in history to ensure variety on next regenerate
+                for meal_key in ['breakfast', 'lunch', 'snacks', 'dinner']:
+                    meal = result.get(meal_key, {})
+                    items = meal.get('items', [])
+                    for item in items:
+                        from backend.services.variation_engine import variation_engine
+                        variation_engine.track_selection(pid, item)
+                        
                 print(f"[GEMINI] ✅ Generated diet for patient {pid} using {model_name}")
                 return result
             else:
@@ -206,6 +215,12 @@ def _build_prompt(patient_data: dict, trends: dict, alerts: list) -> str:
         alert_lines = [f"- [{a['type']}] {a['message']}" for a in alerts[:5]]
         alert_summary = "Active Clinical Alerts:\n" + "\n".join(alert_lines)
 
+    # [NEW] Get selection history to force variety on regeneration
+    from backend.services.variation_engine import variation_engine
+    pid = str(patient_data.get('patient_id', ''))
+    history = variation_engine._selection_history.get(pid, [])
+    history_str = f"- RECENTLY SUGGESTED (AVOID IF POSSIBLE FOR VARIETY): {', '.join(history)}" if history else ""
+
     prompt = f"""Act as an expert clinical nutritionist with 20 years of experience in hospital dietary management.
 
 Patient Profile:
@@ -224,6 +239,8 @@ Vitals Trend Summary (Last 2 Days):
 - SpO2: Trend={spo2_trend.get('trend', 'N/A')}, Average={spo2_trend.get('average', 'N/A')}%
 
 {alert_summary}
+
+{history_str}
 
 Based on these clinical indicators and dietary preferences, generate a personalized daily diet plan.
 Consider Indian dietary preferences and hospital food availability.

@@ -721,5 +721,127 @@
         ],
         "timestamp": 1776929813.9739237,
         "confidence": 0.7
+    },
+    "beetroot salad dal tadka with jowar & lentil dal": {
+        "ingredients": [
+            "garlic",
+            "onion",
+            "lemon",
+            "lentils",
+            "tomato",
+            "cucumber",
+            "spices"
+        ],
+        "timestamp": 1776947998.726356,
+        "confidence": 0.7
+    },
+    "garden fresh kachumber salad": {
+        "ingredients": [
+            "tomato",
+            "cucumber",
+            "lemon"
+        ],
+        "timestamp": 1776948005.228468,
+        "confidence": 0.7
+    },
+    "moong dal soup": {
+        "ingredients": [
+            "onion",
+            "garlic",
+            "spices",
+            "lentils"
+        ],
+        "timestamp": 1776948006.8552916,
+        "confidence": 0.7
+    },
+    "bottle gourd sabzi sabzi with whole wheat & lentil dal": {
+        "ingredients": [
+            "onion",
+            "garlic",
+            "spices",
+            "lentils"
+        ],
+        "timestamp": 1776948060.8304,
+        "confidence": 0.7
+    },
+    "light toor dal": {
+        "ingredients": [
+            "onion",
+            "garlic",
+            "spices",
+            "lentils"
+        ],
+        "timestamp": 1776948065.8942888,
+        "confidence": 0.7
+    },
+    "stir-fried broccoli sabzi with ragi & dal": {
+        "ingredients": [
+            "onion",
+            "garlic",
+            "spices",
+            "lentils"
+        ],
+        "timestamp": 1776948197.0327058,
+        "confidence": 0.7
+    },
+    "yellow moong dal tadka": {
+        "ingredients": [
+            "onion",
+            "garlic",
+            "spices",
+            "lentils"
+        ],
+        "timestamp": 1776948199.9639704,
+        "confidence": 0.7
+    },
+    "chana dal fry": {
+        "ingredients": [
+            "onion",
+            "garlic",
+            "spices",
+            "lentils"
+        ],
+        "timestamp": 1776948229.0441513,
+        "confidence": 0.7
+    },
+    "dalia porridge with almonds": {
+        "ingredients": [
+            "onion",
+            "garlic",
+            "spices",
+            "lentils"
+        ],
+        "timestamp": 1776948257.2987742,
+        "confidence": 0.7
+    },
+    "carrots sabzi with ragi & dal": {
+        "ingredients": [
+            "onion",
+            "garlic",
+            "spices",
+            "lentils"
+        ],
+        "timestamp": 1776948257.58991,
+        "confidence": 0.7
+    },
+    "carrots sabzi with jowar & dal": {
+        "ingredients": [
+            "onion",
+            "garlic",
+            "spices",
+            "lentils"
+        ],
+        "timestamp": 1776948304.8679383,
+        "confidence": 0.7
+    },
+    "hearty bajra porridge with vegetables & dalia": {
+        "ingredients": [
+            "onion",
+            "garlic",
+            "spices",
+            "lentils"
+        ],
+        "timestamp": 1776948306.0416205,
+        "confidence": 0.7
     }
 }
