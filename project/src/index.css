@@ -2,6 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --text-heading: #1e293b;
+  --text-body: #64748b;
+  --text-muted: #94a3b8;
+  --text-brand: #00d1ff;
+  --text-contrast: #ffffff;
+  --text-accent: #9333ea;
+  --primary: #1E3A8A;
+  --primary-hover: #172554;
+  --secondary: #6d28d9;
+  --border-light: #e2e8f0;
+
+  /* Backgrounds */
+  --bg-main: #F5F3F7;
+  --bg-surface: #FFFFFF;
+  --bg-soft: #F9FAFB;
+
+  /* Primary & Gradients */
+  --bg-primary: #14B8A6;
+  --bg-primary-gradient: linear-gradient(90deg, #0EA5A4, #1E3A8A);
+
+  /* Icon Backgrounds */
+  --bg-icon-teal: #CCFBF1;
+  --bg-icon-purple: #EDE9FE;
+  --bg-icon-orange: #FFEDD5;
+  --bg-icon-yellow: #FEF9C3;
+}
+
+@layer base {
+  body {
+    @apply bg-main-mesh text-body min-h-screen;
+    background-attachment: fixed;
+  }
+}
+
+@layer utilities {
+  .text-hero-gradient {
+    @apply bg-text-hero bg-clip-text text-transparent;
+  }
+}
+
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;
@@ -17,7 +58,7 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(45deg, #3B82F6, #8B5CF6);
+  background: linear-gradient(45deg, var(--primary), var(--secondary));
   border-radius: 4px;
 }
 
@@ -31,7 +72,7 @@ html {
   height: 20px;
   width: 20px;
   border-radius: 50%;
-  background: #3B82F6;
+  background: var(--primary);
   cursor: pointer;
   border: 2px solid white;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -41,7 +82,7 @@ html {
   height: 20px;
   width: 20px;
   border-radius: 50%;
-  background: #3B82F6;
+  background: var(--primary);
   cursor: pointer;
   border: 2px solid white;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -56,6 +97,7 @@ html {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -84,21 +126,32 @@ html {
 
 /* Gradient text utilities */
 .gradient-text {
-  background: linear-gradient(45deg, #3B82F6, #8B5CF6, #EC4899);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  @apply bg-text-hero bg-clip-text text-transparent;
 }
 
 /* Custom animations */
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-20px);
+  }
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
-  50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.6); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 40px rgba(59, 130, 246, 0.6);
+  }
 }
 
 .animate-float {

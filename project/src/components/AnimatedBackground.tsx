@@ -3,67 +3,68 @@ import { motion } from 'framer-motion';
 
 const AnimatedBackground = () => {
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {/* Gradient Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50" />
-      
-      {/* Animated Particles */}
-      {[...Array(20)].map((_, i) => (
+    <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+
+      {/* Mesh Glows - Perfected to match the reference screenshot */}
+      <div
+        className="absolute -top-[10%] -left-[10%] w-[70%] h-[70%] rounded-full blur-[120px] opacity-[0.2]"
+        style={{ background: 'radial-gradient(circle, var(--bg-icon-teal), transparent 70%)' }}
+      />
+      <div
+        className="absolute top-[10%] -right-[10%] w-[60%] h-[60%] rounded-full blur-[120px] opacity-[0.15]"
+        style={{ background: 'radial-gradient(circle, var(--bg-icon-purple), transparent 70%)' }}
+      />
+      <div
+        className="absolute -bottom-[20%] right-[10%] w-[50%] h-[50%] rounded-full blur-[100px] opacity-[0.1]"
+        style={{ background: 'radial-gradient(circle, var(--bg-icon-orange), transparent 70%)' }}
+      />
+
+      {/* Subtle Animated Particles */}
+      {[...Array(12)].map((_, i) => (
         <motion.div
           key={i}
-          className="absolute w-2 h-2 bg-blue-400 rounded-full opacity-20"
+          className="absolute w-1.5 h-1.5 bg-brand rounded-full opacity-[0.1]"
           initial={{
-            x: Math.random() * window.innerWidth,
-            y: Math.random() * window.innerHeight,
+            x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000),
+            y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1000),
           }}
           animate={{
-            x: Math.random() * window.innerWidth,
-            y: Math.random() * window.innerHeight,
+            x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000),
+            y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1000),
           }}
           transition={{
-            duration: Math.random() * 20 + 10,
+            duration: Math.random() * 40 + 30,
             repeat: Infinity,
             repeatType: "reverse",
             ease: "linear",
           }}
         />
       ))}
-      
-      {/* Floating Shapes */}
+
+      {/* Elegant Floating Blobs */}
       <motion.div
-        className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full opacity-10"
+        className="absolute top-1/4 left-[5%] w-64 h-64 rounded-full opacity-[0.05] blur-3xl"
+        style={{ background: 'var(--bg-primary-gradient)' }}
         animate={{
-          y: [0, -20, 0],
-          rotate: [0, 180, 360],
+          y: [0, -40, 0],
+          scale: [1, 1.1, 1],
         }}
         transition={{
-          duration: 8,
+          duration: 15,
           repeat: Infinity,
           ease: "easeInOut",
         }}
       />
-      
+
       <motion.div
-        className="absolute top-40 right-20 w-24 h-24 bg-gradient-to-r from-indigo-400 to-pink-400 rounded-full opacity-10"
+        className="absolute bottom-1/4 right-[5%] w-72 h-72 rounded-full opacity-[0.04] blur-3xl"
+        style={{ background: 'linear-gradient(135deg, var(--secondary), var(--accent-pink))' }}
         animate={{
-          y: [0, 30, 0],
-          x: [0, -10, 0],
+          y: [0, 50, 0],
+          scale: [1, 1.15, 1],
         }}
         transition={{
-          duration: 6,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      />
-      
-      <motion.div
-        className="absolute bottom-20 left-1/4 w-20 h-20 bg-gradient-to-r from-green-400 to-blue-400 rounded-full opacity-10"
-        animate={{
-          scale: [1, 1.2, 1],
-          rotate: [0, -180, -360],
-        }}
-        transition={{
-          duration: 10,
+          duration: 18,
           repeat: Infinity,
           ease: "easeInOut",
         }}

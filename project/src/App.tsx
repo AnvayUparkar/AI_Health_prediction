@@ -71,7 +71,7 @@ const AdminRoute = ({ children }: { children: JSX.Element }) => {
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+      <div className="min-h-screen bg-transparent">
         <Toaster position="top-right" />
         <FloatingNavbar />
         <GamificationWidget />
