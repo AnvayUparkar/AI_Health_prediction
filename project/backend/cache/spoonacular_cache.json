@@ -712,5 +712,14 @@
         ],
         "timestamp": 1776911222.7649934,
         "confidence": 0.7
+    },
+    "spinach chilla with whole wheat & lentils": {
+        "ingredients": [
+            "oil",
+            "moong dal",
+            "onion"
+        ],
+        "timestamp": 1776929813.9739237,
+        "confidence": 0.7
     }
 }

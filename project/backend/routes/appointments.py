@@ -55,13 +55,9 @@ def create_appointment():
         appointment = DBService.create_appointment(appointment_data)
         apt_id = appointment['id'] if isinstance(appointment, dict) else appointment.id
         
-        # 3. Brevo Email Notification
-        print(f"[Appointments] Checking email trigger: mode={data['mode']}, has_link={'meeting_link' in appointment_data}")
-        if data['mode'] == 'online' and appointment_data.get('meeting_link'):
-            print(f"[Appointments] Triggering email to {data['email']}")
-            EmailService.send_appointment_email(data['email'], appointment_data['meeting_link'])
-        else:
-            print("[Appointments] Email trigger skipped")
+        # 3. Email Notification (DISABLED ON CREATION - NOW ON APPROVAL)
+        # Email is now sent in update_appointment_status when status is set to 'confirmed'
+        print(f"[Appointments] Appointment {apt_id} created in 'pending' status. Awaiting doctor approval.")
 
         return jsonify({
             'message': 'Appointment booked successfully',
@@ -181,6 +177,37 @@ def update_appointment_status(appointment_id):
         
         status = appointment['status'] if isinstance(appointment, dict) else appointment.status
         
+        # Trigger Notifications on Approval (Status: confirmed)
+        if status == 'confirmed':
+            try:
+                # 1. Fetch full details (need email and meeting link)
+                full_apt = DBService.get_appointment(appointment_id)
+                if full_apt:
+                    patient_email = full_apt.get('email')
+                    meeting_link = full_apt.get('meeting_link')
+                    patient_name = full_apt.get('name', 'Patient')
+                    apt_time = f"{full_apt.get('appointment_date')} at {full_apt.get('appointment_time')}"
+                    mode = full_apt.get('mode', 'online')
+                    doctor_id = full_apt.get('doctor_id')
+
+                    # 2. Notify Patient
+                    if patient_email and mode == 'online' and meeting_link:
+                        EmailService.send_appointment_email(patient_email, meeting_link)
+                    
+                    # 3. Notify Doctor
+                    if doctor_id:
+                        doctor_email = DBService.get_doctor_email(doctor_id)
+                        if doctor_email:
+                            EmailService.send_doctor_notification(
+                                doctor_email, 
+                                patient_name, 
+                                apt_time, 
+                                mode, 
+                                meeting_link if mode == 'online' else None
+                            )
+            except Exception as notify_err:
+                print(f"[Appointments] Notification error: {str(notify_err)}")
+
         return jsonify({
             'message': 'Appointment status updated',
             'status': status

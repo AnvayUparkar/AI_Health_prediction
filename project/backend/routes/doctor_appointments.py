@@ -1,5 +1,7 @@
 from flask import Blueprint, request, jsonify
 from backend.services.appointment_service import AppointmentService
+from backend.db_service import DBService
+from backend.services.email_service import EmailService
 
 doctor_appointments_bp = Blueprint('doctor_appointments', __name__)
 
@@ -16,9 +18,43 @@ def get_doctor_appointments(doctor_id):
 
 @doctor_appointments_bp.route('/doctor_appointments/<string:appointment_id>/approve', methods=['POST'])
 def approve_appointment(appointment_id):
-    """Approve an appointment"""
+    """Approve an appointment and notify both parties"""
     try:
         result = AppointmentService.approve_appointment(appointment_id)
+        
+        # Trigger Notifications
+        try:
+            full_apt = DBService.get_appointment(appointment_id)
+            if full_apt:
+                patient_email = full_apt.get('email')
+                patient_name = full_apt.get('name', 'Patient')
+                meeting_link = full_apt.get('meeting_link')
+                mode = full_apt.get('mode', 'online')
+                doctor_id = full_apt.get('doctor_id')
+                
+                # Format time for doctor email
+                apt_date = full_apt.get('appointment_date') or full_apt.get('requested_date')
+                apt_time = full_apt.get('appointment_time') or full_apt.get('requested_time')
+                full_time_str = f"{apt_date} at {apt_time}"
+
+                # 1. Notify Patient (if online)
+                if patient_email and mode == 'online' and meeting_link:
+                    EmailService.send_appointment_email(patient_email, meeting_link)
+                
+                # 2. Notify Doctor
+                if doctor_id:
+                    doctor_email = DBService.get_doctor_email(doctor_id)
+                    if doctor_email:
+                        EmailService.send_doctor_notification(
+                            doctor_email,
+                            patient_name,
+                            full_time_str,
+                            mode,
+                            meeting_link if mode == 'online' else None
+                        )
+        except Exception as notify_err:
+            print(f"[DoctorAppointments] Notification error: {notify_err}")
+
         return jsonify({"message": "Appointment approved", "appointment": result}), 200
     except Exception as e:
         print(f"Error approving appointment: {e}")

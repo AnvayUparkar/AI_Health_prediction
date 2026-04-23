@@ -836,6 +836,28 @@ class DBService:
         
         return appointment
 
+        return appointment
+
+    @staticmethod
+    def get_doctor_email(doctor_id: Any):
+        if not doctor_id: return None
+        try:
+            # Check SQL first
+            user = User.query.get(doctor_id)
+            if user: return user.email
+            
+            # Check Mongo if hybrid
+            if os.environ.get('DB_MODE') in ['hybrid', 'mongo']:
+                mongodb = DBService.get_mongo_db()
+                if mongodb is not None:
+                    # doctor_id might be a string ID in Mongo
+                    oid = ObjectId(doctor_id) if isinstance(doctor_id, str) and len(doctor_id) == 24 else None
+                    doc = mongodb.users.find_one({"_id": oid} if oid else {"id": doctor_id})
+                    if doc: return doc.get('email')
+        except:
+            pass
+        return None
+
     @staticmethod
     def delete_appointment(appointment_id: Any):
         # 1. SQL
