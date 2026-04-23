@@ -8,6 +8,7 @@ from flask import Blueprint, request, jsonify
 from datetime import datetime, timedelta
 from backend.models import db, Appointment, User, PatientMonitoring
 from backend.trend_engine import run_full_analysis
+from backend.predictive_engine import generate_predictive_insight
 from backend.db_service import DBService
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from backend.authorize_roles import require_medical_staff
@@ -146,6 +147,12 @@ def get_admitted_patients():
                     risk_level = "CRITICAL"
                 elif warning_count > 0:
                     risk_level = "WARNING"
+            
+            # Generate predictive insight
+            prediction = None
+            if latest_records:
+                latest_vitals = latest_records[0].to_dict() # latest_records is desc
+                prediction = generate_predictive_insight(latest_vitals, analysis["trends"])
 
             results.append({
                 "patient_id": canonical_pid,
@@ -158,7 +165,8 @@ def get_admitted_patients():
                 "doctor_id": appt.doctor_id,
                 "admitted_at": appt.ward_assigned_at.isoformat() if appt.ward_assigned_at else None,
                 "risk_level": risk_level,
-                "hospital": appt.hospital_name
+                "hospital": appt.hospital_name,
+                "prediction": prediction
             })
 
         # Get list of hospitals for UI tabs/cards
@@ -240,11 +248,16 @@ def get_patient_monitoring(patient_id):
             "ward_number": appt.ward_number if appt else None,
         }
 
+        # Generate predictive insight
+        latest_vitals = record_dicts[-1] if record_dicts else {}
+        prediction = generate_predictive_insight(latest_vitals, analysis["trends"])
+
         return jsonify({
             "patient": patient_info,
             "records": record_dicts,
             "trends": analysis["trends"],
             "alerts": analysis["alerts"],
+            "prediction": prediction,
         }), 200
 
     except Exception as e:
@@ -338,11 +351,16 @@ def update_monitoring(patient_id):
         )
         analysis = run_full_analysis([r.to_dict() for r in all_records])
 
+        # Generate predictive insight
+        latest_vitals = record.to_dict()
+        prediction = generate_predictive_insight(latest_vitals, analysis["trends"])
+
         return jsonify({
             "message": "Monitoring data saved",
             "record": record.to_dict(),
             "trends": analysis["trends"],
             "alerts": analysis["alerts"],
+            "prediction": prediction,
         }), 201
 
     except Exception as e:
@@ -416,6 +434,10 @@ def get_timeseries(patient_id):
         record_dicts = [r.to_dict() for r in records]
         analysis = run_full_analysis(record_dicts)
 
+        # Generate predictive insight
+        latest_vitals = record_dicts[-1] if record_dicts else {}
+        prediction = generate_predictive_insight(latest_vitals, analysis["trends"])
+
         return jsonify({
             "labels": labels,
             "glucose": glucose_arr,
@@ -424,6 +446,7 @@ def get_timeseries(patient_id):
             "spo2": spo2_arr,
             "trends": analysis["trends"],
             "alerts": analysis["alerts"],
+            "prediction": prediction,
         }), 200
 
     except Exception as e:

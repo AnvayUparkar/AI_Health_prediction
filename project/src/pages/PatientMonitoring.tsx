@@ -149,6 +149,7 @@ export default function PatientMonitoringPage() {
   const [records, setRecords] = useState<MonitoringRecord[]>([]);
   const [trends, setTrends] = useState<Record<string, TrendData>>({});
   const [alerts, setAlerts] = useState<AlertData[]>([]);
+  const [prediction, setPrediction] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState('');
@@ -198,6 +199,7 @@ export default function PatientMonitoringPage() {
       setRecords(res.records || []);
       setTrends(res.trends || {});
       setAlerts(res.alerts || []);
+      setPrediction(res.prediction || null);
 
       // Hydrate diet checkboxes from today's latest record
       const today = new Date().toISOString().slice(0, 10);
@@ -295,6 +297,7 @@ export default function PatientMonitoringPage() {
       // Update trends/alerts from response
       if (res.trends) setTrends(res.trends);
       if (res.alerts) setAlerts(res.alerts);
+      if (res.prediction) setPrediction(res.prediction);
 
       showToast('✅ Vitals saved successfully');
       // Refresh full data
@@ -422,6 +425,73 @@ export default function PatientMonitoringPage() {
             </motion.button>
           </div>
         </motion.div>
+
+        {/* ── Predictive Insight ────────────────────────────────────── */}
+        <AnimatePresence>
+          {prediction && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-6"
+            >
+              <div className="rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 p-[1px] shadow-lg overflow-hidden">
+                <div className="bg-white/95 backdrop-blur-md rounded-[15px] p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center text-xl">
+                        🔮
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-bold text-gray-800">Predictive Intelligence</h2>
+                        <p className="text-xs text-gray-500">Proactive Clinical Early Warning</p>
+                      </div>
+                    </div>
+                    <div className={`px-4 py-1 rounded-full text-xs font-bold ${
+                      prediction.risk_level === 'HIGH' 
+                        ? 'bg-red-100 text-red-600 border border-red-200' 
+                        : 'bg-amber-100 text-amber-600 border border-amber-200'
+                    }`}>
+                      {prediction.risk_level} RISK ESCALATION
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-amber-500" />
+                        Identified Risks (Next {prediction.timeframe})
+                      </p>
+                      <ul className="space-y-2">
+                        {prediction.messages.map((msg: string, idx: number) => (
+                          <li key={idx} className="flex items-start gap-2 text-sm text-gray-600 bg-amber-50/50 p-2 rounded-lg border border-amber-100/50">
+                            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                            {msg}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="bg-blue-50/30 rounded-xl p-4 border border-blue-100/50">
+                      <p className="text-sm font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-blue-500" />
+                        Proactive Recommendations
+                      </p>
+                      <ul className="space-y-2">
+                        {prediction.recommended_actions.map((act: string, idx: number) => (
+                          <li key={idx} className="flex items-center gap-2 text-sm text-blue-700 bg-white/60 p-2 rounded-lg border border-blue-200/20">
+                            <Stethoscope className="h-3.5 w-3.5 text-blue-400" />
+                            {act}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* ── Alert Box ─────────────────────────────────────────────── */}
         <AnimatePresence>

@@ -16,6 +16,12 @@ interface AdmittedPatient {
   admitted_at: string | null;
   risk_level: string;
   hospital: string | null;
+  prediction?: {
+    risk_level: string;
+    timeframe: string;
+    messages: string[];
+    recommended_actions: string[];
+  } | null;
 }
 
 const riskConfig: Record<string, { color: string; bg: string; border: string; icon: any; label: string }> = {
@@ -339,6 +345,50 @@ export default function AdmittedPatients() {
                         </div>
                       )}
                     </div>
+
+                    {/* Predictive Insight Card */}
+                    {patient.prediction && (
+                      <motion.div 
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="mb-4 p-4 rounded-xl bg-amber-50/50 border border-amber-200/50 backdrop-blur-sm"
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-lg">🔮</span>
+                          <h4 className="font-bold text-amber-800 text-sm">Predictive Insight</h4>
+                          <span className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            patient.prediction.risk_level === 'HIGH' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'
+                          }`}>
+                            {patient.prediction.risk_level} RISK
+                          </span>
+                        </div>
+                        
+                        <p className="text-xs text-amber-900/70 mb-2 font-medium">
+                          Potential escalation in next {patient.prediction.timeframe}
+                        </p>
+                        
+                        <ul className="space-y-1 mb-3">
+                          {patient.prediction.messages.map((msg, idx) => (
+                            <li key={idx} className="text-xs text-amber-800 flex items-start gap-1.5">
+                              <span className="mt-1 w-1 h-1 rounded-full bg-amber-400 shrink-0" />
+                              {msg}
+                            </li>
+                          ))}
+                        </ul>
+                        
+                        <div className="pt-2 border-t border-amber-200/30">
+                          <p className="text-[10px] uppercase tracking-wider font-bold text-amber-700/60 mb-1.5">Recommended Actions</p>
+                          <ul className="grid grid-cols-1 gap-1">
+                            {patient.prediction.recommended_actions.map((act, i) => (
+                              <li key={i} className="text-[11px] text-amber-700 flex items-center gap-1.5 bg-white/40 px-2 py-1 rounded-lg">
+                                <Check className="h-2.5 w-2.5 text-amber-500" />
+                                {act}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </motion.div>
+                    )}
 
                     {/* Monitor Button */}
                     <motion.button

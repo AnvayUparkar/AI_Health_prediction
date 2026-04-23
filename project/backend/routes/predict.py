@@ -43,10 +43,10 @@ heart_features = []
 
 # Define expected features for each model (fallback defaults)
 DIABETES_FEATURES = [
-    'Age', 'Gender', 'Polyuria', 'Polydipsia', 'sudden weight loss', 
-    'weakness', 'Polyphagia', 'Genital thrush', 'visual blurring', 
-    'Itching', 'Irritability', 'delayed healing', 'partial paresis', 
-    'muscle stiffness', 'Alopecia', 'Obesity'
+    'HighBP', 'HighChol', 'CholCheck', 'BMI', 'Smoker', 'Stroke', 
+    'HeartDiseaseorAttack', 'PhysActivity', 'Fruits', 'Veggies', 
+    'HvyAlcoholConsump', 'AnyHealthcare', 'GenHlth', 'MentHlth', 
+    'PhysHlth', 'DiffWalk', 'Sex', 'Age'
 ]
 
 LUNG_CANCER_FEATURES = [
@@ -419,60 +419,69 @@ def predict_with_type(prediction_type: str, features: Dict[str, Any]) -> Tuple[D
             return ({'error': 'Diabetes model not available'}, 500)
         try:
             print(f"\n{'='*60}")
-            print("DIABETES PREDICTION REQUEST")
+            print("DIABETES PREDICTION REQUEST (BRFSS 2015)")
             print(f"{'='*60}")
             print(f"Received features: {features}")
             
             # Process the features
-            processed = dict(features)
-            mapping = {'Yes': 1, 'No': 0, 'Male': 1, 'Female': 0}
-            
-            for k, v in list(processed.items()):
-                if isinstance(v, str):
-                    if v in mapping:
-                        processed[k] = mapping[v]
-                    else:
-                        s = v.strip()
-                        try:
-                            processed[k] = float(s) if s != '' else v
-                        except Exception:
-                            processed[k] = v
+            processed = {}
+            for feat in DIABETES_FEATURES:
+                val = features.get(feat)
+                if val is None:
+                    # Try case-insensitive mapping
+                    for k, v in features.items():
+                        if k.strip().lower() == feat.lower():
+                            val = v
+                            break
+                
+                if val is not None:
+                    try:
+                        processed[feat] = float(val)
+                    except (ValueError, TypeError):
+                        # Mapping for common string values if any
+                        mapping = {'Yes': 1.0, 'No': 0.0, 'Male': 1.0, 'Female': 0.0}
+                        processed[feat] = mapping.get(val, 0.0)
+                else:
+                    processed[feat] = 0.0 # Default fallback
             
             print(f"Processed features: {processed}")
             
-            # Create DataFrame with features in correct order
+            # Create DataFrame
             input_df = pd.DataFrame([processed])
             
-            # Ensure we have all required features
-            missing_features = [f for f in DIABETES_FEATURES if f not in input_df.columns]
-            if missing_features:
-                print(f"[FAIL] Missing features: {missing_features}")
-                return ({'error': f'Missing required features: {missing_features}'}, 400)
-            
-            # Reorder columns to match training
+            # Reorder columns to match DIABETES_FEATURES
             input_df = input_df[DIABETES_FEATURES]
             print(f"Input DataFrame shape: {input_df.shape}")
-            print(f"Input DataFrame:\n{input_df}")
             
             # Make prediction
             pred_enc = diabetes_model.predict(input_df)
             pred_label = "Positive" if int(pred_enc[0]) == 1 else "Negative"
             
-            # Get confidence
+            # Get probability/confidence
             confidence = None
+            risk_score = None
             if hasattr(diabetes_model, 'predict_proba'):
                 try:
                     probs = diabetes_model.predict_proba(input_df)[0]
+                    # Index 1 is usually the 'Positive' class in binary classification
+                    risk_score = round(float(probs[1]) * 100, 2)
                     confidence = round(float(np.max(probs)) * 100, 2)
                 except Exception as e:
-                    print(f"Warning: Could not get confidence: {e}")
-                    confidence = None
+                    print(f"Warning: Could not get probability: {e}")
             
-            result = {'prediction': pred_label, 'confidence': confidence}
+            result = {
+                'prediction': pred_label, 
+                'confidence': confidence,
+                'probability': risk_score if risk_score is not None else (100.0 if pred_label == 'Positive' else 0.0)
+            }
             print(f"[OK] Prediction result: {result}")
             print(f"{'='*60}\n")
             
             return (result, 200)
+        except Exception as e:
+            print(f"[FAIL] Prediction error: {str(e)}")
+            traceback.print_exc()
+            return ({'error': f'Prediction error: {str(e)}'}, 500)
         except Exception as e:
             print(f"[FAIL] Prediction error: {str(e)}")
             traceback.print_exc()
@@ -483,7 +492,7 @@ def predict_with_type(prediction_type: str, features: Dict[str, Any]) -> Tuple[D
 
 
 @predict_bp.route('/predict', methods=['OPTIONS', 'POST'])
-@authorize_roles('doctor')
+@authorize_roles('doctor', 'nurse', 'user')
 def predict():
     """
     Main prediction endpoint that handles both diabetes and lung cancer predictions.

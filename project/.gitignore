@@ -13,6 +13,10 @@ dist
 dist-ssr
 *.local
 
+diabetes_model.pkl
+diabetes_label_encoder.pkl
+diabetes_scaler.pkl
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
