@@ -356,6 +356,42 @@ CONDITION_MAP = {
         "risk": "immune dysfunction, muscle wasting, and bone density loss",
         "solution": "Focus on nutrient-dense healthy fats and protein-rich frequent small meals.",
         "markers": []
+    },
+    "hypoxia": {
+        "technical_name": "Acute Respiratory Stress (Hypoxia)",
+        "explanation": {
+            "default": "Low oxygen saturation (SpO2 < 95%) indicates reduced peripheral tissue oxygenation."
+        },
+        "risk": "systemic hypoxia and oxidative stress",
+        "solution": "Prioritize nitrate-rich (Beetroot/Moringa) and iron-dense substrates to support vascular efficiency.",
+        "markers": ["SpO2"]
+    },
+    "hypertension": {
+        "technical_name": "Vascular Tension (Hypertension)",
+        "explanation": {
+            "default": "Elevated blood pressure trends increase cardiac workload and vascular stress."
+        },
+        "risk": "cardiovascular stress and renal workload",
+        "solution": "DASH-aligned potassium loading (Banana/Coconut Water); strictly limit sodium intake.",
+        "markers": ["bp_systolic", "bp_diastolic"]
+    },
+    "hypotension": {
+        "technical_name": "Circulatory Instability (Hypotension)",
+        "explanation": {
+            "default": "Low blood pressure trends may indicate hypovolemia or metabolic instability."
+        },
+        "risk": "orthostatic variance and syncopal risk",
+        "solution": "Increase clinical hydration and electrolyte-rich (Buttermilk/Salt) substrates for volume support.",
+        "markers": ["bp_systolic", "bp_diastolic"]
+    },
+    "hyperglycemia_acute": {
+        "technical_name": "Acute Glycemic Surge (Hyperglycemia)",
+        "explanation": {
+            "default": "Significant glucose spikes indicate acute metabolic volatility or insulin resistance."
+        },
+        "risk": "hyperosmolar stress and vascular inflammation",
+        "solution": "Enforce metabolic shielding with high-fiber (Oats/Sprouts) and strictly low GI substrates.",
+        "markers": ["Glucose"]
     }
 }
 
@@ -468,7 +504,7 @@ def fallback_diet_engine(input_data: Dict[str, Any], raw_text: Optional[str] = N
     patient_id = input_data.get("patient_id", "generic_patient")
     variation_engine.set_daily_seed(patient_id)
 
-    # 1. Detect & 2. Validate
+    # 1. Detect Base Conditions
     health_data = context.get("raw_analysis", {}).get("health_data") if context else None
     if not health_data and context:
         # Reconstruct health_data from context if needed
@@ -480,7 +516,27 @@ def fallback_diet_engine(input_data: Dict[str, Any], raw_text: Optional[str] = N
             "dietaryPreference": context.get("diet_preference")
         }
 
+    # Detect conditions from lab markers
     initial_conditions = detect_high_level_conditions(input_data, health_data=health_data)
+    
+    # [NEW] Detect conditions from monitoring trends if provided
+    if context and "trend_raw" in context:
+        trends = context["trend_raw"]
+        glucose_vals = trends.get("glucose_values", [])
+        bp_vals = trends.get("bp_values", [])
+        spo2_vals = trends.get("spo2_values", [])
+        
+        def calc_avg(vals): return sum(vals)/len(vals) if vals else 0
+        
+        avg_glucose = calc_avg(glucose_vals)
+        avg_bp = calc_avg(bp_vals)
+        avg_spo2 = calc_avg(spo2_vals)
+        
+        if avg_glucose > 180: initial_conditions.append("hyperglycemia_acute")
+        if avg_spo2 < 95 and avg_spo2 > 0: initial_conditions.append("hypoxia")
+        if avg_bp >= 140: initial_conditions.append("hypertension")
+        elif avg_bp < 95 and avg_bp > 0: initial_conditions.append("hypotension")
+
     if raw_text:
         text_conditions = detect_conditions_from_text(raw_text)
         initial_conditions = list(set(initial_conditions + text_conditions))

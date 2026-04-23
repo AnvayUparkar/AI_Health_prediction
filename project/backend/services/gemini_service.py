@@ -263,41 +263,66 @@ def _fallback_diet(trends: dict, trend_raw: dict = None, patient_data: dict = No
     Upgraded to generate narrative clinical recommendations.
     """
     try:
-        from backend.services.clinical_diet_engine import generate_clinical_diet
+        # Call the unified clinical engine
+        from backend.fallback_diet_engine import fallback_diet_engine
         
-        # Use provided raw trends or simulate from existing metrics
-        if not trend_raw:
-            trend_raw = {
-                "glucose_values": [trends.get('glucose', {}).get('average', 120)],
-                "bp_values": [trends.get('bp_systolic', {}).get('average', 120)],
-                "spo2_values": [trends.get('spo2', {}).get('average', 98)],
-                "meals_missed": False,
-                "activity_level": "moderate"
-            }
+        # Prepare context for the unified engine
+        clinical_context = {
+            "age": patient_data.get("age"),
+            "weight": patient_data.get("weight"),
+            "height": patient_data.get("height"),
+            "activityLevel": patient_data.get("activity_level", "moderate"),
+            "diet_preference": patient_data.get("diet_preference", "balanced"),
+            "non_veg_preferences": patient_data.get("non_veg_preferences", []),
+            "allergies": patient_data.get("allergies", []),
+            "trend_raw": trend_raw
+        }
         
-        # Call the new clinical engine
-        result = generate_clinical_diet(patient_data or {}, trend_raw)
+        result = fallback_diet_engine({}, context=clinical_context)
         
-        # Map back to old UI structure to avoid breaking frontend
-        meals = result.get('meals', {})
+        # Map back to monitoring UI structure with robust extraction
+        def extract_items(m):
+            if isinstance(m, dict):
+                # Handle IndianMealBuilder (components dict)
+                if "components" in m:
+                    return list(m["components"].values())
+                # Handle Standard Engine (items list)
+                return m.get("items", [])
+            return m if isinstance(m, list) else []
+            
+        def extract_reason(m):
+            if isinstance(m, dict): 
+                return m.get("benefit", m.get("reason", m.get("reasoning", "")))
+            return ""
+
+        def get_all_snacks(m_dict):
+            all_s = []
+            for k in ["evening_snack", "mid_morning", "snacks", "snack"]:
+                all_s.extend(extract_items(m_dict.get(k)))
+            return list(dict.fromkeys(all_s)) # deduplicate
+
+        meals = result.get('meal_plan', {})
+        issues = result.get('issues_detected', [])
+        protocol = result.get('clinical_protocol', [])
+        
         return {
             "breakfast": {
-                "items": meals.get('breakfast', {}).get('items', []),
-                "reasoning": meals.get('breakfast', {}).get('reason', '')
+                "items": extract_items(meals.get('breakfast')),
+                "reasoning": extract_reason(meals.get('breakfast')) or (f"Targets: {', '.join(issues[:2])}" if issues else "Balanced clinical nutrition.")
             },
             "lunch": {
-                "items": meals.get('lunch', {}).get('items', []),
-                "reasoning": meals.get('lunch', {}).get('reason', '')
+                "items": extract_items(meals.get('lunch')),
+                "reasoning": extract_reason(meals.get('lunch')) or (protocol[0] if protocol else "Clinical protein and fiber support.")
             },
             "snacks": {
-                "items": meals.get('snacks', {}).get('items', []),
-                "reasoning": meals.get('snacks', {}).get('reason', '')
+                "items": get_all_snacks(meals),
+                "reasoning": extract_reason(meals.get('evening_snack')) or extract_reason(meals.get('snacks')) or "Controlled glycemic support."
             },
             "dinner": {
-                "items": meals.get('dinner', {}).get('items', []),
-                "reasoning": meals.get('dinner', {}).get('reason', '')
+                "items": extract_items(meals.get('dinner')),
+                "reasoning": extract_reason(meals.get('dinner')) or "Light restorative evening meal."
             },
-            "overall_reasoning": result.get('strategy', ''),
+            "overall_reasoning": " ".join(protocol) or "Optimizing diet based on recent vital sign trends.",
             "source": "fallback"
         }
     except Exception as e:
