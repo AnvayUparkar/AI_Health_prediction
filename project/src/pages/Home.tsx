@@ -67,6 +67,7 @@ const Home = () => {
 
       glow: "hover:shadow-[0_0_20px_rgba(245,158,11,0.2)]"
     },
+    /*
     {
       icon: Utensils,
       title: "Smart Diet Planner",
@@ -79,6 +80,7 @@ const Home = () => {
       roles: ["doctor", "nurse", "user"],
       glow: "hover:shadow-[0_0_20px_rgba(16,185,129,0.2)]"
     },
+    */
     {
       icon: ClipboardList,
       title: "Appointment Management",

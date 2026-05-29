@@ -999,5 +999,28 @@
         ],
         "timestamp": 1780066983.2049701,
         "confidence": 0.9
+    },
+    "multigrain roti with moong dal and mixed vegetable sabzi": {
+        "ingredients": [
+            "lentils",
+            "garlic",
+            "spices",
+            "onion",
+            "wheat"
+        ],
+        "timestamp": 1780067601.7748919,
+        "confidence": 0.7
+    },
+    "brown rice khichdi with vegetables": {
+        "ingredients": [
+            "brown rice",
+            "sesame oil",
+            "garlic",
+            "grapeseed oil",
+            "peas",
+            "coconut oil"
+        ],
+        "timestamp": 1780067606.7751572,
+        "confidence": 0.9
     }
 }

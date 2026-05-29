@@ -359,4 +359,6 @@ if __name__ == '__main__':
     print("   - GET /api/meal-plan")
     print("   - POST /api/export-report")
     print("=" * 70)
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True, use_reloader=False)
+    port = int(os.environ.get('PORT', 5000))
+    is_debug = os.environ.get('FLASK_ENV') == 'development' or os.environ.get('FLASK_DEBUG', 'False').lower() in ['true', '1', 't']
+    socketio.run(app, host='0.0.0.0', port=port, debug=is_debug, use_reloader=False)
