@@ -8,7 +8,7 @@ os.environ.setdefault('TF_ENABLE_ONEDNN_OPTS', '0')   # Suppress oneDNN info
 import sys
 import eventlet
 import json
-eventlet.monkey_patch()
+eventlet.monkey_patch(thread=False)
 from typing import Optional
 
 # Load .env before any module reads os.environ (e.g. GEMINI_API_KEY)

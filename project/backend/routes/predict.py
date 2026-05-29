@@ -212,6 +212,22 @@ def load_models_once():
         print(f"[FAIL] Models failed to load: {', '.join(models_failed)}")
     print(f"{'='*60}\n")
 
+def _safe_predict(model, data):
+    try:
+        import eventlet
+        from eventlet import tpool
+        return tpool.execute(model.predict, data)
+    except Exception:
+        return model.predict(data)
+
+def _safe_predict_proba(model, data):
+    try:
+        import eventlet
+        from eventlet import tpool
+        return tpool.execute(model.predict_proba, data)
+    except Exception:
+        return model.predict_proba(data)
+
 def predict_with_type(prediction_type: str, features: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
     """
     Main prediction function that handles both diabetes and lung cancer predictions.
@@ -280,7 +296,7 @@ def predict_with_type(prediction_type: str, features: Dict[str, Any]) -> Tuple[D
             print(f"Input DataFrame:\n{input_df}")
             
             # Make prediction
-            pred_enc = lung_cancer_model.predict(input_df)
+            pred_enc = _safe_predict(lung_cancer_model, input_df)
             
             # Decode prediction if encoder is available
             if lung_cancer_label_encoder is not None:
@@ -295,7 +311,7 @@ def predict_with_type(prediction_type: str, features: Dict[str, Any]) -> Tuple[D
             confidence = None
             if hasattr(lung_cancer_model, 'predict_proba'):
                 try:
-                    probs = lung_cancer_model.predict_proba(input_df)[0]
+                    probs = _safe_predict_proba(lung_cancer_model, input_df)[0]
                     confidence = round(float(np.max(probs)) * 100, 2)
                 except Exception as e:
                     print(f"Warning: Could not get confidence: {e}")
@@ -352,7 +368,8 @@ def predict_with_type(prediction_type: str, features: Dict[str, Any]) -> Tuple[D
                 row = heart_scaler.transform(row)
             
             # 2. Model inference
-            prob = float(heart_xgb.predict_proba(row)[0, 1])
+            probs = _safe_predict_proba(heart_xgb, row)
+            prob = float(probs[0, 1])
 
             # 3. Decision
             pred_label = "Higher Risk" if prob >= heart_threshold else "Lower Risk"
@@ -416,7 +433,7 @@ def predict_with_type(prediction_type: str, features: Dict[str, Any]) -> Tuple[D
             print(f"Input DataFrame shape: {input_df.shape}")
             
             # Make prediction
-            pred_enc = diabetes_model.predict(input_df)
+            pred_enc = _safe_predict(diabetes_model, input_df)
             pred_label = "Positive" if int(pred_enc[0]) == 1 else "Negative"
             
             # Get probability/confidence
@@ -424,7 +441,7 @@ def predict_with_type(prediction_type: str, features: Dict[str, Any]) -> Tuple[D
             risk_score = None
             if hasattr(diabetes_model, 'predict_proba'):
                 try:
-                    probs = diabetes_model.predict_proba(input_df)[0]
+                    probs = _safe_predict_proba(diabetes_model, input_df)[0]
                     # Index 1 is usually the 'Positive' class in binary classification
                     risk_score = round(float(probs[1]) * 100, 2)
                     confidence = round(float(np.max(probs)) * 100, 2)
@@ -440,10 +457,6 @@ def predict_with_type(prediction_type: str, features: Dict[str, Any]) -> Tuple[D
             print(f"{'='*60}\n")
             
             return (result, 200)
-        except Exception as e:
-            print(f"[FAIL] Prediction error: {str(e)}")
-            traceback.print_exc()
-            return ({'error': f'Prediction error: {str(e)}'}, 500)
         except Exception as e:
             print(f"[FAIL] Prediction error: {str(e)}")
             traceback.print_exc()

@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Test script for the AI Health Predictor Flask backend
 This script tests both endpoints with sample data to verify the backend is working correctly.
@@ -34,20 +34,23 @@ def test_lung_cancer_endpoint():
     """Test the lung cancer prediction endpoint"""
     print("\n🫁 Testing lung cancer prediction endpoint...")
     
-    # Sample data matching the frontend form structure
+    # Sample data matching the frontend form structure (15 features expected by the model)
     sample_data = {
-        "Age": "55",
         "Gender": "1",
-        "Alcohol use": "4",
-        "Dust Allergy": "3",
-        "OccuPational Hazards": "5",
-        "Genetic Risk": "2",
-        "chronic Lung Disease": "1",
-        "Balanced Diet": "6",
-        "Obesity": "3",
-        "Smoking": "7",
-        "Passive Smoker": "2",
-        "Coughing of Blood": "1"
+        "Age": "55",
+        "Smoking": "2",
+        "Yellow fingers": "1",
+        "Anxiety": "2",
+        "Peer_pressure": "1",
+        "Chronic Disease": "2",
+        "Fatigue ": "2",
+        "Allergy ": "1",
+        "Wheezing": "2",
+        "Alcohol": "1",
+        "Coughing": "2",
+        "Shortness of Breath": "2",
+        "Swallowing Difficulty": "1",
+        "Chest Pain": "2"
     }
     
     try:
@@ -76,24 +79,26 @@ def test_diabetes_endpoint():
     """Test the diabetes prediction endpoint"""
     print("\n🩸 Testing diabetes prediction endpoint...")
     
-    # Sample data matching the frontend form structure
+    # Sample data matching the frontend form structure (18 features expected by the model)
     sample_data = {
-        "Age": "45",
-        "Gender": "Male",
-        "Polyuria": "Yes",
-        "Polydipsia": "Yes",
-        "sudden weight loss": "No",
-        "weakness": "Yes",
-        "Polyphagia": "No",
-        "Genital thrush": "No",
-        "visual blurring": "Yes",
-        "Itching": "No",
-        "Irritability": "No",
-        "delayed healing": "Yes",
-        "partial paresis": "No",
-        "muscle stiffness": "No",
-        "Alopecia": "No",
-        "Obesity": "Yes"
+        "HighBP": "1",
+        "HighChol": "1",
+        "CholCheck": "1",
+        "BMI": "28",
+        "Smoker": "1",
+        "Stroke": "0",
+        "HeartDiseaseorAttack": "0",
+        "PhysActivity": "1",
+        "Fruits": "1",
+        "Veggies": "1",
+        "HvyAlcoholConsump": "0",
+        "AnyHealthcare": "1",
+        "GenHlth": "3",
+        "MentHlth": "2",
+        "PhysHlth": "0",
+        "DiffWalk": "0",
+        "Sex": "1",
+        "Age": "5"
     }
     
     try:

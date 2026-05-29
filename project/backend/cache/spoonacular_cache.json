@@ -851,17 +851,6 @@
         "timestamp": 1777457807.6890311,
         "confidence": 0.9
     },
-    "1/2 cup": {
-        "ingredients": [
-            "vegetable oil",
-            "ground ginger",
-            "eggs",
-            "brown rice flour",
-            "egg whites"
-        ],
-        "timestamp": 1777457808.7379913,
-        "confidence": 0.9
-    },
     "protein & calcium crunch": {
         "ingredients": [
             "carrot",
@@ -879,22 +868,6 @@
             "slc onion 5mm"
         ],
         "timestamp": 1777457817.4152472,
-        "confidence": 0.9
-    },
-    "1 bowl": {
-        "ingredients": [
-            "carrots",
-            "cumin",
-            "chicken stock",
-            "olive oil",
-            "garlic",
-            "canned tomatoes",
-            "cream",
-            "green onions",
-            "onions",
-            "black beans"
-        ],
-        "timestamp": 1777457821.931685,
         "confidence": 0.9
     },
     "8-10 leaves": {
@@ -922,18 +895,6 @@
         "timestamp": 1777457830.2367094,
         "confidence": 0.7
     },
-    "1 cup": {
-        "ingredients": [
-            "vegetable oil",
-            "butter",
-            "cream of tartar",
-            "egg whites",
-            "eggs",
-            "milk"
-        ],
-        "timestamp": 1777457833.2501376,
-        "confidence": 0.9
-    },
     "light moong dal khichdi with paneer": {
         "ingredients": [
             "garlic",
@@ -947,5 +908,96 @@
         ],
         "timestamp": 1777457835.7979681,
         "confidence": 0.7
+    },
+    "oats porridge with berries and flaxseeds": {
+        "ingredients": [
+            "eggs",
+            "almond milk",
+            "oats"
+        ],
+        "timestamp": 1780066938.8755276,
+        "confidence": 0.9
+    },
+    "fruit salad with a sprinkle of chia seeds": {
+        "ingredients": [
+            "cucumber",
+            "tomato",
+            "lemon"
+        ],
+        "timestamp": 1780066939.7378678,
+        "confidence": 0.7
+    },
+    "1 medium": {
+        "ingredients": [
+            "mediums sized carrots",
+            "butter"
+        ],
+        "timestamp": 1780066951.1257892,
+        "confidence": 0.9
+    },
+    "1/2 cup": {
+        "ingredients": [
+            "baby carrots",
+            "baby carrots 4 stalks celery 1 can mushrooms 1 piece pepper 1 cup flour and 3 tbsp 2 tablespoons bee",
+            "potatoes",
+            "onion"
+        ],
+        "timestamp": 1780066956.8189642,
+        "confidence": 0.9
+    },
+    "bajra roti with palak dal and mixed vegetable sabzi": {
+        "ingredients": [
+            "lentils",
+            "garlic",
+            "spices",
+            "onion",
+            "wheat"
+        ],
+        "timestamp": 1780066963.0372255,
+        "confidence": 0.7
+    },
+    "1 tbsp": {
+        "ingredients": [
+            "tbsp olive oil",
+            "garlic cloves",
+            "spring onions",
+            "avocado",
+            "avocados into cubes",
+            "olive oil"
+        ],
+        "timestamp": 1780066964.224049,
+        "confidence": 0.9
+    },
+    "1/4 cup": {
+        "ingredients": [
+            "baby carrots",
+            "baby carrots 4 stalks celery 1 can mushrooms 1 piece pepper 1 cup flour and 3 tbsp 2 tablespoons bee",
+            "potatoes",
+            "onion"
+        ],
+        "timestamp": 1780066972.4111001,
+        "confidence": 0.9
+    },
+    "1 bowl": {
+        "ingredients": [
+            "eggs",
+            "butter",
+            "cumin",
+            "creamed corn",
+            "coriander",
+            "heavy cream"
+        ],
+        "timestamp": 1780066975.361044,
+        "confidence": 0.9
+    },
+    "1.5 cups": {
+        "ingredients": [
+            "vegetable oil",
+            "carrots",
+            "garlic",
+            "onion"
+        ],
+        "timestamp": 1780066983.2049701,
+        "confidence": 0.9
     }
 }

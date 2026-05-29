@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Sun as Lung, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { predict } from '../services/api';
 
 const LungCancer = () => {
   // Default features that match the backend model
@@ -84,33 +85,12 @@ const LungCancer = () => {
     );
     
     try {
-      const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000';
-      
-      // Use the new unified prediction endpoint
-      const response = await fetch(`${API_URL}/api/predict`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: 'lung_cancer',
-          features: payload
-        })
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        // Show backend error in UI
-        console.error('Prediction error:', data);
-        alert(data.error || 'Prediction failed. Please check your inputs and try again.');
-        return;
-      }
-      
+      // Use the centralized api service which handles authorization
+      const data = await predict('lung_cancer', payload);
       setResult(data);
     } catch (error: any) {
       console.error('Prediction error:', error);
-      alert(error.message || 'Prediction failed. Please try again or check if the backend server is running.');
+      alert(error.response?.data?.error || error.message || 'Prediction failed. Please try again or check if the backend server is running.');
     } finally {
       setIsLoading(false);
     }
