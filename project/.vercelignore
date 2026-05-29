@@ -1,7 +1,7 @@
 # Exclude all Python backend files from Vercel build
 # Vercel only builds the React frontend; the Flask backend runs on Render
 *.py
-requirements.txt
+requirements-render.txt
 __pycache__/
 *.pyc
 *.pyo
