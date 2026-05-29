@@ -22,10 +22,11 @@ def book_appointment():
     # Atomic update to prevent double booking
     # We find the document where the specific sub-slot is NOT booked
     # and update it to be booked by this user.
+    doc_id_variants = [str(doctor_id), int(doctor_id) if str(doctor_id).isdigit() else doctor_id]
     
     result = mongodb.doctor_availability.find_one_and_update(
         {
-            "doctorId": doctor_id,
+            "doctorId": {"$in": doc_id_variants},
             "date": date,
             "slots.subSlots": {
                 "$elemMatch": {
@@ -55,7 +56,10 @@ def book_appointment():
     if not result:
         # Check if the slot exists but is already booked
         # or if the slot doesn't exist at all.
-        existing_doc = mongodb.doctor_availability.find_one({"doctorId": doctor_id, "date": date})
+        existing_doc = mongodb.doctor_availability.find_one({
+            "doctorId": {"$in": doc_id_variants},
+            "date": date
+        })
         if not existing_doc:
             return jsonify({"error": "No availability found for this doctor on this date"}), 404
         

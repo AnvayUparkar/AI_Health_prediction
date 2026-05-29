@@ -1,0 +1,30 @@
+{
+  "features": [
+    "HighBP",
+    "HighChol",
+    "CholCheck",
+    "BMI",
+    "Smoker",
+    "Stroke",
+    "Diabetes",
+    "PhysActivity",
+    "Fruits",
+    "Veggies",
+    "HvyAlcoholConsump",
+    "AnyHealthcare",
+    "GenHlth",
+    "MentHlth",
+    "PhysHlth",
+    "DiffWalk",
+    "Sex",
+    "Age"
+  ],
+  "n_features": 18,
+  "dropped_cols": [
+    "Income",
+    "Education",
+    "NoDocbcCost"
+  ],
+  "target": "HeartDiseaseorAttack",
+  "threshold": 0.695
+}

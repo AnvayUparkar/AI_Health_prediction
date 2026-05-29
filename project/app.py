@@ -1,4 +1,10 @@
 import os
+# ── Silence mediapipe / TFLite C++ verbose warnings ──────────────────────────
+# Must be set BEFORE any mediapipe/cv2 import triggers the C++ runtime.
+os.environ.setdefault('TF_CPP_MIN_LOG_LEVEL', '3')   # FATAL only
+os.environ.setdefault('GLOG_minloglevel', '3')        # FATAL only
+os.environ.setdefault('TF_ENABLE_ONEDNN_OPTS', '0')   # Suppress oneDNN info
+# ─────────────────────────────────────────────────────────────────────────────
 import sys
 import eventlet
 import json
@@ -191,14 +197,18 @@ def create_app(config_overrides: Optional[dict] = None):
         Receives frame from frontend and processes it via GestureService.
         """
         try:
-            from backend.gesture_service import gesture_detector
+            from backend.gesture_service import get_gesture_detector
+            _detector = get_gesture_detector()
+            if _detector is None:
+                print('[SOCKET ERROR] Gesture detector is None — initialization failed.')
+                return
             frame_data = data.get('frame')
             patient_info = data.get('info', {})
             
             if not frame_data:
                 return
                 
-            result = gesture_detector.process_frame(frame_data, patient_info)
+            result = _detector.process_frame(frame_data, patient_info)
             socketio.emit('gesture_result', result)
             
         except Exception as e:
@@ -349,4 +359,4 @@ if __name__ == '__main__':
     print("   - GET /api/meal-plan")
     print("   - POST /api/export-report")
     print("=" * 70)
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True, use_reloader=False)

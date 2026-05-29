@@ -1,343 +1,537 @@
-import React, { useState } from 'react';
-import { HeartPulse, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { HeartPulse, AlertCircle, Clock, ChevronDown, Activity as Pulse } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { predict } from '../services/api';
+import AnimatedBackground from '../components/AnimatedBackground';
 
 const HeartDisease = () => {
-  const [formData, setFormData] = useState({
-    General_Health: '',
-    Checkup: '',
-    Exercise: '',
-    Skin_Cancer: '',
-    Other_Cancer: '',
-    Depression: '',
-    Diabetes: '',
-    Arthritis: '',
-    Age_Category: '',
-    Sex: '',
-    Smoking_History: '',
-    'Height_(cm)': '',
-    'Weight_(kg)': '',
-    Alcohol_Consumption: '',
-    Fruit_Consumption: '',
-    Green_Vegetables_Consumption: '',
-    FriedPotato_Consumption: ''
+  /* === Heart Disease UI Logic & State === */
+  const [formData, setFormData] = useState<Record<string, any>>({
+    HighBP: null, HighChol: null, CholCheck: null, BMI: 25, Smoker: null, Stroke: null,
+    Diabetes: null, PhysActivity: null, Fruits: null, Veggies: null,
+    HvyAlcoholConsump: null, AnyHealthcare: null, DiffWalk: null, Sex: null, Age: '',
+    GenHlth: null, MentHlth: '', PhysHlth: ''
   });
 
   const [result, setResult] = useState<{ prediction: string, confidence: number | null, risk_score?: number | null, threshold?: number | null } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
 
-  const questions = [
-    {
-      field: 'General_Health', label: 'How would you rate your general health?', type: 'select', options: [
-        { value: 'Excellent', label: 'Excellent' },
-        { value: 'Very Good', label: 'Very Good' },
-        { value: 'Good', label: 'Good' },
-        { value: 'Fair', label: 'Fair' },
-        { value: 'Poor', label: 'Poor' }
-      ]
-    },
-    {
-      field: 'Checkup', label: 'When was your last medical checkup?', type: 'select', options: [
-        { value: 'Within the past year', label: 'Within the past year' },
-        { value: 'Within the past 2 years', label: 'Within the past 2 years' },
-        { value: 'Within the past 5 years', label: 'Within the past 5 years' },
-        { value: '5 or more years ago', label: '5 or more years ago' },
-        { value: 'Never', label: 'Never' }
-      ]
-    },
-    { field: 'Exercise', label: 'Do you exercise (physical activity in past 30 days)?', type: 'radio' },
-    { field: 'Skin_Cancer', label: 'Have you ever been diagnosed with skin cancer?', type: 'radio' },
-    { field: 'Other_Cancer', label: 'Have you ever been diagnosed with any other cancer?', type: 'radio' },
-    { field: 'Depression', label: 'Have you been diagnosed with a depressive disorder?', type: 'radio' },
-    {
-      field: 'Diabetes', label: 'Diabetes status?', type: 'select', options: [
-        { value: 'No', label: 'No' },
-        { value: 'No, pre-diabetes or borderline diabetes', label: 'No, pre-diabetes or borderline diabetes' },
-        { value: 'Yes, but female told only during pregnancy', label: 'Yes, but female told only during pregnancy' },
-        { value: 'Yes', label: 'Yes' }
-      ]
-    },
-    { field: 'Arthritis', label: 'Have you been told you have arthritis?', type: 'radio' },
-    {
-      field: 'Age_Category', label: 'What is your age group?', type: 'select', options: [
-        { value: '18-24', label: '18-24' },
-        { value: '25-29', label: '25-29' },
-        { value: '30-34', label: '30-34' },
-        { value: '35-39', label: '35-39' },
-        { value: '40-44', label: '40-44' },
-        { value: '45-49', label: '45-49' },
-        { value: '50-54', label: '50-54' },
-        { value: '55-59', label: '55-59' },
-        { value: '60-64', label: '60-64' },
-        { value: '65-69', label: '65-69' },
-        { value: '70-74', label: '70-74' },
-        { value: '75-79', label: '75-79' },
-        { value: '80+', label: '80+' }
-      ]
-    },
-    {
-      field: 'Sex', label: 'What is your biological sex?', type: 'select', options: [
-        { value: 'Male', label: 'Male' },
-        { value: 'Female', label: 'Female' }
-      ]
-    },
-    { field: 'Smoking_History', label: 'Do you have a smoking history?', type: 'radio' },
-    { field: 'Height_(cm)', label: 'What is your height in cm? (e.g. 170)', type: 'number', min: 100, max: 250 },
-    { field: 'Weight_(kg)', label: 'What is your weight in kg? (e.g. 70.5)', type: 'number', min: 30, max: 300 },
-    { field: 'Alcohol_Consumption', label: 'How many alcoholic drinks per week? (0-30)', type: 'number', min: 0, max: 30 },
-    { field: 'Fruit_Consumption', label: 'How many servings of fruit per week? (0-120)', type: 'number', min: 0, max: 120 },
-    { field: 'Green_Vegetables_Consumption', label: 'How many servings of green vegetables per week? (0-128)', type: 'number', min: 0, max: 128 },
-    { field: 'FriedPotato_Consumption', label: 'How many servings of fried potatoes per week? (0-128)', type: 'number', min: 0, max: 128 }
-  ];
+  const TOTAL_FIELDS = 18;
+  const resultRef = useRef<HTMLDivElement>(null);
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  // Feature labels for error reporting and UI
+  const featureLabels: Record<string, string> = {
+    'HighBP': 'High Blood Pressure',
+    'HighChol': 'High Cholesterol',
+    'CholCheck': 'Cholesterol Check',
+    'BMI': 'BMI',
+    'Smoker': 'Smoking Status',
+    'Stroke': 'Stroke History',
+    'Diabetes': 'Diabetes Status',
+    'PhysActivity': 'Physical Activity',
+    'Fruits': 'Fruit Consumption',
+    'Veggies': 'Vegetable Consumption',
+    'HvyAlcoholConsump': 'Alcohol Consumption',
+    'AnyHealthcare': 'Healthcare Access',
+    'GenHlth': 'General Health',
+    'MentHlth': 'Mental Health Days',
+    'PhysHlth': 'Physical Health Days',
+    'DiffWalk': 'Difficulty Walking',
+    'Sex': 'Sex',
+    'Age': 'Age Category'
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  useEffect(() => {
+    let filled = 0;
+    filled += 1; // BMI starts with a default
+    const fieldsToCheck = [
+      'HighBP', 'HighChol', 'CholCheck', 'Smoker', 'PhysActivity', 'Fruits', 'Veggies',
+      'HvyAlcoholConsump', 'Stroke', 'Diabetes', 'AnyHealthcare', 'DiffWalk',
+      'Sex', 'Age', 'GenHlth', 'MentHlth', 'PhysHlth'
+    ];
+
+    fieldsToCheck.forEach(f => {
+      if (formData[f] !== null && formData[f] !== '') filled++;
+    });
+
+    const pct = Math.min(100, Math.round((filled / TOTAL_FIELDS) * 100));
+    setProgress(pct);
+  }, [formData]);
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const missing = Object.entries(formData).filter(([k, v]) => v === null || v === '').map(([k]) => featureLabels[k] || k);
+    if (missing.length > 0) {
+      setErrorMessage(`Please complete all fields. Missing: ${missing.join(', ')}`);
+      return;
+    }
+
     setIsLoading(true);
     setErrorMessage(null);
     setResult(null);
 
     try {
       const data = await predict('heart_disease', formData);
-
       setResult({
         prediction: data.prediction,
         confidence: data.confidence,
         risk_score: data.risk_score,
         threshold: data.threshold
       });
+
+      setTimeout(() => {
+        resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
     } catch (err: any) {
       console.error('Prediction error:', err);
-      const errorMsg = err?.response?.data?.error || err?.message || 'Prediction failed. Please try again.';
-      setErrorMessage(errorMsg);
+      setErrorMessage(err?.response?.data?.error || err?.message || 'Prediction failed.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const getResultColor = (prediction: string) => {
-    if (prediction === 'Lower Risk') return 'text-green-700 bg-green-50 border-green-200';
-    if (prediction === 'Higher Risk') return 'text-red-700 bg-red-50 border-red-200';
-    return 'text-gray-600 bg-gray-50 border-gray-200';
+  const getBMICategory = (val: number) => {
+    if (val < 18.5) return 'Underweight';
+    if (val < 25) return 'Normal weight';
+    if (val < 30) return 'Overweight';
+    if (val < 35) return 'Obese (Class I)';
+    if (val < 40) return 'Obese (Class II)';
+    return 'Severely Obese';
   };
 
-  const isFormValid = Object.values(formData).every(value => value !== '');
-
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="relative min-h-screen selection:bg-rose-500 selection:text-white pb-20">
+      <AnimatedBackground />
+
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap');
+        
+        .heart-container { font-family: 'DM Sans', sans-serif; }
+        .heart-heading { font-family: 'Instrument Serif', serif; }
+        
+        .section-glass {
+          background: rgba(255, 255, 255, 0.4);
+          backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.5);
+          border-radius: 24px;
+          box-shadow: 0 8px 32px 0 rgba(135, 31, 31, 0.07);
+        }
+
+        .toggle-chip input:checked + label {
+          background: #e11d48;
+          border-color: #e11d48;
+          color: white;
+          box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
+        }
+
+        .scale-chip input:checked + label {
+          background: #e11d48;
+          border-color: #e11d48;
+          color: white;
+          font-weight: 500;
+          box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
+        }
+
+        .gauge-fill {
+          transition: width 1.5s cubic-bezier(.4,0,.2,1);
+          background: linear-gradient(90deg, #10b981, #f59e0b, #e11d48);
+          background-size: 300% 100%;
+        }
+
+        .input-glass {
+          background: rgba(255, 255, 255, 0.5);
+          border: 1.5px solid rgba(255, 255, 255, 0.6);
+          backdrop-filter: blur(4px);
+        }
+        
+        .input-glass:focus {
+          background: rgba(255, 255, 255, 0.9);
+          border-color: #e11d48;
+          box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.1);
+        }
+      `}</style>
+
       {/* Header */}
-      <div className="text-center mb-12">
-        <div className="flex justify-center mb-6">
-          <div className="p-4 bg-rose-50 rounded-2xl">
-            <HeartPulse className="h-12 w-12 text-rose-500" />
+      <header className="relative pt-32 pb-12 px-8 text-center overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-5xl mx-auto relative z-10"
+        >
+          <div className="inline-flex p-4 bg-white/30 backdrop-blur-md rounded-2xl border border-white/40 shadow-sm mb-6">
+            <HeartPulse className="w-10 h-10 text-rose-600" />
           </div>
-        </div>
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Heart Disease Risk Questionnaire</h1>
-        <p className="text-gray-600 max-w-2xl mx-auto">
-          Please answer all questions honestly based on your current health status and lifestyle.
-          This assessment evaluates your risk factors for cardiovascular disease using our elite stacking ensemble model.
-        </p>
+          <h1 className="heart-heading text-5xl md:text-6xl font-normal tracking-tight text-gray-900 mb-4">
+            Heart Disease Risk Assessment
+          </h1>
+          <p className="text-gray-600 max-w-2xl mx-auto text-lg leading-relaxed">
+            Advanced diagnostic tool utilizing XGBoost predictive modeling 
+            to evaluate cardiovascular risk factors based on longitudinal health data.
+          </p>
+
+          <div className="flex justify-center gap-3 mt-8">
+            {[...Array(5)].map((_, i) => (
+              <motion.div
+                key={i}
+                animate={{ scale: progress >= (i + 1) * 20 ? 1.2 : 1 }}
+                className={`w-3 h-3 rounded-full transition-colors duration-500 ${progress >= (i + 1) * 20 ? 'bg-rose-500' : 'bg-gray-300'}`}
+              />
+            ))}
+          </div>
+        </motion.div>
+      </header>
+
+      {/* Sticky Progress Bar */}
+      <div className="sticky top-0 z-50 h-1.5 bg-gray-200/50 backdrop-blur-sm overflow-hidden">
+        <motion.div
+          className="h-full bg-gradient-to-r from-rose-400 via-rose-500 to-rose-600"
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 0.5 }}
+        />
       </div>
 
-      <div className="bg-white rounded-2xl shadow-lg p-8">
-        <form id="heart-disease-form" onSubmit={handleSubmit} className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {questions.map((question) => (
-              <div key={question.field} className="space-y-4">
-                <label className="block text-sm font-semibold text-gray-900">
-                  {question.label}
-                </label>
-
-                {question.type === 'number' && (
-                  <input
-                    type="number"
-                    id={question.field}
-                    name={question.field}
-                    min={question.min}
-                    max={question.max}
-                    value={formData[question.field as keyof typeof formData]}
-                    onChange={(e) => handleInputChange(question.field, e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all duration-200"
-                    required
-                  />
-                )}
-
-                {question.type === 'select' && question.options && (
-                  <select
-                    id={question.field}
-                    name={question.field}
-                    value={formData[question.field as keyof typeof formData]}
-                    onChange={(e) => handleInputChange(question.field, e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all duration-200"
-                    required
-                  >
-                    <option value="">Select an option</option>
-                    {question.options.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                )}
-
-                {question.type === 'radio' && (
-                  <div className="flex space-x-6">
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        id={`${question.field}-yes`}
-                        name={question.field}
-                        value="Yes"
-                        checked={formData[question.field as keyof typeof formData] === 'Yes'}
-                        onChange={(e) => handleInputChange(question.field, e.target.value)}
-                        className="w-4 h-4 text-rose-600 border-gray-300 focus:ring-rose-500"
-                        required
-                      />
-                      <span className="text-sm text-gray-700">Yes</span>
-                    </label>
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        id={`${question.field}-no`}
-                        name={question.field}
-                        value="No"
-                        checked={formData[question.field as keyof typeof formData] === 'No'}
-                        onChange={(e) => handleInputChange(question.field, e.target.value)}
-                        className="w-4 h-4 text-rose-600 border-gray-300 focus:ring-rose-500"
-                        required
-                      />
-                      <span className="text-sm text-gray-700">No</span>
-                    </label>
-                  </div>
-                )}
+      <main className="max-w-4xl mx-auto px-6 pt-12 heart-container relative z-10">
+        {/* Section 1: Cardiovascular Vitals */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          className="section-glass mb-8 overflow-hidden"
+        >
+          <div className="px-8 py-5 border-b border-white/50 bg-white/20 flex items-center gap-4">
+            <div className="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold text-sm shadow-lg shadow-rose-200">1</div>
+            <h2 className="heart-heading text-xl text-gray-800">Cardiovascular Vitals</h2>
+          </div>
+          <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-10">
+            {[
+              { id: 'HighBP', label: 'High Blood Pressure', hint: 'Diagnostic history of HBP' },
+              { id: 'HighChol', label: 'High Cholesterol', hint: 'Confirmed by lab test' },
+              { id: 'CholCheck', label: 'Routine Checkup', hint: 'Tested in last 5 years' }
+            ].map(f => (
+              <div key={f.id} className="flex flex-col gap-3">
+                <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500">{f.label}</label>
+                <div className="flex gap-2">
+                  {[{ l: 'No', v: 0 }, { l: 'Yes', v: 1 }].map(opt => (
+                    <div key={opt.v} className="toggle-chip flex-1">
+                      <input type="radio" id={`${f.id}-${opt.v}`} name={f.id} className="hidden" checked={formData[f.id] === opt.v} onChange={() => handleInputChange(f.id, opt.v)} />
+                      <label htmlFor={`${f.id}-${opt.v}`} className="block text-center py-2.5 px-4 border border-white/60 rounded-xl text-xs cursor-pointer transition-all hover:bg-white/40 text-gray-700">{opt.l}</label>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-gray-400 font-medium italic">{f.hint}</p>
               </div>
             ))}
           </div>
+        </motion.div>
 
-          <div className="flex flex-col items-center space-y-4 pt-8 border-t border-gray-200">
-            <button
-              type="submit"
-              disabled={!isFormValid || isLoading}
-              className="px-8 py-4 bg-rose-600 text-white rounded-xl font-semibold hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl"
-            >
-              {isLoading ? (
-                <>
-                  <Clock className="h-5 w-5 animate-spin" />
-                  <span>Analyzing...</span>
-                </>
-              ) : (
-                <span>Predict My Risk</span>
-              )}
-            </button>
-
-            {!isFormValid && (
-              <p className="text-sm text-gray-500 flex items-center space-x-1">
-                <AlertCircle className="h-4 w-4" />
-                <span>Please complete all fields to get your prediction</span>
-              </p>
-            )}
-            {errorMessage && (
-              <div className="text-sm text-red-600 flex items-center space-x-1 mt-4 bg-red-50 p-4 rounded-lg">
-                <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
-                <span>Error: {errorMessage}</span>
-              </div>
-            )}
+        {/* Section 2: Body & Lifestyle */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          className="section-glass mb-8 overflow-hidden"
+        >
+          <div className="px-8 py-5 border-b border-white/50 bg-white/20 flex items-center gap-4">
+            <div className="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold text-sm shadow-lg shadow-rose-200">2</div>
+            <h2 className="heart-heading text-xl text-gray-800">Biometrics & Lifestyle</h2>
           </div>
-        </form>
-
-        {/* Results */}
-        <div id="result">
-          {result && (
-            <div className={`mt-12 p-8 border-2 rounded-2xl transition-all duration-500 ${getResultColor(result.prediction)}`}>
-              <div className="text-center">
-                <div className="flex justify-center mb-4">
-                  {result.prediction === 'Lower Risk' && <CheckCircle className="h-16 w-16 text-green-600" />}
-                  {result.prediction === 'Higher Risk' && <AlertCircle className="h-16 w-16 text-red-600" />}
+          <div className="p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-10">
+              <div className="flex flex-col gap-4">
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500">Body Mass Index (BMI)</label>
+                  <span className="px-3 py-1 bg-white/60 rounded-lg text-[10px] font-bold text-rose-600 border border-white/80">{getBMICategory(formData.BMI)}</span>
                 </div>
-
-                <h2 className="text-3xl font-bold mb-2">
-                  Result: {result.prediction}
-                </h2>
-
-                {result.risk_score !== undefined && result.risk_score !== null && (
-                  <div className="mt-6 mb-2">
-                    <div className="flex justify-between text-sm font-medium mb-1">
-                      <span>Risk Score</span>
-                      <span>{result.risk_score} / 100</span>
+                <div className="flex items-center gap-6">
+                  <input type="range" min="10" max="70" value={formData.BMI} onChange={(e) => handleInputChange('BMI', parseInt(e.target.value))} className="flex-1 h-2 bg-rose-100 rounded-full appearance-none cursor-pointer accent-rose-600" />
+                  <span className="heart-heading text-3xl font-normal text-rose-600">{formData.BMI}</span>
+                </div>
+              </div>
+              <div className="flex flex-col gap-3">
+                <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500">Smoking Status</label>
+                <div className="flex gap-2">
+                  {[{ l: 'Non-Smoker', v: 0 }, { l: 'Smoker (100+ lifetime)', v: 1 }].map(opt => (
+                    <div key={opt.v} className="toggle-chip flex-1">
+                      <input type="radio" id={`Smoker-${opt.v}`} name="Smoker" className="hidden" checked={formData.Smoker === opt.v} onChange={() => handleInputChange('Smoker', opt.v)} />
+                      <label htmlFor={`Smoker-${opt.v}`} className="block text-center py-2.5 px-4 border border-white/60 rounded-xl text-xs cursor-pointer transition-all hover:bg-white/40 text-gray-700 leading-tight">{opt.l}</label>
                     </div>
-                    {/* Gauge bar */}
-                    <div className="relative w-full h-5 bg-gray-200 rounded-full overflow-visible">
-                      {/* Filled bar */}
-                      <div
-                        className={`h-5 rounded-full transition-all duration-700 ${result.prediction === 'Higher Risk' ? 'bg-red-500' : 'bg-green-500'}`}
-                        style={{ width: `${result.risk_score}%` }}
-                      />
-                      {/* Threshold marker */}
-                      {result.threshold !== undefined && result.threshold !== null && (
-                        <div
-                          className="absolute top-0 h-5 flex flex-col items-center"
-                          style={{ left: `${result.threshold}%`, transform: 'translateX(-50%)' }}
-                        >
-                          <div className="w-0.5 h-5 bg-gray-800" />
-                        </div>
-                      )}
-                    </div>
-                    {result.threshold !== undefined && result.threshold !== null && (
-                      <div className="flex justify-end mt-1">
-                        <span className="text-xs text-gray-600 font-medium">▲ Decision threshold: {result.threshold}</span>
-                      </div>
-                    )}
-                    <p className="text-xs text-gray-500 mt-2">
-                      {result.risk_score < (result.threshold ?? 50)
-                        ? `Your score (${result.risk_score}) is below the decision threshold (${result.threshold}) — classified as Lower Risk.`
-                        : `Your score (${result.risk_score}) meets or exceeds the decision threshold (${result.threshold}) — classified as Higher Risk.`
-                      }
-                    </p>
-                  </div>
-                )}
-
-                {result.confidence !== null && (
-                  <p className="text-sm mb-4 mt-1 text-gray-500">
-                    Model confidence: {result.confidence}% away from threshold
-                  </p>
-                )}
-
-                <div className="bg-white bg-opacity-50 rounded-xl p-6 mt-6">
-                  <p className="text-sm leading-relaxed">
-                    {result.prediction === 'Lower Risk' &&
-                      "Your assessment indicates a lower risk profile for heart disease. Keep up the good work by maintaining a balanced diet, staying physically active, and attending regular preventative check-ups."
-                    }
-                    {result.prediction === 'Higher Risk' &&
-                      "Your assessment indicates a potential higher risk profile for cardiovascular issues. We strongly advise that you consult with a healthcare professional to further evaluate your risk and establish a preventative care plan."
-                    }
-                  </p>
+                  ))}
                 </div>
               </div>
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* Disclaimer */}
-      <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-xl p-6">
-        <div className="flex items-start space-x-3">
-          <AlertCircle className="h-6 w-6 text-yellow-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <h3 className="font-semibold text-yellow-800 mb-2">Medical Disclaimer</h3>
-            <p className="text-sm text-yellow-700">
-              This tool is for educational purposes only and is not a substitute for professional medical advice.
-              Please consult a doctor for any health concerns or before making any medical decisions.
-            </p>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { id: 'PhysActivity', label: 'Activity', hint: 'Past 30 days' },
+                { id: 'Fruits', label: 'Fruits', hint: '1+ Daily' },
+                { id: 'Veggies', label: 'Veggies', hint: '1+ Daily' },
+                { id: 'HvyAlcoholConsump', label: 'Alcohol', hint: 'Heavy Intake' }
+              ].map(f => (
+                <div key={f.id} className="flex flex-col gap-2">
+                  <label className="text-[9px] uppercase tracking-widest font-bold text-gray-500 text-center">{f.label}</label>
+                  <div className="flex gap-1">
+                    {[{ l: 'N', v: 0 }, { l: 'Y', v: 1 }].map(opt => (
+                      <div key={opt.v} className="toggle-chip flex-1">
+                        <input type="radio" id={`${f.id}-${opt.v}`} name={f.id} className="hidden" checked={formData[f.id] === opt.v} onChange={() => handleInputChange(f.id, opt.v)} />
+                        <label htmlFor={`${f.id}-${opt.v}`} className="block text-center py-2 border border-white/60 rounded-lg text-[10px] cursor-pointer transition-all text-gray-600">{opt.l}</label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
+        </motion.div>
+
+        {/* Section 3: Medical History */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          className="section-glass mb-8 overflow-hidden"
+        >
+          <div className="px-8 py-5 border-b border-white/50 bg-white/20 flex items-center gap-4">
+            <div className="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold text-sm shadow-lg shadow-rose-200">3</div>
+            <h2 className="heart-heading text-xl text-gray-800">Clinical History</h2>
+          </div>
+          <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-10">
+            {[
+              { id: 'Stroke', label: 'Stroke Incidence', hint: 'Ever suffered a stroke?' },
+              { id: 'Diabetes', label: 'Diabetes Status', hint: 'Co-morbidity history?' },
+              { id: 'AnyHealthcare', label: 'Clinical Access', hint: 'Have health insurance?' },
+              { id: 'DiffWalk', label: 'Mobility Status', hint: 'Difficulty walking/stairs?' }
+            ].map(f => (
+              <div key={f.id} className="flex flex-col gap-3">
+                <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500">{f.label}</label>
+                <div className="flex gap-2">
+                  {f.id === 'Diabetes' ? (
+                    <select 
+                      value={formData.Diabetes ?? ''} 
+                      onChange={(e) => handleInputChange('Diabetes', e.target.value === '' ? null : parseInt(e.target.value))}
+                      className="w-full px-4 py-2.5 rounded-xl input-glass outline-none text-xs font-medium"
+                    >
+                      <option value="">Select Status</option>
+                      <option value="0">No</option>
+                      <option value="1">Pre-diabetes</option>
+                      <option value="2">Pregnancy only</option>
+                      <option value="3">Yes</option>
+                    </select>
+                  ) : (
+                    [{ l: 'No', v: 0 }, { l: 'Yes', v: 1 }].map(opt => (
+                      <div key={opt.v} className="toggle-chip flex-1">
+                        <input type="radio" id={`${f.id}-${opt.v}`} name={f.id} className="hidden" checked={formData[f.id] === opt.v} onChange={() => handleInputChange(f.id, opt.v)} />
+                        <label htmlFor={`${f.id}-${opt.v}`} className="block text-center py-2.5 px-4 border border-white/60 rounded-xl text-xs cursor-pointer transition-all hover:bg-white/40 text-gray-700">{opt.l}</label>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <p className="text-[10px] text-gray-400 font-medium italic">{f.hint}</p>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Section 4: Health Status */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          className="section-glass mb-8 overflow-hidden"
+        >
+          <div className="px-8 py-5 border-b border-white/50 bg-white/20 flex items-center gap-4">
+            <div className="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold text-sm shadow-lg shadow-rose-200">4</div>
+            <h2 className="heart-heading text-xl text-gray-800">Subjective Wellbeing</h2>
+          </div>
+          <div className="p-8">
+            <div className="mb-10">
+              <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500">Self-Perceived Health State</label>
+              <div className="grid grid-cols-5 gap-3 mt-4">
+                {[
+                  { l: 'Excellent', v: 1, e: '✨' }, { l: 'Very Good', v: 2, e: '💪' }, { l: 'Good', v: 3, e: '👍' }, { l: 'Fair', v: 4, e: '😐' }, { l: 'Poor', v: 5, e: '😟' }
+                ].map(opt => (
+                  <div key={opt.v} className="scale-chip">
+                    <input type="radio" id={`gh-${opt.v}`} name="GenHlth" className="hidden" checked={formData.GenHlth === opt.v} onChange={() => handleInputChange('GenHlth', opt.v)} />
+                    <label htmlFor={`gh-${opt.v}`} className="flex flex-col items-center justify-center h-20 border border-white/60 rounded-2xl text-[9px] font-bold text-gray-600 cursor-pointer transition-all hover:bg-white/40 px-2 text-center">
+                      <span className="text-2xl mb-1">{opt.e}</span>
+                      {opt.l}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              <div className="flex flex-col gap-3">
+                <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500">Mental Health Downtime</label>
+                <div className="relative">
+                  <input type="number" min="0" max="30" value={formData.MentHlth} onChange={(e) => handleInputChange('MentHlth', e.target.value)} className="w-full px-5 py-3 rounded-2xl input-glass outline-none transition-all text-sm font-medium" placeholder="Days (0-30)" />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-bold">DAYS</span>
+                </div>
+              </div>
+              <div className="flex flex-col gap-3">
+                <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500">Physical Ailment Duration</label>
+                <div className="relative">
+                  <input type="number" min="0" max="30" value={formData.PhysHlth} onChange={(e) => handleInputChange('PhysHlth', e.target.value)} className="w-full px-5 py-3 rounded-2xl input-glass outline-none transition-all text-sm font-medium" placeholder="Days (0-30)" />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-bold">DAYS</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Section 5: Demographics */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          className="section-glass mb-12 overflow-hidden"
+        >
+          <div className="px-8 py-5 border-b border-white/50 bg-white/20 flex items-center gap-4">
+            <div className="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold text-sm shadow-lg shadow-rose-200">5</div>
+            <h2 className="heart-heading text-xl text-gray-800">Demographics</h2>
+          </div>
+          <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-10">
+            <div className="flex flex-col gap-3">
+              <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500">Sex Assigned at Birth</label>
+              <div className="flex gap-2">
+                {[{ l: 'Female', v: 0 }, { l: 'Male', v: 1 }].map(opt => (
+                  <div key={opt.v} className="toggle-chip flex-1">
+                    <input type="radio" id={`Sex-${opt.v}`} name="Sex" className="hidden" checked={formData.Sex === opt.v} onChange={() => handleInputChange('Sex', opt.v)} />
+                    <label htmlFor={`Sex-${opt.v}`} className="block text-center py-3 px-4 border border-white/60 rounded-xl text-xs cursor-pointer transition-all hover:bg-white/40 text-gray-700">{opt.l}</label>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-col gap-3">
+              <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500">Age Category</label>
+              <div className="relative">
+                <select value={formData.Age} onChange={(e) => handleInputChange('Age', e.target.value)} className="w-full px-5 py-3 rounded-2xl input-glass appearance-none outline-none text-sm font-medium cursor-pointer">
+                  <option value="">— Select Bracket —</option>
+                  {['18–24', '25–29', '30–34', '35–39', '40–44', '45–49', '50–54', '55–59', '60–64', '65–69', '70–74', '75–79', '80 or older'].map((label, i) => (
+                    <option key={i} value={i + 1}>{label}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Submit Area */}
+        <div className="text-center mb-24">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handleSubmit()}
+            disabled={isLoading}
+            className={`inline-flex items-center gap-3 px-12 py-5 bg-rose-600 text-white rounded-2xl font-bold text-lg transition-all shadow-xl shadow-rose-200 hover:shadow-rose-300 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+          >
+            {isLoading ? <Clock className="w-6 h-6 animate-spin" /> : <Pulse className="w-6 h-6" />}
+            {isLoading ? 'Analyzing Cardiovascular Matrix...' : 'Generate Heart Risk Report'}
+          </motion.button>
+
+          <AnimatePresence>
+            {errorMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="mt-8 p-5 bg-red-50/80 backdrop-blur-md border border-red-100 rounded-2xl flex items-center justify-center gap-3 text-red-600 text-sm font-medium max-w-lg mx-auto shadow-sm"
+              >
+                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                {errorMessage}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-      </div>
+
+        {/* Result Section */}
+        <div ref={resultRef}>
+          <AnimatePresence>
+            {result && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="section-glass border-none shadow-2xl overflow-hidden mb-20"
+              >
+                <div className={`p-12 flex items-center gap-8 ${result.prediction === 'Lower Risk' ? 'bg-emerald-100/60' : 'bg-rose-100/60'}`}>
+                  <div className="text-7xl animate-bounce">
+                    {result.prediction === 'Lower Risk' ? '✅' : '🔴'}
+                  </div>
+                  <div>
+                    <h3 className={`heart-heading text-4xl mb-2 ${result.prediction === 'Lower Risk' ? 'text-emerald-700' : 'text-rose-700'}`}>
+                      {result.prediction === 'Lower Risk' ? 'Favorable Result' : 'Elevated Risk Alert'}
+                    </h3>
+                    <p className="text-gray-600 font-medium">XGBoost analysis complete. Predictive model indicates {result.prediction.toLowerCase()}.</p>
+                  </div>
+                </div>
+
+                <div className="p-12">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+                    <div className="text-center md:text-left">
+                      <div className="heart-heading text-8xl font-normal text-gray-900 leading-none">
+                        {Math.round(result.risk_score || 0)}<span className="text-3xl text-gray-400 ml-2">%</span>
+                      </div>
+                      <p className="text-[11px] uppercase tracking-[0.3em] text-gray-400 mt-4 font-black">Computed Cardiovascular Risk Score</p>
+
+                      <div className="mt-12 p-8 bg-rose-50/40 rounded-3xl border-l-8 border-rose-500 text-gray-700 leading-relaxed font-medium italic">
+                        {result.prediction === 'Lower Risk' ?
+                          "Your metrics align with low-risk cardiovascular profiles. Maintain your current healthy lifestyle and continue regular check-ups." :
+                          "Predictive markers suggest an elevated risk for heart disease. We strongly recommend scheduling a clinical screening (ECG/Lipid Profile) with a specialist."
+                        }
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="mb-10">
+                        <div className="flex justify-between text-[11px] uppercase font-black text-gray-400 mb-4 tracking-widest">
+                          <span>Stable Zone</span>
+                          <span>High Alert</span>
+                        </div>
+                        <div className="h-4 bg-gray-100 rounded-full overflow-hidden p-1 shadow-inner relative">
+                          <motion.div
+                            className="h-full gauge-fill rounded-full"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${result.risk_score}%` }}
+                            transition={{ duration: 1.5, ease: "easeOut" }}
+                          />
+                          {/* Threshold marker */}
+                          {result.threshold !== undefined && (
+                            <div 
+                              className="absolute top-0 h-full w-1 bg-black/80 z-10"
+                              style={{ left: `${result.threshold}%` }}
+                            />
+                          )}
+                        </div>
+                        {result.threshold !== undefined && (
+                          <p className="text-[9px] text-gray-500 mt-2 text-right uppercase tracking-tighter">
+                            Decision Threshold: {result.threshold}%
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="bg-gray-50/50 rounded-2xl p-6 border border-gray-100">
+                        <h4 className="text-[10px] uppercase tracking-widest font-black text-gray-400 mb-4 flex items-center gap-2">
+                          <AlertCircle className="w-3 h-3" />
+                          Model Insight
+                        </h4>
+                        <p className="text-xs text-gray-500 leading-relaxed">
+                          This assessment uses a Gradient Boosting machine learning model trained on CDC surveillance data. 
+                          The confidence level of this prediction is based on proximity to the {result.threshold}% threshold.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </main>
     </div>
   );
 };

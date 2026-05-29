@@ -61,6 +61,34 @@ const BookAppointment = () => {
   const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(false);
   const [expandedHour, setExpandedHour] = useState<string | null>(null);
 
+  // General Doctor Schedule States
+  const [doctorSchedule, setDoctorSchedule] = useState<any[]>([]);
+  const [isScheduleLoading, setIsScheduleLoading] = useState(false);
+
+  // Fetch doctor's full schedule when doctor changes
+  useEffect(() => {
+    if (formData.doctorId) {
+      fetchDoctorSchedule();
+    } else {
+      setDoctorSchedule([]);
+    }
+  }, [formData.doctorId]);
+
+  const fetchDoctorSchedule = async () => {
+    setIsScheduleLoading(true);
+    try {
+      const response = await fetch(`http://localhost:5000/api/doctor/availability/${formData.doctorId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setDoctorSchedule(data.availabilities || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch doctor schedule:', error);
+    } finally {
+      setIsScheduleLoading(false);
+    }
+  };
+
 
   // Fetch availability when doctor or date changes
   useEffect(() => {
@@ -595,18 +623,70 @@ const BookAppointment = () => {
                       <span>Fetching registered doctors for this facility...</span>
                     </div>
                   ) : hospitalDoctors.length > 0 ? (
-                    <select
-                      name="doctorId"
-                      value={formData.doctorId}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 rounded-xl border border-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all bg-blue-50/50 shadow-sm"
-                    >
-                      {hospitalDoctors.map(doc => (
-                        <option key={doc.id} value={doc.id}>
-                          Dr. {doc.name} {doc.profile?.specialty ? `- ${doc.profile.specialty}` : ''}
-                        </option>
-                      ))}
-                    </select>
+                    <>
+                      <select
+                        name="doctorId"
+                        value={formData.doctorId}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 rounded-xl border border-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all bg-blue-50/50 shadow-sm"
+                      >
+                        {hospitalDoctors.map(doc => (
+                          <option key={doc.id} value={doc.id}>
+                            Dr. {doc.name} {doc.profile?.specialty ? `- ${doc.profile.specialty}` : ''}
+                          </option>
+                        ))}
+                      </select>
+
+                      {/* Doctor Saved Timings Display */}
+                      {formData.doctorId && (
+                        <div className="mt-4 p-4 rounded-xl border border-blue-100 bg-blue-50/20 backdrop-blur-sm">
+                          <div className="flex items-center space-x-2 mb-3 text-blue-900">
+                            <Clock className="h-4 w-4 text-blue-500" />
+                            <span className="text-xs font-bold uppercase tracking-wider">Doctor's Saved Timings</span>
+                          </div>
+                          {isScheduleLoading ? (
+                            <div className="flex items-center space-x-2 text-xs text-blue-600 py-1">
+                              <div className="w-3.5 h-3.5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                              <span>Loading timings...</span>
+                            </div>
+                          ) : doctorSchedule.length > 0 ? (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                              {doctorSchedule.map((sched: any) => {
+                                const totalRemaining = sched.slots.reduce((acc: number, s: any) => acc + s.remaining, 0);
+                                const formattedDate = new Date(sched.date).toLocaleDateString('en-US', {
+                                  weekday: 'short', month: 'short', day: 'numeric'
+                                });
+                                const isSelected = formData.date === sched.date;
+                                return (
+                                  <button
+                                    key={sched.date}
+                                    type="button"
+                                    onClick={() => {
+                                      setFormData(prev => ({ ...prev, date: sched.date }));
+                                      toast.success(`Selected date: ${formattedDate}`);
+                                    }}
+                                    className={`p-3 rounded-xl border text-left transition-all duration-300 ${
+                                      isSelected
+                                        ? 'bg-blue-600 border-blue-600 text-white shadow-md scale-102'
+                                        : 'bg-white border-blue-50/50 text-gray-700 hover:border-blue-300 hover:bg-blue-50/10'
+                                    }`}
+                                  >
+                                    <div className="font-bold text-xs">{formattedDate}</div>
+                                    <div className={`text-[10px] mt-0.5 font-semibold ${isSelected ? 'text-blue-100' : 'text-blue-500'}`}>
+                                      {totalRemaining > 0 ? `${totalRemaining} slots available` : 'Fully booked'}
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <div className="text-xs text-gray-500 italic pl-1">
+                              No upcoming availability scheduled by this doctor yet.
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <div className="flex items-start space-x-2 text-sm text-gray-500 bg-gray-50 p-3 rounded-xl border border-gray-200">
                       <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />

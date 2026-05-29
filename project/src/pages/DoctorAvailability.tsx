@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Clock, Save, Plus, X, CheckCircle, AlertCircle, ChevronRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Calendar, Clock, Save, Plus, CheckCircle, AlertCircle } from 'lucide-react';
 import AnimatedBackground from '../components/AnimatedBackground';
 import GlassCard from '../components/GlassCard';
 import toast from 'react-hot-toast';
@@ -21,16 +21,16 @@ const DoctorAvailability = () => {
   }, []);
 
   const availableHours = [
-    '08:00', '09:00', '10:00', '11:00', '12:00', 
-    '13:00', '14:00', '15:00', '16:00', '17:00', 
+    '08:00', '09:00', '10:00', '11:00', '12:00',
+    '13:00', '14:00', '15:00', '16:00', '17:00',
     '18:00', '19:00', '20:00', '21:00', '22:00'
   ];
 
 
   const toggleHour = (hour: string) => {
-    setSelectedHours(prev => 
-      prev.includes(hour) 
-        ? prev.filter(h => h !== hour) 
+    setSelectedHours(prev =>
+      prev.includes(hour)
+        ? prev.filter(h => h !== hour)
         : [...prev, hour].sort()
     );
   };
@@ -83,7 +83,7 @@ const DoctorAvailability = () => {
   return (
     <div className="relative min-h-screen pt-24 pb-12 px-6">
       <AnimatedBackground />
-      
+
       <div className="max-w-4xl mx-auto relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -103,12 +103,12 @@ const DoctorAvailability = () => {
               <Calendar className="w-5 h-5 text-indigo-500" />
               Day Settings
             </h2>
-            
+
             <div className="space-y-6">
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Select Date</label>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
                   min={new Date().toISOString().split('T')[0]}
@@ -118,7 +118,7 @@ const DoctorAvailability = () => {
 
               <div className="flex items-center gap-3 p-4 bg-indigo-50/50 rounded-xl border border-indigo-100 cursor-pointer" onClick={() => setApplyToAll(!applyToAll)}>
                 <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${applyToAll ? 'bg-indigo-600 border-indigo-600' : 'border-indigo-200 bg-white'}`}>
-                   {applyToAll && <CheckCircle className="w-4 h-4 text-white" />}
+                  {applyToAll && <CheckCircle className="w-4 h-4 text-white" />}
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-bold text-indigo-900">Apply to Every Day</p>
@@ -132,8 +132,8 @@ const DoctorAvailability = () => {
                   Avg. Consultation Time (Min)
                 </label>
                 <div className="relative">
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     value={avgTime}
                     onChange={(e) => setAvgTime(parseInt(e.target.value) || 0)}
                     min="1"
@@ -170,7 +170,7 @@ const DoctorAvailability = () => {
               <Clock className="w-5 h-5 text-indigo-500" />
               Available Hours
             </h2>
-            
+
             <p className="text-sm text-gray-500 mb-6">Select the starting hours you are available. We'll divide each hour into consultation slots.</p>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -182,11 +182,10 @@ const DoctorAvailability = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => toggleHour(hour)}
-                    className={`py-4 px-4 rounded-2xl border-2 transition-all font-bold text-sm flex items-center justify-between ${
-                      isSelected 
-                        ? 'border-indigo-500 bg-indigo-50 text-indigo-700' 
-                        : 'border-white/60 bg-white/40 text-gray-600 hover:border-indigo-200'
-                    }`}
+                    className={`py-4 px-4 rounded-2xl border-2 transition-all font-bold text-sm flex items-center justify-between ${isSelected
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                      : 'border-white/60 bg-white/40 text-gray-600 hover:border-indigo-200'
+                      }`}
                   >
                     {hour}
                     {isSelected ? <Plus className="w-4 h-4 rotate-45" /> : <Plus className="w-4 h-4 text-gray-300" />}
@@ -201,7 +200,7 @@ const DoctorAvailability = () => {
                 <div>
                   <h3 className="text-sm font-bold text-indigo-800">Preview</h3>
                   <p className="text-xs text-indigo-600 mt-1">
-                    For each selected hour, patients will see <strong>{Math.floor(60/avgTime)} slots</strong> of {avgTime} minutes each.
+                    For each selected hour, patients will see <strong>{Math.floor(60 / avgTime)} slots</strong> of {avgTime} minutes each.
                   </p>
                 </div>
               </div>

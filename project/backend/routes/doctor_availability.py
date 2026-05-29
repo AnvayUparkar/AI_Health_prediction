@@ -69,10 +69,13 @@ def save_availability():
 
     for d in dates_to_update:
         # Upsert: Replace availability for the specific doctor and date
+        # Check both string and integer formats for backward compatibility
+        doc_id_numeric = int(doctor_id) if str(doctor_id).isdigit() else doctor_id
         mongodb.doctor_availability.update_one(
-            {"doctorId": doctor_id, "date": d},
+            {"doctorId": {"$in": [str(doctor_id), doc_id_numeric]}, "date": d},
             {
                 "$set": {
+                    "doctorId": str(doctor_id), # Normalize to string representation
                     "avgConsultationTime": avg_consultation_time,
                     "slots": slots,
                     "updatedAt": datetime.utcnow()
@@ -87,14 +90,48 @@ def save_availability():
 @doctor_availability_bp.route('/doctor/availability/<string:doctor_id>', methods=['GET'])
 def get_availability(doctor_id):
     date = request.args.get('date')
-    if not date:
-        return jsonify({"error": "Date parameter is required"}), 400
 
     mongodb = DBService.get_mongo_db()
     if mongodb is None:
         return jsonify({"error": "Database connection failed"}), 500
 
-    availability = mongodb.doctor_availability.find_one({"doctorId": doctor_id, "date": date})
+    if not date:
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        doc_id_numeric = int(doctor_id) if str(doctor_id).isdigit() else doctor_id
+        cursor = mongodb.doctor_availability.find({
+            "doctorId": {"$in": [str(doctor_id), doc_id_numeric]},
+            "date": {"$gte": today_str}
+        }).sort("date", 1)
+        availabilities = list(cursor)
+        
+        formatted_list = []
+        for avail in availabilities:
+            formatted_slots = []
+            for slot in avail.get('slots', []):
+                sub_slots = slot.get('subSlots', [])
+                total = len(sub_slots)
+                remaining = len([s for s in sub_slots if not s.get('isBooked')])
+                
+                formatted_slots.append({
+                    "hour": slot.get('hour'),
+                    "total": total,
+                    "remaining": remaining,
+                    "subSlots": sub_slots
+                })
+            
+            formatted_list.append({
+                "date": avail.get('date'),
+                "avgConsultationTime": avail.get('avgConsultationTime'),
+                "slots": formatted_slots
+            })
+            
+        return jsonify({"availabilities": formatted_list}), 200
+
+    doc_id_numeric = int(doctor_id) if str(doctor_id).isdigit() else doctor_id
+    availability = mongodb.doctor_availability.find_one({
+        "doctorId": {"$in": [str(doctor_id), doc_id_numeric]},
+        "date": date
+    })
     
     if not availability:
         return jsonify({"slots": []}), 200

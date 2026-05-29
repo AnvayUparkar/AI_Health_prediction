@@ -287,9 +287,9 @@ const Home = () => {
               </p>
             </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {/* Lung Cancer Card */}
-              <GlassCard className="p-8 group" delay={0}>
+              <GlassCard className="p-8 group h-full flex flex-col" delay={0}>
                 <div className="flex items-center space-x-4 mb-6">
                   <motion.div
                     className="p-4 bg-gradient-to-r from-red-400 to-pink-500 rounded-2xl"
@@ -307,7 +307,7 @@ const Home = () => {
                   Our AI model analyzes 12 key risk factors to provide comprehensive risk assessment.
                 </p>
 
-                <div className="space-y-3 mb-8">
+                <div className="flex-grow space-y-3 mb-8">
                   {['12 comprehensive risk factors', 'Takes 3-5 minutes to complete', 'Instant AI-powered analysis'].map((item, index) => (
                     <div key={index} className="flex items-center space-x-3">
                       <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
@@ -329,7 +329,7 @@ const Home = () => {
               </GlassCard>
 
               {/* Diabetes Card */}
-              <GlassCard className="p-8 group" delay={0.2}>
+              <GlassCard className="p-8 group h-full flex flex-col" delay={0.2}>
                 <div className="flex items-center space-x-4 mb-6">
                   <motion.div
                     className="p-4 bg-gradient-to-r from-green-400 to-emerald-500 rounded-2xl"
@@ -347,7 +347,7 @@ const Home = () => {
                   and health indicators. Get insights into your metabolic health with our trained prediction model.
                 </p>
 
-                <div className="space-y-3 mb-8">
+                <div className="flex-grow space-y-3 mb-8">
                   {['Comprehensive symptom analysis', 'Quick and easy questionnaire', 'Immediate risk assessment'].map((item, index) => (
                     <div key={index} className="flex items-center space-x-3">
                       <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
@@ -369,7 +369,7 @@ const Home = () => {
               </GlassCard>
 
               {/* Heart Disease Card */}
-              <GlassCard className="p-8 group" delay={0.4}>
+              <GlassCard className="p-8 group h-full flex flex-col" delay={0.4}>
                 <div className="flex items-center space-x-4 mb-6">
                   <motion.div
                     className="p-4 bg-gradient-to-r from-rose-400 to-red-500 rounded-2xl"
@@ -386,7 +386,7 @@ const Home = () => {
                   Evaluate your cardiovascular risk using our elite ensemble model that analyzes your lifestyle, health markers, and dietary habits.
                 </p>
 
-                <div className="space-y-3 mb-8">
+                <div className="flex-grow space-y-3 mb-8">
                   {['17 comprehensive risk factors', 'Elite Stacking Ensemble Model', 'Highly accurate assessment'].map((item, index) => (
                     <div key={index} className="flex items-center space-x-3">
                       <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>

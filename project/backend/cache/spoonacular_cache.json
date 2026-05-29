@@ -843,5 +843,109 @@
         ],
         "timestamp": 1776948306.0416205,
         "confidence": 0.7
+    },
+    "1 large bowl": {
+        "ingredients": [
+            "lemon"
+        ],
+        "timestamp": 1777457807.6890311,
+        "confidence": 0.9
+    },
+    "1/2 cup": {
+        "ingredients": [
+            "vegetable oil",
+            "ground ginger",
+            "eggs",
+            "brown rice flour",
+            "egg whites"
+        ],
+        "timestamp": 1777457808.7379913,
+        "confidence": 0.9
+    },
+    "protein & calcium crunch": {
+        "ingredients": [
+            "carrot",
+            "rice",
+            "tomato paste"
+        ],
+        "timestamp": 1777457814.6396604,
+        "confidence": 0.9
+    },
+    "1.5 bowls": {
+        "ingredients": [
+            "butter",
+            "parsley 1 tablespoon 1 teaspoon lemon juice",
+            "milk",
+            "slc onion 5mm"
+        ],
+        "timestamp": 1777457817.4152472,
+        "confidence": 0.9
+    },
+    "1 bowl": {
+        "ingredients": [
+            "carrots",
+            "cumin",
+            "chicken stock",
+            "olive oil",
+            "garlic",
+            "canned tomatoes",
+            "cream",
+            "green onions",
+            "onions",
+            "black beans"
+        ],
+        "timestamp": 1777457821.931685,
+        "confidence": 0.9
+    },
+    "8-10 leaves": {
+        "ingredients": [
+            "coriander seeds",
+            "garlic",
+            "cumin seeds",
+            "oil",
+            "baby eggplants- 10-12",
+            "turmeric",
+            "ginger- 1",
+            "cashewnuts",
+            "peanutsns",
+            "onion"
+        ],
+        "timestamp": 1777457823.0473945,
+        "confidence": 0.9
+    },
+    "ragi vegetable upma": {
+        "ingredients": [
+            "oats",
+            "carrot",
+            "onion"
+        ],
+        "timestamp": 1777457830.2367094,
+        "confidence": 0.7
+    },
+    "1 cup": {
+        "ingredients": [
+            "vegetable oil",
+            "butter",
+            "cream of tartar",
+            "egg whites",
+            "eggs",
+            "milk"
+        ],
+        "timestamp": 1777457833.2501376,
+        "confidence": 0.9
+    },
+    "light moong dal khichdi with paneer": {
+        "ingredients": [
+            "garlic",
+            "oil",
+            "ghee",
+            "onion",
+            "spices",
+            "lentils",
+            "paneer",
+            "rice"
+        ],
+        "timestamp": 1777457835.7979681,
+        "confidence": 0.7
     }
 }

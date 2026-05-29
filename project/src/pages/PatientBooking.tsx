@@ -24,6 +24,34 @@ const PatientBooking = () => {
   const [bookingSlot, setBookingSlot] = useState<any | null>(null);
   const [userInfo, setUserInfo] = useState<any>(null);
 
+  // General Doctor Schedule States
+  const [doctorSchedule, setDoctorSchedule] = useState<any[]>([]);
+  const [isScheduleLoading, setIsScheduleLoading] = useState(false);
+
+  // Fetch doctor's full schedule when doctorId changes
+  useEffect(() => {
+    if (doctorId) {
+      fetchDoctorSchedule();
+    } else {
+      setDoctorSchedule([]);
+    }
+  }, [doctorId]);
+
+  const fetchDoctorSchedule = async () => {
+    setIsScheduleLoading(true);
+    try {
+      const response = await fetch(`http://localhost:5000/api/doctor/availability/${doctorId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setDoctorSchedule(data.availabilities || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch doctor schedule:', error);
+    } finally {
+      setIsScheduleLoading(false);
+    }
+  };
+
 
   useEffect(() => {
     const userStr = localStorage.getItem('user');
@@ -107,7 +135,56 @@ const PatientBooking = () => {
               min={new Date().toISOString().split('T')[0]}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 transition-all outline-none bg-white/50"
             />
-            
+
+            {/* Doctor's Saved Timings Quick Select */}
+            <div className="mt-6 pt-6 border-t border-gray-100">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-blue-500" />
+                Doctor's Saved Timings
+              </h3>
+              {isScheduleLoading ? (
+                <div className="flex items-center gap-2 text-xs text-blue-600">
+                  <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  <span>Loading schedule...</span>
+                </div>
+              ) : doctorSchedule.length > 0 ? (
+                <div className="flex flex-col gap-2 max-h-[200px] overflow-y-auto pr-1">
+                  {doctorSchedule.map((sched: any) => {
+                    const totalRemaining = sched.slots.reduce((acc: number, s: any) => acc + s.remaining, 0);
+                    const formattedDate = new Date(sched.date).toLocaleDateString('en-US', {
+                      weekday: 'short', month: 'short', day: 'numeric'
+                    });
+                    const isSelected = selectedDate === sched.date;
+                    return (
+                      <button
+                        key={sched.date}
+                        type="button"
+                        onClick={() => setSelectedDate(sched.date)}
+                        className={`w-full p-2.5 rounded-xl border text-left transition-all duration-300 flex justify-between items-center ${
+                          isSelected
+                            ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+                            : 'bg-white/80 border-gray-100 text-gray-700 hover:border-blue-300 hover:bg-white'
+                        }`}
+                      >
+                        <span className="font-bold text-xs">{formattedDate}</span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                          isSelected 
+                            ? 'bg-blue-500 text-blue-50' 
+                            : totalRemaining > 0 
+                              ? 'bg-blue-50 text-blue-600' 
+                              : 'bg-gray-100 text-gray-400'
+                        }`}>
+                          {totalRemaining > 0 ? `${totalRemaining} left` : 'Full'}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400 italic">No schedule configured by this doctor.</p>
+              )}
+            </div>
+
             <div className="mt-8 space-y-4">
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <div className="w-3 h-3 rounded-full bg-green-500" />

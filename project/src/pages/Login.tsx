@@ -155,6 +155,7 @@ const Login: React.FC = () => {
               )}
             </motion.button>
 
+{/* 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-200"></div>
@@ -174,6 +175,7 @@ const Login: React.FC = () => {
               <Globe className="h-5 w-5 text-blue-500" />
               <span>Connect Google Account</span>
             </motion.button>
+            */}
           </form>
 
           {/* Footer */}

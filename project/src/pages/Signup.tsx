@@ -295,7 +295,7 @@ const Signup: React.FC = () => {
                     <option value="user">Patient / User</option>
                     <option value="nurse">Nurse / Medical Staff</option>
                     <option value="doctor">Doctor (Verification Required)</option>
-                    <option value="admin">System Administrator</option>
+                    {/* <option value="admin">System Administrator</option> */}
                   </select>
                   <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
                     <ArrowRight className="h-4 w-4 text-gray-400 rotate-90" />

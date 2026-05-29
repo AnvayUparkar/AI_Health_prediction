@@ -27,12 +27,11 @@ def _ensure_model():
         urllib.request.urlretrieve(_MODEL_URL, _MODEL_PATH)
         print('[OK] Model downloaded.')
 
-_ensure_model()
-
 # ─────────────────────────────────────────────────────────────────────────────
 
 class GestureService:
     def __init__(self):
+        _ensure_model()
         base_options = mp_python.BaseOptions(model_asset_path=_MODEL_PATH)
         options = HandLandmarkerOptions(
             base_options=base_options,
@@ -118,13 +117,13 @@ class GestureService:
         now = time.time()
 
         if (
-            self._fist_frame_count == self.FIST_FRAMES_REQUIRED   # exactly on threshold
+            self._fist_frame_count >= self.FIST_FRAMES_REQUIRED   # at-or-above threshold (handles dropped frames)
             and now - self.last_sos_time >= self.cooldown
         ):
-            print(f'[!!!] FIST HELD FOR {self.FIST_FRAMES_REQUIRED} FRAMES — SOS TRIGGERED')
+            print(f'[!!!] FIST HELD FOR {self._fist_frame_count} FRAMES — SOS TRIGGERED')
             self._trigger_sos(patient_info)
             self.last_sos_time = now
-            # Reset so a continuous hold doesn't keep re-firing
+            # Reset so a continuous hold doesn't keep re-firing until hand opens again
             self._fist_frame_count = 0
             return True
 
@@ -194,5 +193,21 @@ class GestureService:
         socketio.emit('new_alert', response_data)
 
 
-# Singleton
-gesture_detector = GestureService()
+# Lazy singleton — avoids circular-import issues with eventlet monkey-patching
+_gesture_detector = None
+
+def get_gesture_detector():
+    global _gesture_detector
+    if _gesture_detector is None:
+        try:
+            _gesture_detector = GestureService()
+            print('[INFO] GestureService initialized successfully.')
+        except Exception as e:
+            print(f'[ERROR] GestureService initialization failed: {e}')
+            raise  # Re-raise so caller knows it failed
+    return _gesture_detector
+
+# Keep backward-compatible name for existing imports,
+# but as a module-level attribute that resolves lazily.
+# Direct attribute access still works via the getter.
+gesture_detector = None  # Will be initialized on first use via get_gesture_detector()

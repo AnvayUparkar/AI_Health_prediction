@@ -9,6 +9,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import pickle
+import json
 
 try:
     import xgboost as xgb
@@ -25,9 +26,8 @@ DIABETES_MODEL_PATH = os.path.join(BASE_DIR, 'models', 'diabetes_model.pkl')
 DIABETES_LABEL_ENCODER_PATH = os.path.join(BASE_DIR, 'models', 'diabetes_label_encoder.pkl')
 
 HEART_XGB_PATH = os.path.join(BASE_DIR, 'models', 'saved_models', 'xgb_heart.json')
-HEART_MLP_PATH = os.path.join(BASE_DIR, 'models', 'saved_models', 'mlp_heart.pkl')
 HEART_SCALER_PATH = os.path.join(BASE_DIR, 'models', 'saved_models', 'scaler.pkl')
-HEART_META_PATH = os.path.join(BASE_DIR, 'models', 'saved_models', 'meta.pkl')
+HEART_CONFIG_PATH = os.path.join(BASE_DIR, 'models', 'saved_models', 'feature_columns.json')
 
 lung_cancer_model = None
 lung_cancer_label_encoder = None
@@ -36,7 +36,6 @@ diabetes_model = None
 diabetes_label_encoder = None
 
 heart_xgb = None
-heart_mlp = None
 heart_scaler = None
 heart_threshold = 0.5
 heart_features = []
@@ -107,7 +106,7 @@ def load_models_once():
     """
     global lung_cancer_model, lung_cancer_label_encoder, lung_cancer_feature_names
     global diabetes_model, diabetes_label_encoder
-    global heart_xgb, heart_mlp, heart_scaler, heart_threshold, heart_features
+    global heart_xgb, heart_scaler, heart_threshold, heart_features
     
     print("Loading models...")
     models_loaded = []
@@ -178,35 +177,33 @@ def load_models_once():
             print(f"  [WARN] Failed to load diabetes encoder (optional): {e}")
             models_failed.append(f"diabetes_encoder ({str(e)[:50]})")
 
-    # Try to load heart disease ensemble models
+    # Try to load heart disease XGBoost model
     if heart_xgb is None and xgb is not None:
         try:
-            required_files = [HEART_XGB_PATH, HEART_MLP_PATH, HEART_SCALER_PATH, HEART_META_PATH]
+            required_files = [HEART_XGB_PATH, HEART_SCALER_PATH, HEART_CONFIG_PATH]
             if all(os.path.exists(p) for p in required_files):
                 print(f"  Loading heart disease models from {os.path.dirname(HEART_XGB_PATH)}")
                 heart_xgb = xgb.XGBClassifier()
                 heart_xgb.load_model(HEART_XGB_PATH)
                 
-                with open(HEART_MLP_PATH, "rb") as f:
-                    heart_mlp = pickle.load(f)
-                with open(HEART_SCALER_PATH, "rb") as f:
-                    heart_scaler = pickle.load(f)
-                with open(HEART_META_PATH, "rb") as f:
-                    meta = pickle.load(f)
-                    heart_threshold = meta.get("threshold", 0.5)
-                    heart_features = meta.get("feature_cols", [])
+                heart_scaler = _safe_joblib_load(HEART_SCALER_PATH)
                 
-                print("  [OK] Heart disease ensemble models loaded")
-                models_loaded.append("heart_disease_ensemble")
+                with open(HEART_CONFIG_PATH, "r") as f:
+                    config = json.load(f)
+                    heart_threshold = config.get("threshold", 0.5)
+                    heart_features = config.get("features", [])
+                
+                print(f"  [OK] Heart disease XGBoost model loaded with {len(heart_features)} features")
+                models_loaded.append("heart_disease_xgb")
             else:
                 missing = [p for p in required_files if not os.path.exists(p)]
-                error_msg = f"Heart disease models not found in {os.path.dirname(HEART_XGB_PATH)}: missing {missing}"
+                error_msg = f"Heart disease models not found: missing {missing}"
                 print(f"  [FAIL] {error_msg}")
-                models_failed.append("heart_disease_ensemble (not found)")
+                models_failed.append("heart_disease_xgb (not found)")
         except Exception as e:
             print(f"  [FAIL] Failed to load heart disease models: {e}")
             traceback.print_exc()
-            models_failed.append(f"heart_disease_ensemble ({str(e)[:50]})")
+            models_failed.append(f"heart_disease_xgb ({str(e)[:50]})")
     
     # Summary
     print(f"\n{'='*60}")
@@ -315,94 +312,59 @@ def predict_with_type(prediction_type: str, features: Dict[str, Any]) -> Tuple[D
             return ({'error': f'Prediction error: {str(e)}'}, 500)
 
     elif prediction_type == 'heart_disease':
-        if not heart_xgb or not heart_mlp:
-            return ({'error': 'Heart disease models not available'}, 500)
+        if not heart_xgb:
+            return ({'error': 'Heart disease model not available'}, 500)
         try:
             print(f"\n{'='*60}")
             print("HEART DISEASE PREDICTION REQUEST")
             print(f"{'='*60}")
             print(f"Received features: {features}")
             
-            # 1. Processing and mapping
-            processed = dict(features)
-            
-            ORDINAL_MAPS = {
-                "General_Health": {"Poor": 0, "Fair": 1, "Good": 2, "Very Good": 3, "Excellent": 4},
-                "Checkup": {
-                    "Never": 0,
-                    "5 or more years ago": 1,
-                    "Within the past 5 years": 2,
-                    "Within the past 2 years": 3,
-                    "Within the past year": 4,
-                },
-                "Age_Category": {
-                    "18-24": 0, "25-29": 1, "30-34": 2, "35-39": 3, "40-44": 4,
-                    "45-49": 5, "50-54": 6, "55-59": 7, "60-64": 8, "65-69": 9,
-                    "70-74": 10, "75-79": 11, "80+": 12,
-                },
-                "Diabetes": {
-                    "No": 0,
-                    "No, pre-diabetes or borderline diabetes": 1,
-                    "Yes, but female told only during pregnancy": 2,
-                    "Yes": 3,
-                },
-            }
-            SEX_MAP = {"Female": 0, "Male": 1}
-            
-            # Map ordinals
-            for col, mapping in ORDINAL_MAPS.items():
-                if col in processed and isinstance(processed[col], str):
-                    processed[col] = mapping.get(processed[col], 0)
-            
-            # Map Sex
-            if "Sex" in processed and isinstance(processed["Sex"], str):
-                processed["Sex"] = SEX_MAP.get(processed["Sex"], 0)
-            
-            # Map binary Yes/No
-            BINARY_COLS = ["Exercise", "Skin_Cancer", "Other_Cancer", "Depression", "Arthritis", "Smoking_History"]
-            for col in BINARY_COLS:
-                if col in processed and isinstance(processed[col], str):
-                    processed[col] = 1 if processed[col] == "Yes" else 0
-            
-            # Numeric columns type casting
-            NUMERIC_COLS = ["Height_(cm)", "Weight_(kg)", "Alcohol_Consumption", "Fruit_Consumption", "Green_Vegetables_Consumption", "FriedPotato_Consumption"]
-            for col in NUMERIC_COLS:
-                if col in processed:
+            # 1. Processing and mapping (BRFSS standard)
+            processed = {}
+            for feat in heart_features:
+                val = features.get(feat)
+                if val is None:
+                    # Try case-insensitive mapping
+                    for k, v in features.items():
+                        if k.strip().lower() == feat.lower():
+                            val = v
+                            break
+                
+                if val is not None:
                     try:
-                        processed[col] = float(processed[col])
-                    except ValueError:
-                        processed[col] = 0.0
-
-            # Calculate BMI if needed
-            if "Height_(cm)" in processed and "Weight_(kg)" in processed:
-                h_m = processed["Height_(cm)"] / 100.0
-                if h_m > 0:
-                    bmi = processed["Weight_(kg)"] / (h_m ** 2)
-                    processed["BMI"] = round(bmi, 2)
+                        processed[feat] = float(val)
+                    except (ValueError, TypeError):
+                        # Mapping for common string values
+                        mapping = {'Yes': 1.0, 'No': 0.0, 'Male': 1.0, 'Female': 0.0}
+                        processed[feat] = mapping.get(val, 0.0)
                 else:
-                    processed["BMI"] = 0.0
+                    processed[feat] = 0.0 # Default fallback
             
-            # Order features exactly as expected
+            print(f"Processed features: {processed}")
+            
+            # Create input array in correct order
             row_data = [processed.get(c, 0.0) for c in heart_features]
             row = np.array([row_data], dtype=np.float32)
             
-            # 2. Model inference — soft-vote ensemble (60% XGBoost + 40% MLP)
-            xgb_proba = float(heart_xgb.predict_proba(row)[0, 1])
-            row_sc = heart_scaler.transform(row)
-            mlp_proba = float(heart_mlp.predict_proba(row_sc)[0, 1])
-            ens_proba = 0.60 * xgb_proba + 0.40 * mlp_proba
+            # Apply scaling
+            if heart_scaler:
+                row = heart_scaler.transform(row)
+            
+            # 2. Model inference
+            prob = float(heart_xgb.predict_proba(row)[0, 1])
 
             # 3. Decision
-            pred_label = "Higher Risk" if ens_proba >= heart_threshold else "Lower Risk"
+            pred_label = "Higher Risk" if prob >= heart_threshold else "Lower Risk"
 
-            # Confidence calculation identical to notebook
-            distance = abs(ens_proba - heart_threshold)
+            # Confidence calculation
+            distance = abs(prob - heart_threshold)
             confidence = min(100.0, distance / max(float(heart_threshold), 1 - float(heart_threshold)) * 100)
 
             result = {
                 'prediction': pred_label,
                 'confidence': round(float(confidence), 1),
-                'risk_score': round(float(ens_proba) * 100, 1),
+                'risk_score': round(float(prob) * 100, 1),
                 'threshold': round(float(heart_threshold) * 100, 1)
             }
             print(f"[OK] Prediction result: {result}")
@@ -530,7 +492,7 @@ def health_check():
         'status': 'healthy',
         'lung_cancer_model_loaded': lung_cancer_model is not None,
         'diabetes_model_loaded': diabetes_model is not None,
-        'heart_disease_model_loaded': heart_xgb is not None and heart_mlp is not None
+        'heart_disease_model_loaded': heart_xgb is not None
     })
 
 
@@ -543,7 +505,7 @@ def model_info():
     return jsonify({
         'lung_cancer_model_loaded': lung_cancer_model is not None,
         'diabetes_model_loaded': diabetes_model is not None,
-        'heart_disease_model_loaded': heart_xgb is not None and heart_mlp is not None,
+        'heart_disease_model_loaded': heart_xgb is not None,
         'lung_cancer_features': lc_features,
         'diabetes_features': DIABETES_FEATURES,
         'heart_disease_features': heart_features

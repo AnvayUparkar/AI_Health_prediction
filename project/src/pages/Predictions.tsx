@@ -61,7 +61,7 @@ const Predictions = () => {
           {predictionModels.map((model, index) => {
             const IconComponent = model.icon;
             return (
-              <GlassCard key={index} className="p-8 group" delay={index * 0.2}>
+              <GlassCard key={index} className="p-8 group h-full flex flex-col" delay={index * 0.2}>
                 <div className="flex items-center space-x-4 mb-6">
                   <motion.div 
                     className={`p-4 bg-gradient-to-r ${model.gradient} rounded-2xl relative`}
@@ -81,7 +81,7 @@ const Predictions = () => {
                   {model.description}
                 </p>
                 
-                <div className="space-y-3 mb-8">
+                <div className="flex-grow space-y-3 mb-8">
                   {model.features.map((item, idx) => (
                     <div key={idx} className="flex items-center space-x-3">
                       <div className={`w-2 h-2 bg-gradient-to-r ${model.gradient} rounded-full`}></div>

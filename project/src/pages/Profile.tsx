@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Shield, Search, Hospital, Save, Plus, X, HeartPulse, Stethoscope, Activity, Heart, Edit, Upload, Clock, CalendarClock, ShieldCheck, AlertCircle, FileText, ExternalLink, Check, ChevronRight, Info, Utensils } from 'lucide-react';
+import { User, Mail, Shield, Search, Hospital, Save, Plus, X, HeartPulse, Stethoscope, Activity, Heart, Edit, Upload, Clock, CalendarClock, ShieldCheck, AlertCircle, FileText, ExternalLink, Check, ChevronRight, Info, Utensils, MapPin, Building2 } from 'lucide-react';
 
 import GlassCard from '../components/GlassCard';
 import AnimatedBackground from '../components/AnimatedBackground';
@@ -177,7 +177,7 @@ const Profile = () => {
     }
   };
 
-  if (loading) {
+  if (loading || !currentUser) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -187,6 +187,10 @@ const Profile = () => {
 
   const userRole = currentUser?.role?.toLowerCase();
   const isProfessional = ['doctor', 'nurse'].includes(userRole?.trim().toLowerCase() || '');
+  // Find the most recent active admitted appointment for patient location display
+  const activeAdmission = appointments.find(
+    (apt: any) => apt.status?.toLowerCase() === 'admitted'
+  );
   return (
     <div className="relative min-h-screen pb-20">
       <AnimatedBackground />
@@ -258,6 +262,76 @@ const Profile = () => {
 
           {/* Health & Clinical Data Card */}
           <div className="lg:col-span-2 space-y-8">
+
+            {/* Admission Status Card — Patient only, shown when actively admitted */}
+            {!isProfessional && activeAdmission && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="relative overflow-hidden"
+              >
+                <GlassCard className={`p-8 border-none ${
+                  activeAdmission.ward_number
+                    ? 'bg-gradient-to-br from-emerald-600/10 to-teal-600/10 border-emerald-200'
+                    : 'bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-200'
+                }`}>
+                  <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="flex items-center gap-4">
+                      <div className={`p-4 rounded-2xl shadow-inner ${
+                        activeAdmission.ward_number ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'
+                      }`}>
+                        {activeAdmission.ward_number
+                          ? <Building2 className="w-8 h-8" />
+                          : <MapPin className="w-8 h-8" />}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="relative flex h-3 w-3">
+                            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                              activeAdmission.ward_number ? 'bg-emerald-400' : 'bg-amber-400'
+                            }`}></span>
+                            <span className={`relative inline-flex rounded-full h-3 w-3 ${
+                              activeAdmission.ward_number ? 'bg-emerald-500' : 'bg-amber-500'
+                            }`}></span>
+                          </span>
+                          <span className={`text-xs font-bold uppercase tracking-widest ${
+                            activeAdmission.ward_number ? 'text-emerald-600' : 'text-amber-600'
+                          }`}>Currently Admitted</span>
+                        </div>
+                        <h3 className="text-2xl font-bold text-gray-800">
+                          {activeAdmission.ward_number
+                            ? `Ward ${activeAdmission.ward_number}`
+                            : 'Remote / Home Care'}
+                        </h3>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {activeAdmission.ward_number
+                            ? `You are currently admitted in-hospital. Your assigned ward is ${activeAdmission.ward_number}.`
+                            : 'You are currently receiving remote care. Medical staff are monitoring you.'}
+                        </p>
+                        {activeAdmission.doctor_name && (
+                          <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                            <Stethoscope className="w-3 h-3" />
+                            Attending: <span className="font-semibold">{activeAdmission.doctor_name}</span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className={`text-right shrink-0 px-6 py-4 rounded-2xl ${
+                      activeAdmission.ward_number ? 'bg-emerald-50' : 'bg-amber-50'
+                    }`}>
+                      <p className={`text-xs font-bold uppercase tracking-widest mb-1 ${
+                        activeAdmission.ward_number ? 'text-emerald-500' : 'text-amber-500'
+                      }`}>Location Type</p>
+                      <p className={`text-xl font-black ${
+                        activeAdmission.ward_number ? 'text-emerald-700' : 'text-amber-700'
+                      }`}>
+                        {activeAdmission.ward_number ? 'IN-HOSPITAL' : 'REMOTE'}
+                      </p>
+                    </div>
+                  </div>
+                </GlassCard>
+              </motion.div>
+            )}
 
             {/* NEW: Appointment Availability Section for Doctors */}
             {userRole === 'doctor' && (

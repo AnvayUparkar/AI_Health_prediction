@@ -195,6 +195,11 @@ const AlertMonitoringCard: React.FC = () => {
         .map(normaliseAlert)
         .filter((a: Alert) => {
           if (a.resolved) return false;
+          // SOS/Gesture alerts ALWAYS show — staff must be aware regardless of notified list
+          const isSOS = a.reason.includes('GESTURE') || a.reason.includes('FIST') ||
+                        a.reason.includes('CLENCH') || a.reason.includes('SOS') ||
+                        a.reason.includes('S.O.S') || a.reason.includes('EMERGENCY');
+          if (isSOS) return true;
           // If no notified_doctors list, show to all staff (backward compat)
           if (!a.notified_doctors || a.notified_doctors.length === 0) return true;
           // Only show if this doctor/nurse is in the notified list
@@ -234,10 +239,17 @@ const AlertMonitoringCard: React.FC = () => {
       const userStr = localStorage.getItem('user');
       const currentUser = userStr ? JSON.parse(userStr) : null;
       const myId = currentUser?.id ? String(currentUser.id) : null;
-      const notified = incoming.notified_doctors ?? [];
-      if (notified.length > 0 && myId && !notified.some((id) => String(id) === myId)) {
-        console.log('[AlertMonitoringCard] Skipping alert — not in notified list for this doctor.');
-        return;
+      // SOS/Gesture alerts ALWAYS show — never filter them out by notified list
+      const isSOS = incoming.reason.includes('GESTURE') || incoming.reason.includes('FIST') ||
+                    incoming.reason.includes('CLENCH') || incoming.reason.includes('SOS') ||
+                    incoming.reason.includes('S.O.S') || incoming.reason.includes('EMERGENCY');
+      if (!isSOS) {
+        // For non-SOS alerts, filter by notified_doctors list
+        const notified = incoming.notified_doctors ?? [];
+        if (notified.length > 0 && myId && !notified.some((id) => String(id) === myId)) {
+          console.log('[AlertMonitoringCard] Skipping alert — not in notified list for this doctor.');
+          return;
+        }
       }
 
       setAlerts(prev => {
@@ -353,7 +365,9 @@ const AlertMonitoringCard: React.FC = () => {
   const criticalCount = alerts.filter(a => a.status === 'CRITICAL').length;
   const warningCount = alerts.filter(a => a.status === 'WARNING').length;
   const gestureCount = alerts.filter(a =>
-    a.reason.includes('GESTURE') || a.reason.includes('FIST')
+    a.reason.includes('GESTURE') || a.reason.includes('FIST') ||
+    a.reason.includes('CLENCH') || a.reason.includes('SOS') ||
+    a.reason.includes('S.O.S') || a.reason.includes('EMERGENCY')
   ).length;
 
   return (

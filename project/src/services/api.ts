@@ -21,6 +21,34 @@ api.interceptors.request.use((cfg) => {
     return cfg;
 });
 
+// Handle 401 Unauthorized globally by clearing stale session & redirecting to login
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response && error.response.status === 401) {
+            const configUrl = error.config?.url || '';
+            const isAuthRoute = configUrl.endsWith('/auth/login') || configUrl.endsWith('/auth/signup');
+            if (!isAuthRoute) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('auth_token');
+                window.dispatchEvent(new Event('storage'));
+                
+                // Avoid infinite redirect loops if we are already on a login page
+                if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/admin-login')) {
+                    if (window.location.pathname.startsWith('/manage-') || window.location.pathname.startsWith('/admin')) {
+                        window.location.href = '/admin-login';
+                    } else {
+                        window.location.href = '/login';
+                    }
+                }
+            }
+        }
+        return Promise.reject(error);
+    }
+);
+
 export default api;
 
 // --- Nurse Handoff & Medication APIs ---
