@@ -13,11 +13,8 @@ dist
 dist-ssr
 *.local
 
-project/scratch/*
+scratch/*
 
-diabetes_model.pkl
-diabetes_label_encoder.pkl
-diabetes_scaler.pkl
 
 # Editor directories and files
 .vscode/*
