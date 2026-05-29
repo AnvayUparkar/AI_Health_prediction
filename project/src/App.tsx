@@ -170,17 +170,17 @@ function App() {
           <Route 
             path="/diet-planner" 
             element={
-              <ProtectedRoute>
+              <MedicalRoute>
                 <DietPlanner />
-              </ProtectedRoute>
+              </MedicalRoute>
             } 
           />
           <Route 
             path="/report-analyzer" 
             element={
-              <ProtectedRoute>
+              <MedicalRoute>
                 <ReportAnalyzer />
-              </ProtectedRoute>
+              </MedicalRoute>
             } 
           />
           <Route 
