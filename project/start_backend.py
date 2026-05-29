@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Startup script for the AI Health Predictor Flask backend
 This script checks for required model files and provides helpful setup instructions.
@@ -52,7 +52,7 @@ def print_setup_instructions():
     print("For detailed model specifications, see: models/README.md")
     print()
     print("After placing your model files, run:")
-    print("  python app.py")
+    print("  python server.py")
 
 def install_dependencies():
     """Install Python dependencies"""
@@ -89,8 +89,8 @@ def main():
         return False
     
     # Check if app.py exists
-    if not os.path.exists("app.py"):
-        print("[FAIL] app.py not found!")
+    if not os.path.exists("server.py"):
+        print("[FAIL] server.py not found!")
         return False
     
     print("✅ All checks passed! Starting the Flask server...")
@@ -104,7 +104,7 @@ def main():
     
     # Start the Flask server
     try:
-        subprocess.run([sys.executable, "app.py"])
+        subprocess.run([sys.executable, "server.py"])
     except KeyboardInterrupt:
         print("\n👋 Server stopped by user")
     except Exception as e:
