@@ -1022,5 +1022,60 @@
         ],
         "timestamp": 1780067606.7751572,
         "confidence": 0.9
+    },
+    "1/4 cup each": {
+        "ingredients": [
+            "lemon juice plus 1 tbsp",
+            "garlic",
+            "onion",
+            "butter. 4 tbsp"
+        ],
+        "timestamp": 1780070602.8145316,
+        "confidence": 0.9
+    },
+    "moong dal cheela with spinach": {
+        "ingredients": [
+            "spices",
+            "lentils",
+            "onion",
+            "garlic"
+        ],
+        "timestamp": 1780070613.7060344,
+        "confidence": 0.7
+    },
+    "sprouted moong salad with lemon": {
+        "ingredients": [
+            "cucumber",
+            "tomato",
+            "lemon"
+        ],
+        "timestamp": 1780070615.4340682,
+        "confidence": 0.7
+    },
+    "multigrain roti, masoor dal, lauki sabzi, cucumber salad": {
+        "ingredients": [
+            "lentils",
+            "tomato",
+            "lemon",
+            "garlic",
+            "spices",
+            "onion",
+            "wheat",
+            "cucumber"
+        ],
+        "timestamp": 1780070616.2807558,
+        "confidence": 0.7
+    },
+    "vegetable dalia khichdi": {
+        "ingredients": [
+            "rice",
+            "lentils",
+            "garlic",
+            "ghee",
+            "spices",
+            "onion"
+        ],
+        "timestamp": 1780070620.3864214,
+        "confidence": 0.7
     }
 }
