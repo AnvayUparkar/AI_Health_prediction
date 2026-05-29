@@ -24,4 +24,9 @@ eventlet==0.33.3
 reportlab>=4.0.0                  # PDF generation for health report export
 requests>=2.31.0                   # API communication
 sib-api-v3-sdk>=7.6.0              # Brevo API SDK
+cloudinary>=1.36.0                 # Cloudinary SDK for certificate file uploads
+google-auth-oauthlib>=1.2.0        # Google OAuth2 flow (used in google_auth route)
+mediapipe>=0.10.0                  # MediaPipe for gesture/pose detection
+xgboost>=2.0.0                     # XGBoost for heart disease prediction model
+
 
