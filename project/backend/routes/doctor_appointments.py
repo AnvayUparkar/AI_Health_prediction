@@ -26,15 +26,22 @@ def approve_appointment(appointment_id):
         try:
             full_apt = DBService.get_appointment(appointment_id)
             if full_apt:
-                patient_email = full_apt.get('email')
-                patient_name = full_apt.get('name', 'Patient')
-                meeting_link = full_apt.get('meeting_link')
-                mode = full_apt.get('mode', 'online')
-                doctor_id = full_apt.get('doctor_id')
+                is_dict = isinstance(full_apt, dict)
+                def gv(obj, key):
+                    if is_dict: return obj.get(key)
+                    return getattr(obj, key, None)
+
+                patient_email = gv(full_apt, 'email')
+                patient_name = gv(full_apt, 'name') or 'Patient'
+                meeting_link = gv(full_apt, 'meeting_link')
+                mode = gv(full_apt, 'mode') or 'online'
+                doctor_id = gv(full_apt, 'doctor_id')
                 
                 # Format time for doctor email
-                apt_date = full_apt.get('appointment_date') or full_apt.get('requested_date')
-                apt_time = full_apt.get('appointment_time') or full_apt.get('requested_time')
+                apt_date = gv(full_apt, 'appointment_date') or gv(full_apt, 'requested_date') or gv(full_apt, 'date')
+                if apt_date and not isinstance(apt_date, str):
+                    apt_date = apt_date.strftime('%Y-%m-%d')
+                apt_time = gv(full_apt, 'appointment_time') or gv(full_apt, 'requested_time')
                 full_time_str = f"{apt_date} at {apt_time}"
 
                 # 1. Notify Patient (if online)

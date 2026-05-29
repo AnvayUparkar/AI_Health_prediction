@@ -13,6 +13,8 @@ dist
 dist-ssr
 *.local
 
+project/scratch/*
+
 diabetes_model.pkl
 diabetes_label_encoder.pkl
 diabetes_scaler.pkl

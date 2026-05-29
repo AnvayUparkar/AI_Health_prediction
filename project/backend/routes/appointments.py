@@ -83,14 +83,17 @@ def get_appointment(appointment_id):
         
         def get_val(obj, key, model_key=None):
             if is_dict: return obj.get(key)
-            return getattr(obj, model_key or key)
+            return getattr(obj, model_key or key, None)
 
         created_at = get_val(appointment, 'created_at')
         if not isinstance(created_at, str) and created_at:
             created_at = created_at.isoformat()
 
         apt_date = get_val(appointment, 'appointment_date')
-        if not isinstance(apt_date, str) and apt_date:
+        if not apt_date:
+            apt_date = get_val(appointment, 'requested_date') or get_val(appointment, 'date')
+
+        if apt_date and not isinstance(apt_date, str):
             apt_date = apt_date.strftime('%Y-%m-%d')
 
         return jsonify({
@@ -131,7 +134,7 @@ def list_appointments():
             is_dict = isinstance(apt, dict)
             def gv(obj, k, mk=None):
                 if is_dict: return obj.get(k)
-                return getattr(obj, mk or k)
+                return getattr(obj, mk or k, None)
 
             ca = gv(apt, 'created_at')
             if ca and not isinstance(ca, str): ca = ca.isoformat()
@@ -199,12 +202,22 @@ def update_appointment_status(appointment_id):
                 # 1. Fetch full details (need email and meeting link)
                 full_apt = DBService.get_appointment(appointment_id)
                 if full_apt:
-                    patient_email = full_apt.get('email')
-                    meeting_link = full_apt.get('meeting_link')
-                    patient_name = full_apt.get('name', 'Patient')
-                    apt_time = f"{full_apt.get('appointment_date')} at {full_apt.get('appointment_time')}"
-                    mode = full_apt.get('mode', 'online')
-                    doctor_id = full_apt.get('doctor_id')
+                    is_dict = isinstance(full_apt, dict)
+                    def gv(obj, key):
+                        if is_dict: return obj.get(key)
+                        return getattr(obj, key, None)
+
+                    patient_email = gv(full_apt, 'email')
+                    meeting_link = gv(full_apt, 'meeting_link')
+                    patient_name = gv(full_apt, 'name') or 'Patient'
+                    
+                    apt_date = gv(full_apt, 'requested_date') or gv(full_apt, 'date') or gv(full_apt, 'appointment_date')
+                    if apt_date and not isinstance(apt_date, str):
+                        apt_date = apt_date.strftime('%Y-%m-%d')
+                    apt_time = f"{apt_date} at {gv(full_apt, 'appointment_time') or gv(full_apt, 'requested_time')}"
+                    
+                    mode = gv(full_apt, 'mode') or 'online'
+                    doctor_id = gv(full_apt, 'doctor_id')
 
                     # 2. Notify Patient
                     if patient_email and mode == 'online' and meeting_link:

@@ -651,7 +651,7 @@ const BookAppointment = () => {
                             </div>
                           ) : doctorSchedule.length > 0 ? (
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                              {doctorSchedule.map((sched: any) => {
+                              {doctorSchedule.map((sched: any, idx: number) => {
                                 const totalRemaining = sched.slots.reduce((acc: number, s: any) => acc + s.remaining, 0);
                                 const formattedDate = new Date(sched.date).toLocaleDateString('en-US', {
                                   weekday: 'short', month: 'short', day: 'numeric'
@@ -659,7 +659,7 @@ const BookAppointment = () => {
                                 const isSelected = formData.date === sched.date;
                                 return (
                                   <button
-                                    key={sched.date}
+                                    key={`${sched.date}-${idx}`}
                                     type="button"
                                     onClick={() => {
                                       setFormData(prev => ({ ...prev, date: sched.date }));

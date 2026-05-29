@@ -149,7 +149,7 @@ const PatientBooking = () => {
                 </div>
               ) : doctorSchedule.length > 0 ? (
                 <div className="flex flex-col gap-2 max-h-[200px] overflow-y-auto pr-1">
-                  {doctorSchedule.map((sched: any) => {
+                  {doctorSchedule.map((sched: any, idx: number) => {
                     const totalRemaining = sched.slots.reduce((acc: number, s: any) => acc + s.remaining, 0);
                     const formattedDate = new Date(sched.date).toLocaleDateString('en-US', {
                       weekday: 'short', month: 'short', day: 'numeric'
@@ -157,7 +157,7 @@ const PatientBooking = () => {
                     const isSelected = selectedDate === sched.date;
                     return (
                       <button
-                        key={sched.date}
+                        key={`${sched.date}-${idx}`}
                         type="button"
                         onClick={() => setSelectedDate(sched.date)}
                         className={`w-full p-2.5 rounded-xl border text-left transition-all duration-300 flex justify-between items-center ${

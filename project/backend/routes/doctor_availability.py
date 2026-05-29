@@ -104,8 +104,38 @@ def get_availability(doctor_id):
         }).sort("date", 1)
         availabilities = list(cursor)
         
-        formatted_list = []
+        # Deduplicate by date (keep the most recently updated one)
+        unique_availabilities = {}
         for avail in availabilities:
+            d = avail.get('date')
+            if not d:
+                continue
+            if d not in unique_availabilities:
+                unique_availabilities[d] = avail
+            else:
+                existing = unique_availabilities[d]
+                existing_updated = existing.get('updatedAt') or existing.get('updated_at')
+                current_updated = avail.get('updatedAt') or avail.get('updated_at')
+                
+                # Convert strings to datetime if necessary
+                if existing_updated and isinstance(existing_updated, str):
+                    try: existing_updated = datetime.fromisoformat(existing_updated)
+                    except: pass
+                if current_updated and isinstance(current_updated, str):
+                    try: current_updated = datetime.fromisoformat(current_updated)
+                    except: pass
+                
+                try:
+                    if (current_updated and not existing_updated) or (current_updated and existing_updated and current_updated > existing_updated):
+                        unique_availabilities[d] = avail
+                except:
+                    # Fallback: keep the one with more slots
+                    if len(avail.get('slots', [])) > len(existing.get('slots', [])):
+                        unique_availabilities[d] = avail
+        
+        formatted_list = []
+        for d in sorted(unique_availabilities.keys()):
+            avail = unique_availabilities[d]
             formatted_slots = []
             for slot in avail.get('slots', []):
                 sub_slots = slot.get('subSlots', [])
@@ -120,7 +150,7 @@ def get_availability(doctor_id):
                 })
             
             formatted_list.append({
-                "date": avail.get('date'),
+                "date": d,
                 "avgConsultationTime": avail.get('avgConsultationTime'),
                 "slots": formatted_slots
             })
