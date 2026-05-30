@@ -76,8 +76,9 @@ const BookAppointment = () => {
 
   const fetchDoctorSchedule = async () => {
     setIsScheduleLoading(true);
+    const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000';
     try {
-      const response = await fetch(`http://localhost:5000/api/doctor/availability/${formData.doctorId}`);
+      const response = await fetch(`${API_URL}/api/doctor/availability/${formData.doctorId}`);
       if (response.ok) {
         const data = await response.json();
         setDoctorSchedule(data.availabilities || []);
@@ -311,7 +312,8 @@ const BookAppointment = () => {
       }
 
       // Record the appointment in the main SQL database as well
-      const response = await fetch('http://localhost:5000/api/appointments', {
+      const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${API_URL}/api/appointments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

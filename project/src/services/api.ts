@@ -210,10 +210,11 @@ export const analyzeReport = async (file: File | null, onUploadProgress?: (progr
     const res = await api.post('/api/analyze-report', fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress,
-        timeout: 120000,  // 2 min timeout for OCR processing
+        timeout: 180000,  // 3 min timeout: accounts for Render cold-start (60s) + OCR + Gemini AI
     });
     return res.data;
 };
+
 
 export const triggerSOS = async (data: { patient_id?: string; room_number?: string; latitude?: number; longitude?: number } = {}) => {
     const res = await api.post('/api/alert/sos', data);

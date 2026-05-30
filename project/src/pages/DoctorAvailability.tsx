@@ -52,8 +52,9 @@ const DoctorAvailability = () => {
     }
 
     setIsLoading(true);
+    const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000';
     try {
-      const response = await fetch('http://localhost:5000/api/doctor/availability', {
+      const response = await fetch(`${API_URL}/api/doctor/availability`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

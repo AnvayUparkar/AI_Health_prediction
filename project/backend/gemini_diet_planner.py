@@ -486,13 +486,17 @@ def _is_model_unavailable(exc: Exception) -> bool:
     )
 
 
-def _call_gemini_single(genai, model_name: str, prompt: str) -> str:
+
+def _call_gemini_single(genai, model_name: str, prompt: str, timeout_secs: int = 45) -> str:
     """
     Attempt one model with response_mime_type first, then without.
+    Enforces a hard timeout of *timeout_secs* seconds using a thread executor.
     Raises RuntimeError on non-quota failures.
     Returns raw text on success.
     Returns None if this model should be skipped (mime rejection) — caller retries.
     """
+    import concurrent.futures
+
     base_config = {
         "temperature": 0.3,
         "top_p": 0.85,
@@ -506,8 +510,7 @@ def _call_gemini_single(genai, model_name: str, prompt: str) -> str:
         {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
     ]
 
-    # Attempt A — with response_mime_type (clean JSON)
-    try:
+    def _run_with_mime():
         config_a = {**base_config, "response_mime_type": "application/json"}
         model = genai.GenerativeModel(
             model_name=model_name,
@@ -515,12 +518,33 @@ def _call_gemini_single(genai, model_name: str, prompt: str) -> str:
             safety_settings=safety_settings,
         )
         response = model.generate_content(prompt)
-        logger.debug("[%s] response length: %d chars", model_name, len(response.text))
         return response.text
+
+    def _run_without_mime():
+        model = genai.GenerativeModel(
+            model_name=model_name,
+            generation_config=base_config,
+            safety_settings=safety_settings,
+        )
+        response = model.generate_content(prompt)
+        return response.text
+
+    # Attempt A — with response_mime_type (clean JSON)
+    try:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_run_with_mime)
+            try:
+                result = future.result(timeout=timeout_secs)
+                logger.debug("[%s] response length: %d chars", model_name, len(result))
+                return result
+            except concurrent.futures.TimeoutError:
+                raise RuntimeError(f"Gemini model {model_name} timed out after {timeout_secs}s")
     except Exception as exc:
         err_str = str(exc).lower()
         if _is_quota_error(exc):
             raise  # bubble up so the outer loop can try the next model
+        if "timed out" in err_str:
+            raise  # propagate timeout so next model is tried
         if "mime" in err_str or "unsupported" in err_str or "invalid" in err_str or "400" in err_str:
             logger.warning("[%s] response_mime_type rejected — retrying without it.", model_name)
         else:
@@ -528,18 +552,19 @@ def _call_gemini_single(genai, model_name: str, prompt: str) -> str:
 
     # Attempt B — without response_mime_type
     try:
-        model = genai.GenerativeModel(
-            model_name=model_name,
-            generation_config=base_config,
-            safety_settings=safety_settings,
-        )
-        response = model.generate_content(prompt)
-        logger.debug("[%s] response (no mime) length: %d chars", model_name, len(response.text))
-        return response.text
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_run_without_mime)
+            try:
+                result = future.result(timeout=timeout_secs)
+                logger.debug("[%s] response (no mime) length: %d chars", model_name, len(result))
+                return result
+            except concurrent.futures.TimeoutError:
+                raise RuntimeError(f"Gemini model {model_name} timed out after {timeout_secs}s (attempt B)")
     except Exception as exc2:
         if _is_quota_error(exc2):
             raise  # bubble up for fallback
         raise RuntimeError(f"Gemini API error: {exc2}") from exc2
+
 
 
 def _call_gemini(prompt: str, model_name: str = "gemini-3-flash-preview") -> str:

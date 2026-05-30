@@ -81,8 +81,9 @@ const HealthAnalysisCard: React.FC = () => {
   }, []);
 
   const fetchLatestAnalysis = async (token: string) => {
+    const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000';
     try {
-      const response = await fetch('http://localhost:5000/api/health-analysis', {
+      const response = await fetch(`${API_URL}/api/health-analysis`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
 
@@ -114,7 +115,8 @@ const HealthAnalysisCard: React.FC = () => {
       }
 
       try {
-        const response = await fetch('http://localhost:5000/api/google-fit-sync', {
+        const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000';
+        const response = await fetch(`${API_URL}/api/google-fit-sync`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -195,7 +197,8 @@ const HealthAnalysisCard: React.FC = () => {
 
     try {
       const today = new Date().toISOString().split('T')[0];
-      const response = await fetch('http://localhost:5000/api/health-connect-sync', {
+      const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${API_URL}/api/health-connect-sync`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -286,10 +286,12 @@ const ReportAnalyzer = () => {
         setError(data.error || 'Analysis failed. Please try again.');
       }
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.error ||
-        err?.message ||
-        'Failed to analyze report. Please check if the backend is running.';
+      const isTimeout = err?.code === 'ECONNABORTED' || err?.message?.includes('timeout');
+      const msg = isTimeout
+        ? 'The analysis is taking too long — the server may be waking up from sleep. Please wait 30 seconds and try again.'
+        : err?.response?.data?.error ||
+          err?.message ||
+          'Failed to analyze report. Please check if the backend is running.';
       setError(msg);
     } finally {
       setLoading(false);
@@ -319,8 +321,9 @@ const ReportAnalyzer = () => {
     if (!result) return;
     setExportLoading(true);
     const token = localStorage.getItem('token');
+    const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000';
     try {
-      const response = await fetch('http://localhost:5000/api/export-report-analysis', {
+      const response = await fetch(`${API_URL}/api/export-report-analysis`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

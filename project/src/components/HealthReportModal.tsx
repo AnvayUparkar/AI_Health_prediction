@@ -64,8 +64,9 @@ const HealthReportModal: React.FC<HealthReportModalProps> = ({ isOpen, onClose }
   const fetchReport = async () => {
     setLoading(true);
     const token = localStorage.getItem('token');
+    const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000';
     try {
-      const response = await fetch('http://localhost:5000/api/health-report', {
+      const response = await fetch(`${API_URL}/api/health-report`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -86,8 +87,9 @@ const HealthReportModal: React.FC<HealthReportModalProps> = ({ isOpen, onClose }
     setMealPlanLoading(true);
     setMealPlanError(null);
     const token = localStorage.getItem('token');
+    const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000';
     try {
-      const response = await fetch('http://localhost:5000/api/meal-plan', {
+      const response = await fetch(`${API_URL}/api/meal-plan`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -110,8 +112,9 @@ const HealthReportModal: React.FC<HealthReportModalProps> = ({ isOpen, onClose }
   const handleExport = async () => {
     setExportLoading(true);
     const token = localStorage.getItem('token');
+    const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000';
     try {
-      const response = await fetch('http://localhost:5000/api/export-report', {
+      const response = await fetch(`${API_URL}/api/export-report`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
