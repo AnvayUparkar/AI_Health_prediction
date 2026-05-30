@@ -198,8 +198,14 @@ def get_google_fit_data(access_token, start_time_ms, end_time_ms, timezone_offse
         response = requests.post(url, headers=headers, json=aggregate_body, timeout=15)
 
         if response.status_code != 200:
-            print(f"[GoogleFit] [ERROR] API Error {response.status_code}: {response.text[:500]}")
-            return None
+            error_body = response.text[:500]
+            print(f"[GoogleFit] [ERROR] API Error {response.status_code}: {error_body}")
+            try:
+                err_json = response.json()
+                msg = err_json.get('error', {}).get('message', error_body)
+            except:
+                msg = error_body
+            return None, response.status_code, msg
 
         data = response.json()
         buckets = data.get('bucket', [])
@@ -294,12 +300,12 @@ def get_google_fit_data(access_token, start_time_ms, end_time_ms, timezone_offse
             print(f"  {m['date']} | steps={m['steps']} | hr={m['avg_heart_rate']}")
         print(f"{'='*70}\n")
 
-        return daily_metrics
+        return daily_metrics, 200, "Success"
 
     except Exception as e:
         print(f"[GoogleFit] [EXCEPTION] {e}")
         logger.exception("[GoogleFit] Failed to fetch data: %s", str(e))
-        return None
+        return None, 500, str(e)
 
 @google_fit_sync_bp.route('/google-fit-sync', methods=['POST'])
 @jwt_required()
@@ -352,10 +358,22 @@ def sync_google_fit():
         print(f"  end   = {end_time_ms}  (now)")
         print(f"  offset = {timezone_offset} min ({offset_ms} ms)")
 
-        daily_metrics_list = get_google_fit_data(access_token, start_time_ms, end_time_ms, timezone_offset)
+        daily_metrics_list, fit_status, fit_error = get_google_fit_data(access_token, start_time_ms, end_time_ms, timezone_offset)
         
         if not daily_metrics_list:
-            return jsonify({"success": False, "error": "Could not fetch data from Google Fit. Check permissions."}), 400
+            if fit_status == 403:
+                msg = "Google Fit sync failed (403 Forbidden). This usually means the required Google Fit API scopes (heart rate, sleep) are missing or not enabled in your Google Cloud Console OAuth consent screen, or your Google account is not added as a Test User."
+            elif fit_status == 401:
+                msg = "Google Fit sync failed (401 Unauthorized). The access token has expired or is invalid. Please log out and log in again."
+            else:
+                msg = f"Google Fit sync failed ({fit_status}): {fit_error}"
+                
+            return jsonify({
+                "success": False, 
+                "error": msg,
+                "code": fit_status,
+                "raw_error": fit_error
+            }), 400
 
         # 2. Batch Analyze with Gemini (Safety Net fallback is now handled inside analyze_weekly_data)
         weekly_analysis = analyze_weekly_data(daily_metrics_list)

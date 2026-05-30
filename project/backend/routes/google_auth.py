@@ -20,12 +20,14 @@ google_auth_bp = Blueprint('google_auth', __name__)
 CLIENT_SECRET_PATH = r"C:\Users\Anvay Uparkar\Hackathon projects\AI_Health_prediction\project\client_secret_436743225854-418loq227rgki0rk8freubjmf2v8r5t9.apps.googleusercontent.com.json"
 REDIRECT_URI = "http://localhost:5173"
 
-# Scopes: User asked for contacts, but we likely need health for this app too.
+# All scopes needed by this application
+# IMPORTANT: These must exactly match what is requested in the frontend useGoogleLogin()
+# and what is approved in Google Cloud Console > OAuth consent screen
 SCOPES = [
-
-    "https://www.googleapis.com/auth/contacts.readonly",
     "https://www.googleapis.com/auth/fitness.activity.read",
     "https://www.googleapis.com/auth/fitness.body.read",
+    "https://www.googleapis.com/auth/fitness.heart_rate.read",
+    "https://www.googleapis.com/auth/fitness.sleep.read",
 ]
 
 @google_auth_bp.route('/auth/google/url', methods=['GET'])

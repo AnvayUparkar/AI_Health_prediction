@@ -23,8 +23,8 @@ except ImportError:
 # CRITICAL: Fix for Windows Unicode console crashes
 if sys.platform == 'win32':
     import io
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', write_through=True)
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', write_through=True)
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -80,7 +80,16 @@ def create_app(config_overrides: Optional[dict] = None):
     db_path = os.path.join(backend_dir, 'app.db')
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'change-this-secret')
+    _jwt_key = os.environ.get('JWT_SECRET_KEY', '')
+    if not _jwt_key or len(_jwt_key) < 32:
+        # Fallback: strong 64-char key used ONLY if env var is absent/short.
+        # WARNING: tokens signed with this key are invalidated on every restart.
+        # Set JWT_SECRET_KEY in your Render/production environment variables.
+        _jwt_key = 'd80e1b8e94ae68f60b76a0939325bd05d333516b15c127fa38cd2f9eb1bf4993'
+        print("[WARN] JWT_SECRET_KEY env var is not set or too short (<32 bytes). "
+              "Using a built-in fallback key — all sessions will be invalidated on restart. "
+              "Set JWT_SECRET_KEY in Render > Environment to fix this permanently.")
+    app.config['JWT_SECRET_KEY'] = _jwt_key
     app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10 MB upload limit
 
     if config_overrides:
