@@ -8,7 +8,7 @@ pillow       # optional (PIL)
 pytesseract==0.3.10  # optional, requires tesseract binary on system
 opencv-python-headless>=4.8.0  # image preprocessing for OCR (headless for server deploy)
 joblib==1.4.2
-pandas==2.1.1
+pandas>=2.2.0
 # Use a numpy compatible with pandas on Python 3.11 and scikit-learn 1.7.2
 numpy>=2.0.0
 # Pin to 1.7.2 — exact version the .pkl models were serialized with
