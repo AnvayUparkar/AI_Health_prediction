@@ -87,7 +87,7 @@ def create_app(config_overrides: Optional[dict] = None):
         app.config.update(config_overrides)
 
     db.init_app(app)
-    socketio.init_app(app)
+    socketio.init_app(app, cors_allowed_origins='*', async_mode='eventlet')
     JWTManager(app)
 
     # Register blueprints
