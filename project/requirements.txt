@@ -10,7 +10,7 @@ opencv-python-headless>=4.8.0  # image preprocessing for OCR (headless for serve
 joblib==1.4.2
 pandas==2.1.1
 # Use a numpy compatible with pandas on Python 3.11 and scikit-learn 1.7.2
-numpy>=1.26,<2.0
+numpy>=2.0.0
 # Pin to 1.7.2 — exact version the .pkl models were serialized with
 # (models include DummyClassifier, RandomForestClassifier, StandardScaler, LabelEncoder)
 # Upgrading without re-training will cause InconsistentVersionWarning and potential errors
