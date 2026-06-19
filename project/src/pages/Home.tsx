@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Sun as Lung, Activity, ArrowRight, Brain, Heart, Zap, Calendar, HeartPulse, LineChart, Utensils, ClipboardList } from 'lucide-react';
 import AnimatedBackground from '../components/AnimatedBackground';
+import HeroSection from '../components/HeroSection';
 import GlassCard from '../components/GlassCard';
 import FeatureCard from '../components/FeatureCard';
 import HealthAnalysisCard from '../components/HealthAnalysisCard';
@@ -105,66 +106,8 @@ const Home = () => {
     <div className="relative min-h-screen">
       <AnimatedBackground />
 
-      {/* Hero Section */}
-      <section className="relative pt-32 pb-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-          >
-            <motion.h1
-              className="text-5xl md:text-7xl font-bold mb-8 leading-tight"
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-            >
-              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                NeuroCare AI
-              </span>
-              <br />
-              <span className="bg-gradient-to-r from-indigo-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Proactive Health Insights
-              </span>
-            </motion.h1>
-
-            <motion.p
-              className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed mb-12"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-            >
-              Leverage the power of machine learning to provide early-stage risk assessment
-              for common diseases. Get instant, data-driven insights into your potential health risks
-              and take proactive steps towards a healthier life.
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.6 }}
-              className="flex flex-col sm:flex-row gap-6 justify-center items-center"
-            >
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-2xl font-semibold text-lg shadow-xl hover:shadow-2xl transition-all duration-300"
-                onClick={() => window.scrollTo({ top: (document.querySelector('#services') as HTMLElement)?.offsetTop || 0, behavior: 'smooth' })}
-              >
-                Explore Services
-              </motion.button>
-
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-8 py-4 backdrop-blur-lg bg-white/20 border border-white/30 text-gray-700 rounded-2xl font-semibold text-lg hover:bg-white/30 transition-all duration-300"
-              >
-                Learn More
-              </motion.button>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
+      {/* Hero Section - New Design */}
+      <HeroSection />
 
       {/* Main Services Section */}
       <section id="services" className="relative py-20 px-4 sm:px-6 lg:px-8">

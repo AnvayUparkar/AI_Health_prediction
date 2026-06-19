@@ -15,6 +15,18 @@ export default {
           'medium': '#F59E0B',
           'high': '#EF4444',
         },
+        'healthcare': {
+          'mint': '#4A9B8E',
+          'mint-dark': '#2F7A6F',
+          'mint-light': '#E8F6F3',
+          'mint-border': '#C8E6E0',
+          'bg-main': '#E8F6F3',
+          'bg-secondary': '#D8F0EB',
+          'heading': '#1F2937',
+          'text': '#6B7280',
+          'white': '#FFFFFF',
+          'peach-light': '#FFE8D6',
+        },
         'truthshield': {
           'primary': {
             DEFAULT: '#00D1FF',
