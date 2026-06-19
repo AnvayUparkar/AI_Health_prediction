@@ -3,10 +3,7 @@
 import { Navigate } from 'react-router-dom';
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
+  // Authentication is bypassed for user-facing pages, returning children directly.
   return children;
 };
 

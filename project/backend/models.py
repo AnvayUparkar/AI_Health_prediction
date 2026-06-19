@@ -444,6 +444,62 @@ def init_db(app):
     with app.app_context():
         db.create_all()
         
+        # Seed guest user if it doesn't exist
+        guest = User.query.filter_by(email='guest@neurocare.ai').first()
+        if not guest:
+            guest = User(
+                name="Guest User",
+                email="guest@neurocare.ai",
+                password_hash=generate_password_hash("guest_password_1234"),
+                role="user",
+                points=1000,
+                isApproved=True,
+                age=30,
+                sex="male",
+                weight=70.0,
+                height=175.0,
+                diet_preference="veg",
+                non_veg_preferences="[]",
+                allergies="[]"
+            )
+            db.session.add(guest)
+            db.session.commit()
+            print("[INFO] Seeded Guest User into SQL database.")
+            
+            # Sync to Mongo if hybrid/mongo is enabled
+            if os.environ.get('DB_MODE') in ['hybrid', 'mongo']:
+                try:
+                    from backend.db_service import DBService
+                    mongodb = DBService.get_mongo_db()
+                    if mongodb is not None:
+                        mongo_data = {
+                            "sql_id": guest.id,
+                            "name": guest.name,
+                            "email": guest.email,
+                            "password_hash": guest.password_hash,
+                            "role": guest.role,
+                            "points": guest.points,
+                            "isApproved": guest.isApproved,
+                            "profile": {
+                                "age": guest.age,
+                                "sex": guest.sex,
+                                "weight": guest.weight,
+                                "height": guest.height,
+                                "diet_preference": guest.diet_preference,
+                                "non_veg_preferences": [],
+                                "allergies": []
+                            },
+                            "created_at": datetime.utcnow()
+                        }
+                        mongodb.users.update_one(
+                            {"email": "guest@neurocare.ai"},
+                            {"$set": mongo_data},
+                            upsert=True
+                        )
+                        print("[INFO] Seeded Guest User into MongoDB.")
+                except Exception as mongo_err:
+                    print(f"[WARN] Failed to seed Guest User to Mongo: {mongo_err}")
+
         # Seed hospitals if table is empty
         if Hospital.query.count() == 0:
             from backend.utils.geocode import geocode_hospital

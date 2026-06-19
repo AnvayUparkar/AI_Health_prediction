@@ -105,7 +105,6 @@ def update_steps():
     }), 200
 
 @gamification_bp.route('/shop', methods=['GET'])
-@jwt_required()
 def get_shop():
     """
     GET /api/shop

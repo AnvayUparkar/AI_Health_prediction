@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-
-
+import { useNavigate } from 'react-router-dom';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -22,6 +21,7 @@ import toast from 'react-hot-toast';
 
 
 const BookAppointment = () => {
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -285,12 +285,19 @@ const BookAppointment = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const userString = localStorage.getItem('user');
+    const currentUser = userString ? JSON.parse(userString) : null;
+
+    if (!currentUser || currentUser.email === 'guest@neurocare.ai') {
+      toast.error('Please log in to book an appointment');
+      navigate('/login');
+      return;
+    }
+
     setLoading(true);
 
     const selectedFacility = facilities.find(f => String(f.id) === String(formData.facilityId));
-    
-    const userString = localStorage.getItem('user');
-    const currentUser = userString ? JSON.parse(userString) : null;
     
     const bookingData = {
       ...formData,

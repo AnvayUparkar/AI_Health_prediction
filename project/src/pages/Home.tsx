@@ -95,10 +95,11 @@ const Home = () => {
     }
   ];
 
-  // Filter services based on user role
-  const visibleServices = mainServices.filter(service =>
-    !service.roles || (user && user.role && service.roles.includes(user.role))
-  );
+  // Filter services based on user role. If guest/unauthenticated, default to 'user' role visibility.
+  const visibleServices = mainServices.filter(service => {
+    const role = user?.role || 'user';
+    return !service.roles || service.roles.includes(role);
+  });
 
   return (
     <div className="relative min-h-screen">
@@ -270,7 +271,7 @@ const Home = () => {
       </section>
 
       {/* Assessment Cards Section - Restricted to Professionals */}
-      {(user?.role?.toLowerCase() === 'doctor' || user?.role?.toLowerCase() === 'nurse' || user?.role?.toLowerCase() === 'user') && (
+      {(!user || user?.email === 'guest@neurocare.ai' || user?.role?.toLowerCase() === 'doctor' || user?.role?.toLowerCase() === 'nurse' || user?.role?.toLowerCase() === 'user') && (
 
         <section className="relative py-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">

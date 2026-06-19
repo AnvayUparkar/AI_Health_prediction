@@ -16,13 +16,11 @@ const PatientBooking = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [availability, setAvailability] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [expandedHour, setExpandedHour] = useState<string | null>(null);
   const [bookingSlot, setBookingSlot] = useState<any | null>(null);
-  const [userInfo, setUserInfo] = useState<any>(null);
 
   // General Doctor Schedule States
   const [doctorSchedule, setDoctorSchedule] = useState<any[]>([]);
@@ -54,12 +52,7 @@ const PatientBooking = () => {
   };
 
 
-  useEffect(() => {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      setUserInfo(JSON.parse(userStr));
-    }
-  }, []);
+
 
   useEffect(() => {
     if (doctorId && selectedDate) {
@@ -81,12 +74,6 @@ const PatientBooking = () => {
   };
 
   const handleBook = async (slot: any) => {
-    if (!userInfo?.id) {
-      toast.error('Please log in to book an appointment');
-      navigate('/login');
-      return;
-    }
-
     const currentFormData = location.state?.currentFormData || {};
 
     // Carry over the selected slot info AND the previous form data

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import FloatingNavbar from './components/FloatingNavbar';
 import Home from './pages/Home';
@@ -19,7 +20,6 @@ import AdmittedPatients from './pages/AdmittedPatients';
 import PatientMonitoringPage from './pages/PatientMonitoring';
 import AdminLogin from './pages/AdminLogin';
 import ManageDoctors from './pages/ManageDoctors';
-import ManageAppointments from './pages/ManageAppointments';
 import ApprovalGuard from './components/ApprovalGuard';
 import GamificationWidget from './components/GamificationWidget';
 import { AIChatBot } from './components/AIChatBot';
@@ -31,10 +31,8 @@ import { Toaster } from 'react-hot-toast';
 
 // ProtectedRoute Component
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
+  // Authentication is bypassed for user-facing pages, returning children directly.
+  // Sensitive actions (e.g. database updates) will still require token checks.
   return children;
 };
 
@@ -70,8 +68,41 @@ const AdminRoute = ({ children }: { children: JSX.Element }) => {
 
 import DoctorAvailability from './pages/DoctorAvailability';
 import PatientBooking from './pages/PatientBooking';
+import ManageAppointments from './pages/ManageAppointments';
 
 function App() {
+  useEffect(() => {
+    const initGuestSession = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        try {
+          const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000';
+          const response = await fetch(`${API_URL}/auth/login`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: 'guest@neurocare.ai',
+              password: 'guest_password_1234'
+            }),
+          });
+          if (response.ok) {
+            const data = await response.json();
+            localStorage.setItem('token', data.access_token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            // Trigger storage event so navbar and components refresh
+            window.dispatchEvent(new Event('storage'));
+          }
+        } catch (e) {
+          console.error("Failed to initialize guest session", e);
+        }
+      }
+    };
+
+    initGuestSession();
+  }, []);
+
   return (
     <Router>
       <div className="min-h-screen bg-transparent">

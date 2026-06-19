@@ -46,9 +46,16 @@ const FloatingNavbar = () => {
       if (token && userStr) {
         try {
           const user = JSON.parse(userStr);
-          setIsAuthenticated(true);
-          setUserName(user.name || 'User');
-          setUserRole(user.role || 'user');
+          if (user.email === 'guest@neurocare.ai') {
+            // Treat guest user as unauthenticated visually
+            setIsAuthenticated(false);
+            setUserName('');
+            setUserRole('user');
+          } else {
+            setIsAuthenticated(true);
+            setUserName(user.name || 'User');
+            setUserRole(user.role || 'user');
+          }
         } catch (e) {
           setIsAuthenticated(false);
           setUserRole('');
