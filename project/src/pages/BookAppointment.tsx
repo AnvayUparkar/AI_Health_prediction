@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -22,6 +23,7 @@ import toast from 'react-hot-toast';
 
 const BookAppointment = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -64,6 +66,64 @@ const BookAppointment = () => {
   // General Doctor Schedule States
   const [doctorSchedule, setDoctorSchedule] = useState<any[]>([]);
   const [isScheduleLoading, setIsScheduleLoading] = useState(false);
+
+  // Load state from location.state if navigated from slots selection
+  useEffect(() => {
+    if (location.state) {
+      const { selectedSlot, selectedDate, doctorId, currentFormData } = location.state || {};
+      setFormData(prev => ({
+        ...prev,
+        ...currentFormData,
+        doctorId: doctorId || prev.doctorId,
+        date: selectedDate || prev.date,
+        time: selectedSlot ? `${selectedSlot.start} - ${selectedSlot.end}` : prev.time,
+        subSlot: selectedSlot || prev.subSlot
+      }));
+    }
+  }, [location.state]);
+
+  // Restore pending guest booking progress
+  useEffect(() => {
+    const pendingBookingStr = localStorage.getItem('pending_appointment_booking');
+    if (pendingBookingStr) {
+      try {
+        const pendingBooking = JSON.parse(pendingBookingStr);
+        const pendingFacilitiesStr = localStorage.getItem('pending_appointment_facilities');
+        const pendingLocationStr = localStorage.getItem('pending_appointment_location');
+        
+        if (pendingFacilitiesStr) {
+          setFacilities(JSON.parse(pendingFacilitiesStr));
+        }
+        if (pendingLocationStr) {
+          setUserLocation(JSON.parse(pendingLocationStr));
+        }
+        
+        setFormData(pendingBooking);
+        toast.success('Your pending booking details have been restored!');
+      } catch (err) {
+        console.error('Failed to restore pending booking progress:', err);
+      }
+    }
+  }, []);
+
+  const handleResetForm = () => {
+    setFormData({
+      name: '',
+      email: '',
+      phone: '',
+      mode: 'online',
+      date: '',
+      time: '',
+      reason: '',
+      facilityId: '',
+      doctorId: '',
+      subSlot: null
+    });
+    localStorage.removeItem('pending_appointment_booking');
+    localStorage.removeItem('pending_appointment_facilities');
+    localStorage.removeItem('pending_appointment_location');
+    toast.success('Form progress cleared.');
+  };
 
   // Fetch doctor's full schedule when doctor changes
   useEffect(() => {
@@ -290,7 +350,11 @@ const BookAppointment = () => {
     const currentUser = userString ? JSON.parse(userString) : null;
 
     if (!currentUser || currentUser.email === 'guest@neurocare.ai') {
-      toast.error('Please log in to book an appointment');
+      localStorage.setItem('pending_appointment_booking', JSON.stringify(formData));
+      localStorage.setItem('pending_appointment_facilities', JSON.stringify(facilities));
+      localStorage.setItem('pending_appointment_location', JSON.stringify(userLocation));
+      localStorage.setItem('redirect_after_login', '/book-appointment');
+      toast.error('Please log in to book an appointment. Your form progress has been saved.');
       navigate('/login');
       return;
     }
@@ -329,6 +393,9 @@ const BookAppointment = () => {
       });
 
       if (response.ok) {
+        localStorage.removeItem('pending_appointment_booking');
+        localStorage.removeItem('pending_appointment_facilities');
+        localStorage.removeItem('pending_appointment_location');
         setSubmitted(true);
         setTimeout(() => {
           setSubmitted(false);
@@ -939,6 +1006,16 @@ const BookAppointment = () => {
             >
               {loading ? 'Booking...' : 'Book Appointment'}
             </motion.button>
+
+            {localStorage.getItem('pending_appointment_booking') && (
+              <button
+                type="button"
+                onClick={handleResetForm}
+                className="w-full text-center text-sm font-semibold text-red-500 hover:text-red-700 hover:underline mt-4 transition-colors"
+              >
+                Clear Restored Progress
+              </button>
+            )}
           </form>
         </GlassCard>
       </div>

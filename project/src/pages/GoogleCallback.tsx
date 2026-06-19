@@ -32,7 +32,15 @@ const GoogleCallback: React.FC = () => {
 
           setStatus('success');
           setMessage('Google account linked successfully! Redirecting...');
-          setTimeout(() => navigate('/'), 2000);
+
+          // Redirect to saved destination if set (e.g. from guest booking flow)
+          const redirectTo = localStorage.getItem('redirect_after_login');
+          if (redirectTo) {
+            localStorage.removeItem('redirect_after_login');
+            setTimeout(() => navigate(redirectTo), 2000);
+          } else {
+            setTimeout(() => navigate('/'), 2000);
+          }
         } else {
           setStatus('error');
           setMessage(response.data.error || 'Failed to link Google account.');

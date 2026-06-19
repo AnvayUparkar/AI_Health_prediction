@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LogIn, Mail, Lock, Loader, Globe, Eye, EyeOff } from 'lucide-react';
-import api from '../services/api';
+import { LogIn, Mail, Lock, Loader, Eye, EyeOff } from 'lucide-react';
 import { login } from '../services/api';
 
 const Login: React.FC = () => {
@@ -28,8 +27,14 @@ const Login: React.FC = () => {
         // Dispatch storage event for navbar to detect
         window.dispatchEvent(new Event('storage'));
 
-        // Navigate to home
-        navigate('/');
+        // Redirect back to saved destination if set (e.g. from guest booking flow)
+        const redirectTo = localStorage.getItem('redirect_after_login');
+        if (redirectTo) {
+          localStorage.removeItem('redirect_after_login');
+          navigate(redirectTo);
+        } else {
+          navigate('/');
+        }
       } else {
         setError(data.error || 'Login failed');
       }
@@ -40,18 +45,7 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleGoogleConnect = async () => {
-    try {
-      const response = await api.get('/api/auth/google/url');
-      if (response.data.success && response.data.url) {
-        window.location.href = response.data.url;
-      } else {
-        setError('Failed to get Google Auth URL');
-      }
-    } catch (err: any) {
-      setError('Error initiating Google connection');
-    }
-  };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-20">
