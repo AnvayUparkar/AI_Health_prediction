@@ -72,7 +72,7 @@ const HeroSection: React.FC = () => {
   };
 
   return (
-    <section className="relative min-h-screen pt-32 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden bg-gradient-to-br from-healthcare-light via-healthcare-bg-secondary to-healthcare-light">
+    <section className="relative min-h-screen pt-40 sm:pt-32 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden bg-gradient-to-br from-healthcare-light via-healthcare-bg-secondary to-healthcare-light">
       {/* Decorative background shapes */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Soft green circle (bottom-left) */}
