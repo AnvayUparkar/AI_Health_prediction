@@ -13,7 +13,7 @@ cd lib
 # Download native package binaries
 echo "Downloading packages..."
 apt-get update -qy || true
-apt-get download -q libgl1 libglib2.0-0 || true
+apt-get download -q libgl1 libglib2.0-0 libgles2 libegl1 libgthread-2.0-0 || true
 
 # Extract downloaded .deb archives
 for deb in *.deb; do
