@@ -32,7 +32,10 @@ def _ensure_model():
 class GestureService:
     def __init__(self):
         _ensure_model()
-        base_options = mp_python.BaseOptions(model_asset_path=_MODEL_PATH)
+        base_options = mp_python.BaseOptions(
+            model_asset_path=_MODEL_PATH,
+            delegate=mp_python.BaseOptions.Delegate.CPU
+        )
         options = HandLandmarkerOptions(
             base_options=base_options,
             running_mode=mp_vision.RunningMode.IMAGE,
@@ -195,16 +198,21 @@ class GestureService:
 
 # Lazy singleton — avoids circular-import issues with eventlet monkey-patching
 _gesture_detector = None
+_gesture_init_failed = False
 
 def get_gesture_detector():
-    global _gesture_detector
+    global _gesture_detector, _gesture_init_failed
+    if _gesture_init_failed:
+        return None
     if _gesture_detector is None:
         try:
             _gesture_detector = GestureService()
             print('[INFO] GestureService initialized successfully.')
         except Exception as e:
             print(f'[ERROR] GestureService initialization failed: {e}')
-            raise  # Re-raise so caller knows it failed
+            print('[WARN] Gesture detection disabled for this session.')
+            _gesture_init_failed = True
+            return None
     return _gesture_detector
 
 # Keep backward-compatible name for existing imports,
