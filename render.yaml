@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: ai-health-predictor-backend
+    env: python
+    buildCommand: "cd project && bash build.sh"
+    startCommand: "cd project && python server.py"
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: LD_LIBRARY_PATH
+        value: /opt/render/project/src/project/lib/usr/lib/x86_64-linux-gnu:/opt/render/project/src/project/lib/usr/lib:/opt/render/project/src/project/lib/lib/x86_64-linux-gnu:/opt/render/project/src/project/lib/lib:$LD_LIBRARY_PATH
