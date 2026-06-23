@@ -200,16 +200,21 @@ def create_app(config_overrides: Optional[dict] = None):
             print(f"[WARN] Model loading encountered errors: {e}")
             print("  Server will continue - some predictions may not be available")
 
+    _gesture_warned = False
+
     @socketio.on('gesture_frame')
     def handle_gesture(data):
         """
         Receives frame from frontend and processes it via GestureService.
         """
+        nonlocal _gesture_warned
         try:
             from backend.gesture_service import get_gesture_detector
             _detector = get_gesture_detector()
             if _detector is None:
-                print('[SOCKET ERROR] Gesture detector is None — initialization failed.')
+                if not _gesture_warned:
+                    print('[WARN] Gesture detector unavailable — gesture detection is disabled.')
+                    _gesture_warned = True
                 return
             frame_data = data.get('frame')
             patient_info = data.get('info', {})
