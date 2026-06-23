@@ -1,0 +1,12 @@
+node_modules
+dist
+src
+.git
+__pycache__
+*.pyc
+.env
+.vscode
+.bolt
+.claude
+scratch
+android
