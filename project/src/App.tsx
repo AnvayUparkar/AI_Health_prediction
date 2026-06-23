@@ -25,7 +25,7 @@ import GamificationWidget from './components/GamificationWidget';
 import { AIChatBot } from './components/AIChatBot';
 import SOSButton from './components/SOSButton';
 import SOSNavigationModal from './components/SOSNavigationModal';
-import GestureMonitor from './components/GestureMonitor';
+// import GestureMonitor from './components/GestureMonitor';
 import { Toaster } from 'react-hot-toast';
 
 
@@ -112,7 +112,7 @@ function App() {
         <AIChatBot />
         <SOSButton />
         <SOSNavigationModal />
-        <GestureMonitor />
+        {/* <GestureMonitor /> */}
 
         <Routes>
           <Route path="/" element={<Home />} />
