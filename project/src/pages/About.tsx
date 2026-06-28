@@ -4,9 +4,9 @@ import { Users, Target, Heart, Award } from 'lucide-react';
 const About = () => {
   const teamMembers = [
     { name: 'Anvay Uparkar', role: 'AI/ML Engineer' },
-    { name: 'Nishidh Vora', role: 'Data Scientist' },
-    { name: 'Goopesh Seth', role: 'Full Stack Developer' },
-    { name: 'Shravani Shewale', role: 'Product Designer' },
+    // { name: 'Nishidh Vora', role: 'Data Scientist' },
+    { name: 'Shreyasi Ghorbund', role: 'Full Stack Developer' },
+    // { name: 'Shravani Shewale', role: 'Product Designer' },
   ];
 
   const values = [
