@@ -78,7 +78,7 @@ const Home = () => {
       features: ["Personalized meal plans", "Report-based recommendations", "Nutritionist-approved"],
       link: "/report-analyzer",
       ctaText: "Get Diet Plan",
-      roles: ["doctor", "nurse"/*, "user"*/],
+      roles: ["doctor", "nurse", "user"],
       glow: "hover:shadow-[0_0_20px_rgba(16,185,129,0.2)]"
     },
 
