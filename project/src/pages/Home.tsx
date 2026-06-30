@@ -52,7 +52,7 @@ const Home = () => {
       features: ["Online & Offline consultations", "Flexible scheduling", "Experienced doctors"],
       link: "/book-appointment",
       ctaText: "Book Appointment",
-      roles: ["doctor", "nurse", "user"],
+      roles: ["nurse", "user"],
       glow: "hover:shadow-[0_0_20px_rgba(168,85,247,0.2)]"
     },
     {
