@@ -209,9 +209,9 @@ function App() {
           <Route 
             path="/report-analyzer" 
             element={
-              <MedicalRoute>
+              <ProtectedRoute>
                 <ReportAnalyzer />
-              </MedicalRoute>
+              </ProtectedRoute>
             } 
           />
           <Route 

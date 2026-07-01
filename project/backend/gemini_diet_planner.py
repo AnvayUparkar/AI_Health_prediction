@@ -460,7 +460,7 @@ _MODEL_FALLBACK_CHAIN = [
 
 
 def _is_quota_error(exc: Exception) -> bool:
-    """Return True when *exc* is a 429 / quota-exceeded Gemini error."""
+    """Return True when *exc* is a 429 quota, rate-limit, or 504/timeout error."""
     err_str = str(exc).lower()
     return (
         "429" in err_str
@@ -468,6 +468,11 @@ def _is_quota_error(exc: Exception) -> bool:
         or "rate limit" in err_str
         or "resource_exhausted" in err_str
         or "rate_limit" in err_str
+        or "504" in err_str
+        or "deadline" in err_str
+        or "503" in err_str
+        or "timeout" in err_str
+        or "timed out" in err_str
     )
 
 
@@ -490,13 +495,11 @@ def _is_model_unavailable(exc: Exception) -> bool:
 def _call_gemini_single(genai, model_name: str, prompt: str, timeout_secs: int = 45) -> str:
     """
     Attempt one model with response_mime_type first, then without.
-    Enforces a hard timeout of *timeout_secs* seconds using a thread executor.
+    Enforces a hard timeout of *timeout_secs* seconds using native request options.
     Raises RuntimeError on non-quota failures.
     Returns raw text on success.
     Returns None if this model should be skipped (mime rejection) — caller retries.
     """
-    import concurrent.futures
-
     base_config = {
         "temperature": 0.3,
         "top_p": 0.85,
@@ -517,7 +520,8 @@ def _call_gemini_single(genai, model_name: str, prompt: str, timeout_secs: int =
             generation_config=config_a,
             safety_settings=safety_settings,
         )
-        response = model.generate_content(prompt)
+        # Using request_options for timeout
+        response = model.generate_content(prompt, request_options={"timeout": timeout_secs})
         return response.text
 
     def _run_without_mime():
@@ -526,25 +530,20 @@ def _call_gemini_single(genai, model_name: str, prompt: str, timeout_secs: int =
             generation_config=base_config,
             safety_settings=safety_settings,
         )
-        response = model.generate_content(prompt)
+        response = model.generate_content(prompt, request_options={"timeout": timeout_secs})
         return response.text
 
     # Attempt A — with response_mime_type (clean JSON)
     try:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(_run_with_mime)
-            try:
-                result = future.result(timeout=timeout_secs)
-                logger.debug("[%s] response length: %d chars", model_name, len(result))
-                return result
-            except concurrent.futures.TimeoutError:
-                raise RuntimeError(f"Gemini model {model_name} timed out after {timeout_secs}s")
+        result = _run_with_mime()
+        logger.debug("[%s] response length: %d chars", model_name, len(result))
+        return result
     except Exception as exc:
         err_str = str(exc).lower()
         if _is_quota_error(exc):
             raise  # bubble up so the outer loop can try the next model
-        if "timed out" in err_str:
-            raise  # propagate timeout so next model is tried
+        if "timed out" in err_str or "timeout" in err_str:
+            raise RuntimeError(f"Gemini model {model_name} timed out after {timeout_secs}s")
         if "mime" in err_str or "unsupported" in err_str or "invalid" in err_str or "400" in err_str:
             logger.warning("[%s] response_mime_type rejected — retrying without it.", model_name)
         else:
@@ -552,18 +551,16 @@ def _call_gemini_single(genai, model_name: str, prompt: str, timeout_secs: int =
 
     # Attempt B — without response_mime_type
     try:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(_run_without_mime)
-            try:
-                result = future.result(timeout=timeout_secs)
-                logger.debug("[%s] response (no mime) length: %d chars", model_name, len(result))
-                return result
-            except concurrent.futures.TimeoutError:
-                raise RuntimeError(f"Gemini model {model_name} timed out after {timeout_secs}s (attempt B)")
+        result = _run_without_mime()
+        logger.debug("[%s] response (no mime) length: %d chars", model_name, len(result))
+        return result
     except Exception as exc2:
         if _is_quota_error(exc2):
             raise  # bubble up for fallback
+        if "timed out" in str(exc2).lower() or "timeout" in str(exc2).lower():
+            raise RuntimeError(f"Gemini model {model_name} timed out after {timeout_secs}s (attempt B)")
         raise RuntimeError(f"Gemini API error: {exc2}") from exc2
+
 
 
 

@@ -88,40 +88,6 @@
         "timestamp": 1776882376.2925887,
         "confidence": 0.7
     },
-    "lentil dal": {
-        "ingredients": [
-            "onion",
-            "spices",
-            "lentils",
-            "garlic"
-        ],
-        "timestamp": 1776882469.963173,
-        "confidence": 0.7
-    },
-    "moong dal khichdi": {
-        "ingredients": [
-            "onion",
-            "spices",
-            "lentils",
-            "ghee",
-            "rice",
-            "garlic"
-        ],
-        "timestamp": 1776882472.40668,
-        "confidence": 0.7
-    },
-    "moong dal khichdi with curd": {
-        "ingredients": [
-            "onion",
-            "spices",
-            "lentils",
-            "ghee",
-            "rice",
-            "garlic"
-        ],
-        "timestamp": 1776882475.2696295,
-        "confidence": 0.7
-    },
     "bajra roti with beetroot salad and lentil dal curry": {
         "ingredients": [
             "cucumber",
@@ -208,39 +174,12 @@
         "timestamp": 1776883241.9545522,
         "confidence": 0.7
     },
-    "nuts": {
-        "ingredients": [
-            "dried chickpeas",
-            "turmeric",
-            "sun-dried tomatoes",
-            "ground cumin",
-            "olive oil"
-        ],
-        "timestamp": 1776905575.1062186,
-        "confidence": 0.9
-    },
     "almonds": {
         "ingredients": [
             "natural almond butter",
             "almond milk"
         ],
         "timestamp": 1776905575.4429274,
-        "confidence": 0.9
-    },
-    "walnuts": {
-        "ingredients": [
-            "walnuts",
-            "olive oil"
-        ],
-        "timestamp": 1776905576.2840958,
-        "confidence": 0.9
-    },
-    "brussels sprouts": {
-        "ingredients": [
-            "walnuts",
-            "olive oil"
-        ],
-        "timestamp": 1776905576.6238034,
         "confidence": 0.9
     },
     "barley": {
@@ -304,15 +243,6 @@
         "timestamp": 1776905579.878065,
         "confidence": 0.9
     },
-    "flaxseed, ground": {
-        "ingredients": [
-            "wheat germ",
-            "oats",
-            "peanut butter"
-        ],
-        "timestamp": 1776905587.7227235,
-        "confidence": 0.9
-    },
     "roasted masala makhana": {
         "ingredients": [
             "cashew nuts- a bit",
@@ -326,28 +256,12 @@
         "timestamp": 1776905590.7560568,
         "confidence": 0.9
     },
-    "nuts, almonds, whole, raw": {
-        "ingredients": [
-            "carrots",
-            "ginger powder"
-        ],
-        "timestamp": 1776906076.5604005,
-        "confidence": 0.9
-    },
     "beetroot": {
         "ingredients": [
             "lemon juice",
             "extra virgin olive oil"
         ],
         "timestamp": 1776906988.904769,
-        "confidence": 0.9
-    },
-    "spinach": {
-        "ingredients": [
-            "spinach leaves",
-            "chicken"
-        ],
-        "timestamp": 1776906989.758833,
         "confidence": 0.9
     },
     "flaxseeds": {
@@ -450,17 +364,6 @@
         "timestamp": 1776906999.3781376,
         "confidence": 0.7
     },
-    "fresh curd": {
-        "ingredients": [
-            "eggs",
-            "butter",
-            "lemon zest",
-            "lemons",
-            "egg yolks"
-        ],
-        "timestamp": 1776907324.1967394,
-        "confidence": 0.9
-    },
     "ragi roti": {
         "ingredients": [
             "wheat"
@@ -468,35 +371,12 @@
         "timestamp": 1776907329.241684,
         "confidence": 0.7
     },
-    "fresh probiotic curd": {
-        "ingredients": [
-            "eggs",
-            "butter",
-            "lemon zest",
-            "lemons",
-            "egg yolks"
-        ],
-        "timestamp": 1776907330.0695822,
-        "confidence": 0.9
-    },
     "beetroot salad": {
         "ingredients": [
             "lemon juice",
             "extra virgin olive oil"
         ],
         "timestamp": 1776907331.2346559,
-        "confidence": 0.9
-    },
-    "fresh cucumber & lemon salad": {
-        "ingredients": [
-            "cucumber",
-            "juice of lemon",
-            "onion",
-            "garlic",
-            "olive oil",
-            "green lentils"
-        ],
-        "timestamp": 1776907332.0471656,
         "confidence": 0.9
     },
     "lentils curry": {
@@ -562,22 +442,6 @@
         "timestamp": 1776908362.010072,
         "confidence": 0.7
     },
-    "beetroot salad sabzi": {
-        "ingredients": [
-            "tomato",
-            "lemon",
-            "cucumber"
-        ],
-        "timestamp": 1776908365.9206815,
-        "confidence": 0.7
-    },
-    "whole wheat roti": {
-        "ingredients": [
-            "wheat"
-        ],
-        "timestamp": 1776908905.7489612,
-        "confidence": 0.7
-    },
     "beetroot salad dal tadka with ragi & lentil dal": {
         "ingredients": [
             "lemon",
@@ -620,13 +484,6 @@
         "timestamp": 1776908997.9824066,
         "confidence": 0.7
     },
-    "jowar roti": {
-        "ingredients": [
-            "wheat"
-        ],
-        "timestamp": 1776908998.8170748,
-        "confidence": 0.7
-    },
     "dalia tadka": {
         "ingredients": [
             "onion",
@@ -637,31 +494,11 @@
         "timestamp": 1776909004.4510999,
         "confidence": 0.7
     },
-    "masoor dal curry": {
-        "ingredients": [
-            "onion",
-            "spices",
-            "lentils",
-            "garlic"
-        ],
-        "timestamp": 1776909004.757035,
-        "confidence": 0.7
-    },
     "bajra roti with jaggery": {
         "ingredients": [
             "wheat"
         ],
         "timestamp": 1776909987.6414564,
-        "confidence": 0.7
-    },
-    "carrots sabzi with whole wheat & dal": {
-        "ingredients": [
-            "spices",
-            "onion",
-            "garlic",
-            "lentils"
-        ],
-        "timestamp": 1776910029.7563264,
         "confidence": 0.7
     },
     "toor dal tadka": {
@@ -733,15 +570,6 @@
             "spices"
         ],
         "timestamp": 1776947998.726356,
-        "confidence": 0.7
-    },
-    "garden fresh kachumber salad": {
-        "ingredients": [
-            "tomato",
-            "cucumber",
-            "lemon"
-        ],
-        "timestamp": 1776948005.228468,
         "confidence": 0.7
     },
     "moong dal soup": {
@@ -927,24 +755,6 @@
         "timestamp": 1780066939.7378678,
         "confidence": 0.7
     },
-    "1 medium": {
-        "ingredients": [
-            "mediums sized carrots",
-            "butter"
-        ],
-        "timestamp": 1780066951.1257892,
-        "confidence": 0.9
-    },
-    "1/2 cup": {
-        "ingredients": [
-            "baby carrots",
-            "baby carrots 4 stalks celery 1 can mushrooms 1 piece pepper 1 cup flour and 3 tbsp 2 tablespoons bee",
-            "potatoes",
-            "onion"
-        ],
-        "timestamp": 1780066956.8189642,
-        "confidence": 0.9
-    },
     "bajra roti with palak dal and mixed vegetable sabzi": {
         "ingredients": [
             "lentils",
@@ -1077,5 +887,286 @@
         ],
         "timestamp": 1780070620.3864214,
         "confidence": 0.7
+    },
+    "nuts": {
+        "ingredients": [
+            "butter"
+        ],
+        "timestamp": 1782921548.595456,
+        "confidence": 0.9
+    },
+    "brussels sprouts": {
+        "ingredients": [
+            "skim milk",
+            "butter",
+            "onion",
+            "garlic clove"
+        ],
+        "timestamp": 1782921549.4462261,
+        "confidence": 0.9
+    },
+    "walnuts": {
+        "ingredients": [
+            "garlic",
+            "olive oil",
+            "walnuts"
+        ],
+        "timestamp": 1782921553.6404042,
+        "confidence": 0.9
+    },
+    "kale": {
+        "ingredients": [
+            "garlic",
+            "olive oil"
+        ],
+        "timestamp": 1782921554.4759984,
+        "confidence": 0.9
+    },
+    "spinach": {
+        "ingredients": [
+            "butter",
+            "onions",
+            "frozen spinach",
+            "eggs",
+            "sour cream"
+        ],
+        "timestamp": 1782921555.3459086,
+        "confidence": 0.9
+    },
+    "flaxseed, ground": {
+        "ingredients": [
+            "vital wheat gluten",
+            "skim milk powder"
+        ],
+        "timestamp": 1782921559.9513206,
+        "confidence": 0.9
+    },
+    "nuts, almonds, whole, raw": {
+        "ingredients": [
+            "almond milk",
+            "natural almond butter"
+        ],
+        "timestamp": 1782921563.8314006,
+        "confidence": 0.9
+    },
+    "lentil dal": {
+        "ingredients": [
+            "chicken breast",
+            "lentils",
+            "canned tomatoes",
+            "additional toppings: avocado",
+            "garlic",
+            "onion",
+            "carrots",
+            "olive oil"
+        ],
+        "timestamp": 1782921565.0044465,
+        "confidence": 0.9
+    },
+    "moong dal khichdi": {
+        "ingredients": [
+            "lentils",
+            "spices",
+            "garlic",
+            "onion",
+            "rice",
+            "ghee"
+        ],
+        "timestamp": 1782921565.8839025,
+        "confidence": 0.7
+    },
+    "carrots sabzi with whole wheat & dal": {
+        "ingredients": [
+            "garlic",
+            "onion",
+            "lentils",
+            "spices"
+        ],
+        "timestamp": 1782921567.4154048,
+        "confidence": 0.7
+    },
+    "beetroot salad khichdi with jowar & moong dal khichdi": {
+        "ingredients": [
+            "lemon",
+            "lentils",
+            "ghee",
+            "spices",
+            "garlic",
+            "onion",
+            "cucumber",
+            "rice",
+            "tomato"
+        ],
+        "timestamp": 1782921568.8345172,
+        "confidence": 0.7
+    },
+    "beetroot salad sabzi": {
+        "ingredients": [
+            "lemon juice",
+            "extra virgin olive oil"
+        ],
+        "timestamp": 1782921569.1973093,
+        "confidence": 0.9
+    },
+    "moong dal khichdi with curd": {
+        "ingredients": [
+            "lentils",
+            "spices",
+            "garlic",
+            "onion",
+            "rice",
+            "ghee"
+        ],
+        "timestamp": 1782921570.1972811,
+        "confidence": 0.7
+    },
+    "fresh probiotic curd": {
+        "ingredients": [
+            "lemons",
+            "butter",
+            "egg yolks",
+            "lemon zest",
+            "eggs"
+        ],
+        "timestamp": 1782921571.02728,
+        "confidence": 0.9
+    },
+    "whole wheat roti": {
+        "ingredients": [
+            "wheat"
+        ],
+        "timestamp": 1782921571.8904495,
+        "confidence": 0.7
+    },
+    "masoor dal curry": {
+        "ingredients": [
+            "garlic",
+            "onion",
+            "lentils",
+            "spices"
+        ],
+        "timestamp": 1782921572.7703733,
+        "confidence": 0.7
+    },
+    "fresh cucumber & lemon salad": {
+        "ingredients": [
+            "lemon",
+            "tomato",
+            "cucumber"
+        ],
+        "timestamp": 1782921573.1161423,
+        "confidence": 0.7
+    },
+    "jowar roti": {
+        "ingredients": [
+            "wheat"
+        ],
+        "timestamp": 1782921577.1844087,
+        "confidence": 0.7
+    },
+    "fresh curd": {
+        "ingredients": [
+            "lemons",
+            "butter",
+            "egg yolks",
+            "lemon zest",
+            "eggs"
+        ],
+        "timestamp": 1782921578.9276128,
+        "confidence": 0.9
+    },
+    "moong dal khichdi tadka": {
+        "ingredients": [
+            "lentils",
+            "spices",
+            "garlic",
+            "onion",
+            "rice",
+            "ghee"
+        ],
+        "timestamp": 1782921581.739105,
+        "confidence": 0.7
+    },
+    "garden fresh kachumber salad": {
+        "ingredients": [
+            "lemon",
+            "tomato",
+            "cucumber"
+        ],
+        "timestamp": 1782921582.832407,
+        "confidence": 0.7
+    },
+    "pomegranate & guava salad with a sprinkle of flax seeds": {
+        "ingredients": [
+            "lemon",
+            "tomato",
+            "cucumber"
+        ],
+        "timestamp": 1782921857.7007735,
+        "confidence": 0.7
+    },
+    "vegetable & chickpea curry with jowar roti": {
+        "ingredients": [
+            "canned tomatoes",
+            "ground ginger",
+            "chickpeas/garbanzo beans",
+            "veggies",
+            "garlic",
+            "onion",
+            "not chicken\" vegan bouillons",
+            "oil",
+            "potatoes",
+            "cumin"
+        ],
+        "timestamp": 1782921869.543478,
+        "confidence": 0.9
+    },
+    "1 medium": {
+        "ingredients": [
+            "butter",
+            "mediums sized carrots"
+        ],
+        "timestamp": 1782921876.0127447,
+        "confidence": 0.9
+    },
+    "oats upma with mixed vegetables": {
+        "ingredients": [
+            "old-fashioned oats",
+            "butter",
+            "vegetable oil",
+            "eggs"
+        ],
+        "timestamp": 1782921876.9159944,
+        "confidence": 0.9
+    },
+    "small amount": {
+        "ingredients": [
+            "juice of lemon",
+            "garlic",
+            "olive oil"
+        ],
+        "timestamp": 1782921880.7936153,
+        "confidence": 0.9
+    },
+    "brown rice with moong dal and methi sabzi": {
+        "ingredients": [
+            "lentils",
+            "spices",
+            "rice",
+            "garlic",
+            "onion"
+        ],
+        "timestamp": 1782921881.6396098,
+        "confidence": 0.7
+    },
+    "1/2 cup": {
+        "ingredients": [
+            "baby carrots",
+            "baby carrots 4 stalks celery 1 can mushrooms 1 piece pepper 1 cup flour and 3 tbsp 2 tablespoons bee",
+            "onion",
+            "potatoes"
+        ],
+        "timestamp": 1782921889.9299164,
+        "confidence": 0.9
     }
 }
