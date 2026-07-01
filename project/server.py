@@ -192,13 +192,14 @@ def create_app(config_overrides: Optional[dict] = None):
         except Exception as e:
             print(f"[ERROR] DB init failed: {e}")
 
-        # Load ML models (non-blocking)
-        try:
-            from backend.routes.predict import load_models_once
-            load_models_once()
-        except Exception as e:
-            print(f"[WARN] Model loading encountered errors: {e}")
-            print("  Server will continue - some predictions may not be available")
+        # Load ML models lazily to save RAM on free tier (512MB limit)
+        # They will be loaded automatically when the /predict endpoint is first hit.
+        # try:
+        #     from backend.routes.predict import load_models_once
+        #     load_models_once()
+        # except Exception as e:
+        #     print(f"[WARN] Model loading encountered errors: {e}")
+        #     print("  Server will continue - some predictions may not be available")
 
     _gesture_warned = False
 
@@ -301,7 +302,7 @@ def run_scheduler(app):
                         print(f"[REMINDER] Medicine {med.name} due for {user_name} at {current_time}")
                         
                         # 1. Emit to the patient specifically
-                        socketio.emit('medication_reminder', payload, room=f"user_{med.patient_id}")
+                        socketio.emit('medication_reminder', payload, to=f"user_{med.patient_id}")
                         
                         # 2. Emit to relevant hospital rooms
                         if user and user.hospitals:
@@ -309,7 +310,7 @@ def run_scheduler(app):
                                 patient_hospitals = json.loads(user.hospitals) if isinstance(user.hospitals, str) else user.hospitals
                                 if isinstance(patient_hospitals, list):
                                     for h in patient_hospitals:
-                                        socketio.emit('medication_reminder', payload, room=f"hospital_{h}")
+                                        socketio.emit('medication_reminder', payload, to=f"hospital_{h}")
                             except:
                                 pass
                                 
