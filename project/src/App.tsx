@@ -201,9 +201,9 @@ function App() {
           <Route 
             path="/diet-planner" 
             element={
-              <MedicalRoute>
+              <ProtectedRoute>
                 <DietPlanner />
-              </MedicalRoute>
+              </ProtectedRoute>
             } 
           />
           <Route 
