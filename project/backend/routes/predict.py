@@ -99,118 +99,99 @@ def _safe_joblib_load(path: str):
                 pass
         raise
 
-def load_models_once():
+def load_model_for_type(model_type: str):
     """
-    Load models lazily. Safe to call inside a request context.
-    Each model loads independently - if one fails, others can still work.
+    Load models lazily based on requested type to save RAM on free tier (512MB limit).
+    Unloads other models to prevent Out of Memory errors.
     """
     global lung_cancer_model, lung_cancer_label_encoder, lung_cancer_feature_names
     global diabetes_model, diabetes_label_encoder
     global heart_xgb, heart_scaler, heart_threshold, heart_features
     
-    print("Loading models...")
-    models_loaded = []
-    models_failed = []
+    import gc
     
-    # Try to load lung cancer model (non-critical)
-    if lung_cancer_model is None:
-        try:
-            if os.path.exists(LUNG_CANCER_MODEL_PATH):
-                print(f"  Loading lung cancer model from {LUNG_CANCER_MODEL_PATH}")
-                lung_cancer_model = _safe_joblib_load(LUNG_CANCER_MODEL_PATH)
-                
-                # CRITICAL FIX: Extract actual feature names from the model
-                if hasattr(lung_cancer_model, 'feature_names_in_'):
-                    lung_cancer_feature_names = list(lung_cancer_model.feature_names_in_)
-                    print(f"  [OK] Extracted feature names from model: {lung_cancer_feature_names}")
+    print(f"Loading model for type: {model_type}...")
+    
+    if model_type == 'lung_cancer':
+        # Unload others
+        diabetes_model = None
+        diabetes_label_encoder = None
+        heart_xgb = None
+        heart_scaler = None
+        gc.collect()
+        
+        if lung_cancer_model is None:
+            try:
+                if os.path.exists(LUNG_CANCER_MODEL_PATH):
+                    print(f"  Loading lung cancer model from {LUNG_CANCER_MODEL_PATH}")
+                    lung_cancer_model = _safe_joblib_load(LUNG_CANCER_MODEL_PATH)
+                    
+                    if hasattr(lung_cancer_model, 'feature_names_in_'):
+                        lung_cancer_feature_names = list(lung_cancer_model.feature_names_in_)
+                    else:
+                        lung_cancer_feature_names = LUNG_CANCER_FEATURES
+                    
+                    if lung_cancer_label_encoder is None and os.path.exists(LUNG_CANCER_LABEL_ENCODER_PATH):
+                        lung_cancer_label_encoder = _safe_joblib_load(LUNG_CANCER_LABEL_ENCODER_PATH)
+                        
+                    print("  [OK] Lung cancer model loaded")
                 else:
-                    lung_cancer_feature_names = LUNG_CANCER_FEATURES
-                    print(f"  [WARN] Model has no feature_names_in_, using defaults")
+                    print(f"  [WARN] Lung cancer model not found: {LUNG_CANCER_MODEL_PATH}")
+            except Exception as e:
+                print(f"  [FAIL] Failed to load lung cancer model: {e}")
                 
-                print("  [OK] Lung cancer model loaded")
-                models_loaded.append("lung_cancer_model")
-            else:
-                print(f"  [WARN] Lung cancer model not found: {LUNG_CANCER_MODEL_PATH}")
-                models_failed.append("lung_cancer_model (not found)")
-        except Exception as e:
-            print(f"  [FAIL] Failed to load lung cancer model: {e}")
-            models_failed.append(f"lung_cancer_model ({str(e)[:50]})")
-    
-    # Try to load lung cancer encoder (non-critical)
-    if lung_cancer_label_encoder is None:
-        try:
-            if os.path.exists(LUNG_CANCER_LABEL_ENCODER_PATH):
-                print(f"  Loading lung cancer encoder from {LUNG_CANCER_LABEL_ENCODER_PATH}")
-                lung_cancer_label_encoder = _safe_joblib_load(LUNG_CANCER_LABEL_ENCODER_PATH)
-                print("  [OK] Lung cancer encoder loaded")
-                models_loaded.append("lung_cancer_encoder")
-        except Exception as e:
-            print(f"  [FAIL] Failed to load lung cancer encoder: {e}")
-            models_failed.append(f"lung_cancer_encoder ({str(e)[:50]})")
-    
-    # Try to load diabetes model (critical)
-    if diabetes_model is None:
-        try:
-            if os.path.exists(DIABETES_MODEL_PATH):
-                print(f"  Loading diabetes model from {DIABETES_MODEL_PATH}")
-                diabetes_model = _safe_joblib_load(DIABETES_MODEL_PATH)
-                print("  [OK] Diabetes model loaded")
-                models_loaded.append("diabetes_model")
-            else:
-                error_msg = f"Diabetes model not found: {DIABETES_MODEL_PATH}"
-                print(f"  [FAIL] {error_msg}")
-                models_failed.append("diabetes_model (not found)")
-        except Exception as e:
-            print(f"  [FAIL] Failed to load diabetes model: {e}")
-            traceback.print_exc()
-            models_failed.append(f"diabetes_model ({str(e)[:50]})")
-    
-    # Try to load diabetes encoder (optional)
-    if diabetes_label_encoder is None:
-        try:
-            if os.path.exists(DIABETES_LABEL_ENCODER_PATH):
-                print(f"  Loading diabetes encoder from {DIABETES_LABEL_ENCODER_PATH}")
-                diabetes_label_encoder = _safe_joblib_load(DIABETES_LABEL_ENCODER_PATH)
-                print("  [OK] Diabetes encoder loaded")
-                models_loaded.append("diabetes_encoder")
-        except Exception as e:
-            print(f"  [WARN] Failed to load diabetes encoder (optional): {e}")
-            models_failed.append(f"diabetes_encoder ({str(e)[:50]})")
-
-    # Try to load heart disease XGBoost model
-    if heart_xgb is None and xgb is not None:
-        try:
-            required_files = [HEART_XGB_PATH, HEART_SCALER_PATH, HEART_CONFIG_PATH]
-            if all(os.path.exists(p) for p in required_files):
-                print(f"  Loading heart disease models from {os.path.dirname(HEART_XGB_PATH)}")
-                heart_xgb = xgb.XGBClassifier()
-                heart_xgb.load_model(HEART_XGB_PATH)
+    elif model_type == 'diabetes':
+        # Unload others
+        lung_cancer_model = None
+        lung_cancer_label_encoder = None
+        heart_xgb = None
+        heart_scaler = None
+        gc.collect()
+        
+        if diabetes_model is None:
+            try:
+                if os.path.exists(DIABETES_MODEL_PATH):
+                    print(f"  Loading diabetes model from {DIABETES_MODEL_PATH}")
+                    diabetes_model = _safe_joblib_load(DIABETES_MODEL_PATH)
+                    
+                    if diabetes_label_encoder is None and os.path.exists(DIABETES_LABEL_ENCODER_PATH):
+                        diabetes_label_encoder = _safe_joblib_load(DIABETES_LABEL_ENCODER_PATH)
+                        
+                    print("  [OK] Diabetes model loaded")
+                else:
+                    print(f"  [FAIL] Diabetes model not found: {DIABETES_MODEL_PATH}")
+            except Exception as e:
+                print(f"  [FAIL] Failed to load diabetes model: {e}")
+                traceback.print_exc()
                 
-                heart_scaler = _safe_joblib_load(HEART_SCALER_PATH)
-                
-                with open(HEART_CONFIG_PATH, "r") as f:
-                    config = json.load(f)
-                    heart_threshold = config.get("threshold", 0.5)
-                    heart_features = config.get("features", [])
-                
-                print(f"  [OK] Heart disease XGBoost model loaded with {len(heart_features)} features")
-                models_loaded.append("heart_disease_xgb")
-            else:
-                missing = [p for p in required_files if not os.path.exists(p)]
-                error_msg = f"Heart disease models not found: missing {missing}"
-                print(f"  [FAIL] {error_msg}")
-                models_failed.append("heart_disease_xgb (not found)")
-        except Exception as e:
-            print(f"  [FAIL] Failed to load heart disease models: {e}")
-            traceback.print_exc()
-            models_failed.append(f"heart_disease_xgb ({str(e)[:50]})")
-    
-    # Summary
-    print(f"\n{'='*60}")
-    print(f"[OK] Models loaded successfully: {', '.join(models_loaded) if models_loaded else 'None'}")
-    if models_failed:
-        print(f"[FAIL] Models failed to load: {', '.join(models_failed)}")
-    print(f"{'='*60}\n")
+    elif model_type == 'heart_disease':
+        # Unload others
+        lung_cancer_model = None
+        lung_cancer_label_encoder = None
+        diabetes_model = None
+        diabetes_label_encoder = None
+        gc.collect()
+        
+        if heart_xgb is None and xgb is not None:
+            try:
+                required_files = [HEART_XGB_PATH, HEART_SCALER_PATH, HEART_CONFIG_PATH]
+                if all(os.path.exists(p) for p in required_files):
+                    print(f"  Loading heart disease models from {os.path.dirname(HEART_XGB_PATH)}")
+                    heart_xgb = xgb.XGBClassifier()
+                    heart_xgb.load_model(HEART_XGB_PATH)
+                    heart_scaler = _safe_joblib_load(HEART_SCALER_PATH)
+                    
+                    with open(HEART_CONFIG_PATH, "r") as f:
+                        config = json.load(f)
+                        heart_threshold = config.get("threshold", 0.5)
+                        heart_features = config.get("features", [])
+                    
+                    print(f"  [OK] Heart disease XGBoost model loaded")
+                else:
+                    print(f"  [FAIL] Heart disease models not found")
+            except Exception as e:
+                print(f"  [FAIL] Failed to load heart disease models: {e}")
+                traceback.print_exc()
 
 def _safe_predict(model, data):
     try:
@@ -232,7 +213,7 @@ def predict_with_type(prediction_type: str, features: Dict[str, Any]) -> Tuple[D
     """
     Main prediction function that handles both diabetes and lung cancer predictions.
     """
-    load_models_once()
+    load_model_for_type(prediction_type)
 
     if prediction_type == 'lung_cancer':
         if not lung_cancer_model:
